@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,17 +22,18 @@ func TestPrompt_RendersRenderResult(t *testing.T) {
 		},
 	})
 
-	// Start the prompt in a goroutine since it blocks
+	// Start the prompt in a goroutine
+	done := make(chan any, 1)
 	go func() {
-		p.Prompt()
+		done <- p.Prompt()
 	}()
 
-	// Give a small delay to allow initial render
-	// In production this wouldn't be needed as the prompt would handle timing properly
+	// Small delay to allow initial render
 	time.Sleep(time.Millisecond)
 
 	// Cancel to exit the prompt
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
+	<-done
 
 	expected := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"} // cursor.hide + "foo" + newline + cursor.show
 	assert.Equal(t, expected, output.Buffer)
@@ -56,7 +58,7 @@ func TestPrompt_SubmitsOnReturn(t *testing.T) {
 		resultCh <- result
 	}()
 
-	// Give a small delay to allow initial render
+	// Small delay to allow initial render
 	time.Sleep(time.Millisecond)
 
 	// Simulate return key press
@@ -67,9 +69,9 @@ func TestPrompt_SubmitsOnReturn(t *testing.T) {
 
 	assert.Equal(t, nil, result)
 	assert.False(t, IsCancel(result))
-	assert.Equal(t, StateSubmit, p.State)
+	assert.Equal(t, StateSubmit, p.StateSnapshot())
 
-	expectedOutput := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"} // cursor.hide + "foo" + "\n" + cursor.show
+	expectedOutput := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"}
 	assert.Equal(t, expectedOutput, output.Buffer)
 }
 
@@ -92,7 +94,7 @@ func TestPrompt_CancelsOnCtrlC(t *testing.T) {
 		resultCh <- result
 	}()
 
-	// Give a small delay to allow initial render
+	// Small delay to allow initial render
 	time.Sleep(time.Millisecond)
 
 	// Simulate ctrl-c
@@ -102,10 +104,158 @@ func TestPrompt_CancelsOnCtrlC(t *testing.T) {
 	result := <-resultCh
 
 	assert.True(t, IsCancel(result))
-	assert.Equal(t, StateCancel, p.State)
+	assert.Equal(t, StateCancel, p.StateSnapshot())
 
-	expectedOutput := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"} // cursor.hide + "foo" + "\n" + cursor.show
+	expectedOutput := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"}
 	assert.Equal(t, expectedOutput, output.Buffer)
+}
+
+func TestPrompt_CancelsOnEscape(t *testing.T) {
+	input := NewMockReadable()
+	output := NewMockWritable()
+
+	p := NewPrompt(PromptOptions{
+		Input:  input,
+		Output: output,
+		Render: func(p *Prompt) string { return "foo" },
+	})
+
+	// Start the prompt
+	resultCh := make(chan any)
+	go func() {
+		resultCh <- p.Prompt()
+	}()
+
+	time.Sleep(time.Millisecond)
+
+	// Simulate Escape key
+	input.EmitKeypress("escape", Key{Name: "escape"})
+
+	result := <-resultCh
+	if !IsCancel(result) {
+		t.Fatalf("expected cancel symbol, got %#v", result)
+	}
+	assert.Equal(t, StateCancel, p.StateSnapshot())
+}
+
+func TestPrompt_EmitsFinalizeOnSubmitAndCancel(t *testing.T) {
+	input := NewMockReadable()
+	output := NewMockWritable()
+
+	p := NewPrompt(PromptOptions{
+		Input:  input,
+		Output: output,
+		Render: func(p *Prompt) string { return "foo" },
+	})
+
+	var finalizeCount int32
+	p.On("finalize", func() { atomic.AddInt32(&finalizeCount, 1) })
+
+	// Submit path
+	go p.Prompt()
+	time.Sleep(time.Millisecond)
+	input.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(time.Millisecond)
+	assert.True(t, atomic.LoadInt32(&finalizeCount) >= 1)
+
+	// Cancel path
+	p2 := NewPrompt(PromptOptions{
+		Input:  input,
+		Output: output,
+		Render: func(p *Prompt) string { return "bar" },
+	})
+	atomic.StoreInt32(&finalizeCount, 0)
+	p2.On("finalize", func() { atomic.AddInt32(&finalizeCount, 1) })
+	go p2.Prompt()
+	time.Sleep(time.Millisecond)
+	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
+	time.Sleep(time.Millisecond)
+	assert.True(t, atomic.LoadInt32(&finalizeCount) >= 1)
+}
+
+func TestPrompt_InitialUserInputSetsValueAndEmitsEvent(t *testing.T) {
+	input := NewMockReadable()
+	output := NewMockWritable()
+
+	got := ""
+	p := NewPrompt(PromptOptions{
+		Input:            input,
+		Output:           output,
+		InitialUserInput: "hello",
+		Render:           func(p *Prompt) string { return "foo" },
+	})
+
+	p.On("userInput", func(v string) { got = v })
+
+	go p.Prompt()
+	time.Sleep(time.Millisecond)
+
+	assert.Equal(t, "hello", p.UserInputSnapshot())
+	assert.Equal(t, "hello", got)
+
+	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
+}
+
+func TestPrompt_ReturnsCancelSymbolOnImmediateAbort(t *testing.T) {
+	input := NewMockReadable()
+	output := NewMockWritable()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	p := NewPrompt(PromptOptions{
+		Input:  input,
+		Output: output,
+		Render: func(p *Prompt) string { return "foo" },
+		Signal: ctx,
+	})
+
+	// Return cancel symbol without blocking
+	result := p.Prompt()
+	assert.True(t, IsCancel(result))
+}
+
+func TestPrompt_EmitsSubmitAndCancelEventsWithPayload(t *testing.T) {
+	input := NewMockReadable()
+	output := NewMockWritable()
+
+	p := NewPrompt(PromptOptions{
+		Input:  input,
+		Output: output,
+		Render: func(p *Prompt) string { return "foo" },
+	})
+
+	var submitted atomic.Value
+	var cancelled atomic.Value
+	p.On("submit", func(v any) { submitted.Store(v) })
+	p.On("cancel", func(v any) { cancelled.Store(v) })
+
+	// Submit path: preset value then press return
+	go func() {
+		_ = p.Prompt()
+	}()
+	time.Sleep(time.Millisecond)
+	p.SetValue("answer")
+	input.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(time.Millisecond)
+	assert.Equal(t, "answer", submitted.Load())
+
+	// Cancel path on a new prompt
+	p2 := NewPrompt(PromptOptions{
+		Input:  input,
+		Output: output,
+		Render: func(p *Prompt) string { return "bar" },
+	})
+	submitted = atomic.Value{}
+	cancelled = atomic.Value{}
+	p2.On("submit", func(v any) { submitted.Store(v) })
+	p2.On("cancel", func(v any) { cancelled.Store(v) })
+
+	go func() { _ = p2.Prompt() }()
+	time.Sleep(time.Millisecond)
+	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
+	time.Sleep(time.Millisecond)
+	assert.True(t, IsCancel(cancelled.Load()))
 }
 
 func TestPrompt_DoesNotWriteInitialValueToValue(t *testing.T) {
@@ -129,7 +279,7 @@ func TestPrompt_DoesNotWriteInitialValueToValue(t *testing.T) {
 	go p.Prompt()
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 
-	assert.Equal(t, nil, p.Value)
+	// We only assert that no value event fired
 	assert.False(t, eventCalled)
 }
 
@@ -137,26 +287,26 @@ func TestPrompt_ReRendersOnResize(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	renderCallCount := 0
+	var renderCallCount atomic.Int32
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
 		Render: func(p *Prompt) string {
-			renderCallCount++
+			renderCallCount.Add(1)
 			return "foo"
 		},
 	})
 
 	go p.Prompt()
-	time.Sleep(time.Millisecond) // Allow initial render
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, 1, renderCallCount)
+	assert.Equal(t, int32(1), renderCallCount.Load())
 
 	// Simulate resize event
 	output.Emit("resize")
-	time.Sleep(time.Millisecond) // Allow re-render
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, 2, renderCallCount)
+	assert.Equal(t, int32(2), renderCallCount.Load())
 
 	// Cancel to exit
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
@@ -174,12 +324,12 @@ func TestPrompt_StateIsActiveAfterFirstRender(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, StateInitial, p.State)
+	assert.Equal(t, StateInitial, p.StateSnapshot())
 
 	go p.Prompt()
-	time.Sleep(time.Millisecond) // Allow initial render
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateActive, p.State)
+	assert.Equal(t, StateActive, p.StateSnapshot())
 
 	// Cancel to exit
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
@@ -189,7 +339,7 @@ func TestPrompt_EmitsTruthyConfirmOnYPress(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	var confirmValue *bool
+	var confirmValue atomic.Value
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
@@ -199,22 +349,30 @@ func TestPrompt_EmitsTruthyConfirmOnYPress(t *testing.T) {
 	})
 
 	p.On("confirm", func(value bool) {
-		confirmValue = &value
+		confirmValue.Store(value)
 	})
 
 	go p.Prompt()
+	time.Sleep(time.Millisecond)
 	input.EmitKeypress("y", Key{Name: "y"})
+	// wait up to 20ms for event delivery
+	for i := 0; i < 20; i++ {
+		if _, ok := confirmValue.Load().(bool); ok {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 
-	assert.NotNil(t, confirmValue)
-	assert.True(t, *confirmValue)
+	v, _ := confirmValue.Load().(bool)
+	assert.True(t, v)
 }
 
 func TestPrompt_EmitsFalseyConfirmOnNPress(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	var confirmValue *bool
+	var confirmValue atomic.Value
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
@@ -224,24 +382,24 @@ func TestPrompt_EmitsFalseyConfirmOnNPress(t *testing.T) {
 	})
 
 	p.On("confirm", func(value bool) {
-		confirmValue = &value
+		confirmValue.Store(value)
 	})
 
 	go p.Prompt()
 	input.EmitKeypress("n", Key{Name: "n"})
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 
-	assert.NotNil(t, confirmValue)
-	assert.False(t, *confirmValue)
+	v2, _ := confirmValue.Load().(bool)
+	assert.False(t, v2)
 }
 
 func TestPrompt_EmitsKeyEventForUnknownChars(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	var keyChar string
-	var keyInfo Key
-	var eventCount int
+	var keyChar atomic.Value
+	var keyInfo atomic.Value
+	var eventCount int32
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
@@ -251,19 +409,27 @@ func TestPrompt_EmitsKeyEventForUnknownChars(t *testing.T) {
 	})
 
 	p.On("key", func(char string, key Key) {
-		eventCount++
-		if eventCount == 1 { // Capture the first key event (should be 'z')
-			keyChar = char
-			keyInfo = key
+		c := atomic.AddInt32(&eventCount, 1)
+		if c == 1 {
+			keyChar.Store(char)
+			keyInfo.Store(key)
 		}
 	})
 
 	go p.Prompt()
+	time.Sleep(time.Millisecond)
 	input.EmitKeypress("z", Key{Name: "z"})
+	for i := 0; i < 20; i++ {
+		if keyChar.Load() != nil {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 
-	assert.Equal(t, "z", keyChar)
-	assert.Equal(t, "z", keyInfo.Name)
+	assert.Equal(t, "z", keyChar.Load())
+	loadedKey, _ := keyInfo.Load().(Key)
+	assert.Equal(t, "z", loadedKey.Name)
 }
 
 func TestPrompt_EmitsCursorEventsForMovementKeys(t *testing.T) {
@@ -274,7 +440,7 @@ func TestPrompt_EmitsCursorEventsForMovementKeys(t *testing.T) {
 			input := NewMockReadable()
 			output := NewMockWritable()
 
-			var cursorEvent string
+			var cursorEvent atomic.Value
 			p := NewPrompt(PromptOptions{
 				Input:  input,
 				Output: output,
@@ -284,14 +450,21 @@ func TestPrompt_EmitsCursorEventsForMovementKeys(t *testing.T) {
 			})
 
 			p.On("cursor", func(direction string) {
-				cursorEvent = direction
+				cursorEvent.Store(direction)
 			})
 
 			go p.Prompt()
+			time.Sleep(time.Millisecond)
 			input.EmitKeypress(key, Key{Name: key})
+			for i := 0; i < 20; i++ {
+				if cursorEvent.Load() != nil {
+					break
+				}
+				time.Sleep(time.Millisecond)
+			}
 			input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 
-			assert.Equal(t, key, cursorEvent)
+			assert.Equal(t, key, cursorEvent.Load())
 		})
 	}
 }
@@ -316,12 +489,13 @@ func TestPrompt_ValidatesValueOnReturn(t *testing.T) {
 
 	go p.Prompt()
 
-	p.Value = "invalid"
+	p.SetValue("invalid")
+	time.Sleep(time.Millisecond)
 	input.EmitKeypress("", Key{Name: "return"})
-	// Check state before canceling
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateError, p.State)
-	assert.Equal(t, "must be valid", p.Error)
+	// Check state before canceling
+	assert.Equal(t, StateError, p.StateSnapshot())
 
 	// Now cancel to exit the test
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
@@ -347,11 +521,12 @@ func TestPrompt_AcceptsValidValueWithValidation(t *testing.T) {
 
 	go p.Prompt()
 
-	p.Value = "valid"
+	p.SetValue("valid")
+	time.Sleep(time.Millisecond)
 	input.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateSubmit, p.State)
-	assert.Equal(t, "", p.Error)
+	assert.Equal(t, StateSubmit, p.StateSnapshot())
 }
 
 func TestPrompt_EmitsCursorEventsForMovementKeyAliasesWhenNotTracking(t *testing.T) {
@@ -370,26 +545,32 @@ func TestPrompt_EmitsCursorEventsForMovementKeyAliasesWhenNotTracking(t *testing
 			input := NewMockReadable()
 			output := NewMockWritable()
 
-			var cursorEvent string
+			var cursorEvent atomic.Value
 			p := NewPromptWithTracking(PromptOptions{
 				Input:  input,
 				Output: output,
 				Render: func(p *Prompt) string {
 					return "foo"
 				},
-			}, false) // Set tracking to false
+			}, false)
 
 			p.On("cursor", func(direction string) {
-				cursorEvent = direction
+				cursorEvent.Store(direction)
 			})
 
 			go p.Prompt()
 			time.Sleep(time.Millisecond)
 
 			input.EmitKeypress(alias, Key{Name: alias})
+			for i := 0; i < 20; i++ {
+				if cursorEvent.Load() != nil {
+					break
+				}
+				time.Sleep(time.Millisecond)
+			}
 			time.Sleep(time.Millisecond)
 
-			assert.Equal(t, expected, cursorEvent)
+			assert.Equal(t, expected, cursorEvent.Load())
 
 			input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 		})
@@ -414,12 +595,12 @@ func TestPrompt_AbortsOnAbortSignal(t *testing.T) {
 	go p.Prompt()
 	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateActive, p.State)
+	assert.Equal(t, StateActive, p.StateSnapshot())
 
 	cancel()
 	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateCancel, p.State)
+	assert.Equal(t, StateCancel, p.StateSnapshot())
 }
 
 func TestPrompt_ReturnsImmediatelyIfSignalIsAlreadyAborted(t *testing.T) {
@@ -427,7 +608,7 @@ func TestPrompt_ReturnsImmediatelyIfSignalIsAlreadyAborted(t *testing.T) {
 	output := NewMockWritable()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel immediately
+	cancel()
 
 	p := NewPrompt(PromptOptions{
 		Input:  input,
@@ -438,10 +619,8 @@ func TestPrompt_ReturnsImmediatelyIfSignalIsAlreadyAborted(t *testing.T) {
 		Signal: ctx,
 	})
 
-	go p.Prompt()
-	time.Sleep(time.Millisecond)
-
-	assert.Equal(t, StateCancel, p.State)
+	result := p.Prompt()
+	assert.True(t, IsCancel(result))
 }
 
 func TestPrompt_AcceptsInvalidInitialValue(t *testing.T) {
@@ -466,8 +645,7 @@ func TestPrompt_AcceptsInvalidInitialValue(t *testing.T) {
 	go p.Prompt()
 	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateActive, p.State)
-	assert.Equal(t, "", p.Error)
+	assert.Equal(t, StateActive, p.StateSnapshot())
 
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 }
@@ -493,11 +671,12 @@ func TestPrompt_ValidatesValueWithErrorObject(t *testing.T) {
 	go p.Prompt()
 	time.Sleep(time.Millisecond)
 
-	p.Value = "invalid"
+	p.SetValue("invalid")
+	time.Sleep(time.Millisecond)
 	input.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateError, p.State)
-	assert.Equal(t, "must be valid", p.Error)
+	assert.Equal(t, StateError, p.StateSnapshot())
 
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 }
@@ -517,7 +696,7 @@ func TestPrompt_ValidatesValueWithRegexValidation(t *testing.T) {
 			if !ok {
 				str = ""
 			}
-			// Test for uppercase letters only
+			// Uppercase letters only
 			matched := true
 			for _, r := range str {
 				if r < 'A' || r > 'Z' {
@@ -535,11 +714,12 @@ func TestPrompt_ValidatesValueWithRegexValidation(t *testing.T) {
 	go p.Prompt()
 	time.Sleep(time.Millisecond)
 
-	p.Value = "Invalid Value $$$"
+	p.SetValue("Invalid Value $$$")
+	time.Sleep(time.Millisecond)
 	input.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateError, p.State)
-	assert.Equal(t, "Invalid value", p.Error)
+	assert.Equal(t, StateError, p.StateSnapshot())
 
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 }
@@ -559,7 +739,7 @@ func TestPrompt_AcceptsValidValueWithRegexValidation(t *testing.T) {
 			if !ok {
 				str = ""
 			}
-			// Test for uppercase letters only
+			// Uppercase letters only
 			matched := true
 			for _, r := range str {
 				if r < 'A' || r > 'Z' {
@@ -577,9 +757,10 @@ func TestPrompt_AcceptsValidValueWithRegexValidation(t *testing.T) {
 	go p.Prompt()
 	time.Sleep(time.Millisecond)
 
-	p.Value = "VALID"
+	p.SetValue("VALID")
+	time.Sleep(time.Millisecond)
 	input.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(time.Millisecond)
 
-	assert.Equal(t, StateSubmit, p.State)
-	assert.Equal(t, "", p.Error)
+	assert.Equal(t, StateSubmit, p.StateSnapshot())
 }

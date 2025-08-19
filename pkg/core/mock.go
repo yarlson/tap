@@ -5,7 +5,6 @@ import (
 	"sync"
 )
 
-// MockReadable simulates a readable stream for testing
 type MockReadable struct {
 	buffer    []byte
 	closed    bool
@@ -59,7 +58,6 @@ func (m *MockReadable) EmitKeypress(char string, key Key) {
 	}
 }
 
-// MockWritable simulates a writable stream for testing
 type MockWritable struct {
 	Buffer    []string
 	mutex     sync.Mutex
@@ -88,7 +86,7 @@ func (m *MockWritable) On(event string, handler func()) {
 
 func (m *MockWritable) Emit(event string) {
 	m.mutex.Lock()
-	handlers := m.listeners[event]
+	handlers := append([]func(){}, m.listeners[event]...)
 	m.mutex.Unlock()
 
 	for _, handler := range handlers {
