@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"sync/atomic"
 )
@@ -35,6 +36,8 @@ type Prompt struct {
 	snap atomic.Value
 
 	track bool
+
+	cleanup func()
 }
 
 type promptState struct {
@@ -88,6 +91,19 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 		evCh:        make(chan func(*promptState), 64),
 		doneCh:      make(chan any, 1),
 		stopped:     make(chan struct{}),
+	}
+	// Provide default TTY input/output when not supplied
+	if p.input == nil || p.output == nil {
+		// Best-effort defaults using current process stdio
+		if p.input == nil {
+			if ti, restore, err := newDefaultTTYInput(os.Stdin); err == nil {
+				p.input = ti
+				p.cleanup = restore
+			}
+		}
+		if p.output == nil {
+			p.output = newDefaultTTYOutput(os.Stdout)
+		}
 	}
 	p.snap.Store(promptState{State: StateInitial})
 	return p
@@ -255,41 +271,84 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 
 func (p *Prompt) loop() {
 	st := promptState{State: StateInitial}
-	for k, v := range p.preSubs {
-		p.subscribers[k] = append(p.subscribers[k], v...)
-	}
+	p.adoptPreSubscribers()
 	p.snap.Store(st)
+
 	for ev := range p.evCh {
 		ev(&st)
-		if p.opts.Render != nil {
-			frame := p.opts.Render(p)
-			if frame != st.PrevFrame {
-				if st.State == StateInitial {
-					_, _ = p.output.Write([]byte(CursorHide))
-				}
-				_, _ = p.output.Write([]byte(frame))
-				if st.State == StateInitial {
-					st.State = StateActive
-				}
-				st.PrevFrame = frame
-			}
-		}
+		p.renderIfNeeded(&st)
 		p.snap.Store(st)
-		if st.State == StateSubmit || st.State == StateCancel {
-			p.Emit("finalize")
-			_, _ = p.output.Write([]byte("\n"))
-			_, _ = p.output.Write([]byte(CursorShow))
-			var res any
-			if st.State == StateCancel {
-				res = GetCancelSymbol()
-				p.Emit("cancel", res)
-			} else {
-				res = st.Value
-				p.Emit("submit", res)
-			}
+
+		if p.shouldFinalize(st.State) {
+			res := p.finalize(&st)
 			p.doneCh <- res
 			close(p.stopped)
+
 			return
 		}
 	}
+}
+
+// adoptPreSubscribers moves temporary handlers registered before the loop started
+// into the active subscribers map.
+func (p *Prompt) adoptPreSubscribers() {
+	for k, v := range p.preSubs {
+		p.subscribers[k] = append(p.subscribers[k], v...)
+	}
+}
+
+// renderIfNeeded runs the render function, hides the cursor on the first frame,
+// writes the frame, and updates state to active. It only writes when the frame
+// content changes.
+func (p *Prompt) renderIfNeeded(st *promptState) {
+	if p.opts.Render == nil || p.output == nil {
+		return
+	}
+
+	frame := p.opts.Render(p)
+	if frame == st.PrevFrame {
+		return
+	}
+
+	if st.State == StateInitial {
+		_, _ = p.output.Write([]byte(CursorHide))
+	}
+
+	_, _ = p.output.Write([]byte(frame))
+	if st.State == StateInitial {
+		st.State = StateActive
+	}
+
+	st.PrevFrame = frame
+}
+
+func (p *Prompt) shouldFinalize(state ClackState) bool {
+	return state == StateSubmit || state == StateCancel
+}
+
+// finalize performs teardown, emits finalize/submit/cancel, and returns the
+// result to send to the caller.
+func (p *Prompt) finalize(st *promptState) any {
+	p.Emit("finalize")
+	// Write trailing newline and show the cursor again
+	if p.output != nil {
+		_, _ = p.output.Write([]byte("\r\n"))
+		_, _ = p.output.Write([]byte(CursorShow))
+	}
+
+	if p.cleanup != nil {
+		p.cleanup()
+	}
+
+	if st.State == StateCancel {
+		res := GetCancelSymbol()
+		p.Emit("cancel", res)
+
+		return res
+	}
+
+	res := st.Value
+	p.Emit("submit", res)
+
+	return res
 }

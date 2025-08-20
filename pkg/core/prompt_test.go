@@ -35,7 +35,7 @@ func TestPrompt_RendersRenderResult(t *testing.T) {
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 	<-done
 
-	expected := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"} // cursor.hide + "foo" + newline + cursor.show
+	expected := []string{"\x1b[?25l", "foo", "\r\n", "\x1b[?25h"} // cursor.hide + "foo" + newline + cursor.show
 	assert.Equal(t, expected, output.Buffer)
 }
 
@@ -71,7 +71,7 @@ func TestPrompt_SubmitsOnReturn(t *testing.T) {
 	assert.False(t, IsCancel(result))
 	assert.Equal(t, StateSubmit, p.StateSnapshot())
 
-	expectedOutput := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"}
+	expectedOutput := []string{"\x1b[?25l", "foo", "\r\n", "\x1b[?25h"}
 	assert.Equal(t, expectedOutput, output.Buffer)
 }
 
@@ -106,7 +106,7 @@ func TestPrompt_CancelsOnCtrlC(t *testing.T) {
 	assert.True(t, IsCancel(result))
 	assert.Equal(t, StateCancel, p.StateSnapshot())
 
-	expectedOutput := []string{"\x1b[?25l", "foo", "\n", "\x1b[?25h"}
+	expectedOutput := []string{"\x1b[?25l", "foo", "\r\n", "\x1b[?25h"}
 	assert.Equal(t, expectedOutput, output.Buffer)
 }
 
