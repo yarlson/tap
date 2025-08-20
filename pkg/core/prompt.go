@@ -226,7 +226,10 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 		p.Emit("cursor", alias)
 	}
 	if char != "" && (strings.ToLower(char) == "y" || strings.ToLower(char) == "n") {
-		p.Emit("confirm", strings.ToLower(char) == "y")
+		val := strings.ToLower(char) == "y"
+		p.Emit("confirm", val)
+		s.Value = val
+		s.State = StateSubmit
 	}
 	p.Emit("key", strings.ToLower(char), key)
 	if key.Name == "return" {

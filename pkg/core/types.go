@@ -22,6 +22,15 @@ type Key struct {
 	Shift    bool
 }
 
+type ConfirmOptions struct {
+	Message      string
+	Active       string
+	Inactive     string
+	InitialValue bool
+	Input        Reader
+	Output       Writer
+}
+
 type ValidationError struct {
 	Message string
 }
