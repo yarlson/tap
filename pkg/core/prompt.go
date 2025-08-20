@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"errors"
-	"os"
 	"strings"
 	"sync/atomic"
 )
@@ -46,6 +45,7 @@ type promptState struct {
 	Error     string
 	Value     any
 	UserInput string
+	Cursor    int
 	PrevFrame string
 }
 
@@ -57,6 +57,11 @@ func (p *Prompt) StateSnapshot() ClackState {
 func (p *Prompt) UserInputSnapshot() string {
 	s := p.snap.Load().(promptState)
 	return s.UserInput
+}
+
+func (p *Prompt) CursorSnapshot() int {
+	s := p.snap.Load().(promptState)
+	return s.Cursor
 }
 
 func (p *Prompt) snapshot() (ClackState, string) {
@@ -104,19 +109,7 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 		doneCh:      make(chan any, 1),
 		stopped:     make(chan struct{}),
 	}
-	// Provide default TTY input/output when not supplied
-	if p.input == nil || p.output == nil {
-		// Best-effort defaults using current process stdio
-		if p.input == nil {
-			if ti, restore, err := newDefaultTTYInput(os.Stdin); err == nil {
-				p.input = ti
-				p.cleanup = restore
-			}
-		}
-		if p.output == nil {
-			p.output = newDefaultTTYOutput(os.Stdout)
-		}
-	}
+	// Default TTY will be provided by a higher-level adapter when needed
 	p.snap.Store(promptState{State: StateInitial})
 	return p
 }
@@ -208,12 +201,11 @@ func (p *Prompt) Prompt() any {
 	if p.opts.InitialUserInput != "" {
 		p.evCh <- func(s *promptState) {
 			s.UserInput = p.opts.InitialUserInput
+			s.Cursor = len([]rune(s.UserInput))
 			p.Emit("userInput", s.UserInput)
 		}
 	}
 	p.evCh <- func(s *promptState) { p.handleInitialRender(s) }
-	// Kick a render immediately so initial state becomes active
-	// but do not increment render call count in tests expecting first render only
 
 	return <-p.doneCh
 }
@@ -249,6 +241,29 @@ func (p *Prompt) handleResize(s *promptState) {}
 func (p *Prompt) handleAbort(s *promptState) { s.State = StateCancel }
 
 func (p *Prompt) handleKey(s *promptState, char string, key Key) {
+	// Track user input when tracking is enabled
+	if p.track && key.Name != "return" {
+		oldInput := s.UserInput
+		oldCursor := s.Cursor
+		newInput, newCursor := p.updateUserInputWithCursor(s.UserInput, s.Cursor, char, key)
+
+		inputChanged := newInput != oldInput
+		cursorChanged := newCursor != oldCursor
+
+		if inputChanged {
+			s.UserInput = newInput
+			p.Emit("userInput", s.UserInput)
+		}
+		if cursorChanged {
+			s.Cursor = newCursor
+		}
+
+		// Force re-render when state changes
+		if inputChanged || cursorChanged {
+			s.PrevFrame = ""
+		}
+	}
+
 	if isMovementKey(key.Name) {
 		p.Emit("cursor", key.Name)
 	}
@@ -290,6 +305,77 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 	}
 }
 
+// updateUserInputWithCursor handles cursor-based input tracking
+func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char string, key Key) (newInput string, newCursor int) {
+	runes := []rune(current)
+
+	// Ensure cursor is within bounds
+	if cursor < 0 {
+		cursor = 0
+	}
+	if cursor > len(runes) {
+		cursor = len(runes)
+	}
+
+	switch key.Name {
+	case "left":
+		// Move cursor left
+		if cursor > 0 {
+			return current, cursor - 1
+		}
+		return current, cursor
+
+	case "right":
+		// Move cursor right
+		if cursor < len(runes) {
+			return current, cursor + 1
+		}
+		return current, cursor
+
+	case "backspace":
+		// Delete character before cursor
+		if cursor > 0 && len(runes) > 0 {
+			newRunes := append(runes[:cursor-1], runes[cursor:]...)
+			return string(newRunes), cursor - 1
+		}
+		return current, cursor
+
+	case "delete":
+		// Delete character at cursor
+		if cursor < len(runes) {
+			newRunes := append(runes[:cursor], runes[cursor+1:]...)
+			return string(newRunes), cursor
+		}
+		return current, cursor
+
+	case "up", "down", "escape":
+		// These keys don't change input or cursor
+		return current, cursor
+
+	case "tab":
+		// Insert tab at cursor
+		newRunes := append(runes[:cursor], append([]rune{'\t'}, runes[cursor:]...)...)
+		return string(newRunes), cursor + 1
+
+	case "space":
+		// Insert space at cursor
+		newRunes := append(runes[:cursor], append([]rune{' '}, runes[cursor:]...)...)
+		return string(newRunes), cursor + 1
+
+	default:
+		// Regular printable characters - insert at cursor position
+		if char != "" && len(char) > 0 {
+			for _, r := range char {
+				if r >= 32 && r <= 126 { // Printable ASCII
+					newRunes := append(runes[:cursor], append([]rune{r}, runes[cursor:]...)...)
+					return string(newRunes), cursor + 1
+				}
+			}
+		}
+		return current, cursor
+	}
+}
+
 func (p *Prompt) loop() {
 	st := promptState{State: StateInitial}
 	p.adoptPreSubscribers()
@@ -302,10 +388,12 @@ func (p *Prompt) loop() {
 		p.snap.Store(st)
 
 		if p.shouldFinalize(st.State) {
+			p.snap.Store(st)
+			p.renderIfNeeded(&st)
 			res := p.finalize(&st)
 			p.doneCh <- res
 			close(p.stopped)
-
+			p.cur = nil
 			return
 		}
 		p.cur = nil
@@ -335,13 +423,12 @@ func (p *Prompt) renderIfNeeded(st *promptState) {
 
 	if st.State == StateInitial {
 		_, _ = p.output.Write([]byte(CursorHide))
-	}
-
-	// Overwrite current line for subsequent renders
-	if st.PrevFrame != "" {
+	} else {
+		// Clear current line and return to start
 		_, _ = p.output.Write([]byte("\r"))
 		_, _ = p.output.Write([]byte(EraseLine))
 	}
+
 	_, _ = p.output.Write([]byte(frame))
 	if st.State == StateInitial {
 		st.State = StateActive

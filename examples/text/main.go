@@ -3,15 +3,24 @@ package main
 import (
 	"fmt"
 
-	core "github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/glack/pkg/terminal"
 )
 
 func main() {
+	term, err := terminal.New()
+	if err != nil {
+		fmt.Printf("init terminal: %v\r\n", err)
+		return
+	}
+	defer term.Close()
+
 	res := core.Text(core.TextOptions{
 		Message:      "Enter text:",
+		InitialValue: "initial",
 		DefaultValue: "anon",
-		Input:        nil,
-		Output:       nil,
+		Input:        term.Reader,
+		Output:       term.Writer,
 	})
 
 	if core.IsCancel(res) {

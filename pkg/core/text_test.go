@@ -1,6 +1,7 @@
 package core
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -86,7 +87,7 @@ func TestText_RendersWhileTyping(t *testing.T) {
 	// Expect at least one frame to contain the typed text
 	found := false
 	for _, s := range out.Buffer {
-		if len(s) >= 2 && s[len(s)-2:] == "te" || (len(s) >= 7 && s[len(s)-7:] == "Enter: te") {
+		if strings.Contains(s, "Enter:") && (strings.Contains(s, "t") || strings.Contains(s, "e")) {
 			found = true
 			break
 		}

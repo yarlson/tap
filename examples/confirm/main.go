@@ -3,13 +3,23 @@ package main
 import (
 	"fmt"
 
-	core "github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/glack/pkg/terminal"
 )
 
 func main() {
+	term, err := terminal.New()
+	if err != nil {
+		fmt.Printf("init terminal: %v\r\n", err)
+		return
+	}
+	defer term.Close()
+
 	res := core.Confirm(core.ConfirmOptions{
 		Message:      "Proceed? (y/n)",
 		InitialValue: true,
+		Input:        term.Reader,
+		Output:       term.Writer,
 	})
 
 	if core.IsCancel(res) {
