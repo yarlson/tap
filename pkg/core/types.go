@@ -31,6 +31,16 @@ type ConfirmOptions struct {
 	Output       Writer
 }
 
+type TextOptions struct {
+	Message      string
+	Placeholder  string
+	DefaultValue string
+	InitialValue string
+	Input        Reader
+	Output       Writer
+	Validate     func(string) error
+}
+
 type ValidationError struct {
 	Message string
 }
@@ -57,6 +67,7 @@ type Writer interface {
 const (
 	CursorHide = "\x1b[?25l"
 	CursorShow = "\x1b[?25h"
+	EraseLine  = "\x1b[K"
 )
 
 type CancelSymbol struct{}
