@@ -11,6 +11,7 @@ import (
 	"github.com/yarlson/tap/core"
 
 	"github.com/eiannone/keyboard"
+	"golang.org/x/term"
 )
 
 // Reader provides terminal input functionality.
@@ -27,13 +28,23 @@ type Writer struct {
 
 // Terminal manages terminal I/O operations.
 type Terminal struct {
-	Reader  *Reader
-	Writer  *Writer
-	cleanup func()
+	Reader        *Reader
+	Writer        *Writer
+	cleanup       func()
+	originalFd    int
+	originalState *term.State
 }
 
 // New creates a new terminal instance with keyboard input and output handling.
 func New() (*Terminal, error) {
+	// Save original terminal state for restoration
+	fd := int(os.Stdin.Fd())
+	originalState, err := term.GetState(fd)
+	if err != nil {
+		// If we can't get terminal state, continue anyway - might not be a TTY
+		originalState = nil
+	}
+
 	if err := keyboard.Open(); err != nil {
 		return nil, err
 	}
@@ -42,6 +53,23 @@ func New() (*Terminal, error) {
 	writer := &Writer{listeners: make(map[string][]func())}
 
 	stop := make(chan struct{})
+
+	// Set up signal handling to ensure terminal is always restored
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	var cleanupOnce sync.Once
+	doCleanup := func() {
+		close(stop)
+		_ = keyboard.Close()
+
+		// Restore original terminal state if we saved it
+		if originalState != nil {
+			_ = term.Restore(fd, originalState)
+		}
+
+		signal.Stop(sigChan)
+	}
 
 	// Keyboard input handling goroutine
 	go func() {
@@ -223,24 +251,32 @@ func New() (*Terminal, error) {
 		}
 	}()
 
-	// Terminal resize notifications
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGWINCH)
+	// Signal handler for clean shutdown
 	go func() {
-		for range sig {
+		<-sigChan
+		cleanupOnce.Do(doCleanup)
+		os.Exit(1)
+	}()
+
+	// Terminal resize notifications
+	resizeChan := make(chan os.Signal, 1)
+	signal.Notify(resizeChan, syscall.SIGWINCH)
+	go func() {
+		for range resizeChan {
 			writer.Emit("resize")
 		}
 	}()
 
 	cleanup := func() {
-		close(stop)
-		_ = keyboard.Close()
+		cleanupOnce.Do(doCleanup)
 	}
 
 	return &Terminal{
-		Reader:  reader,
-		Writer:  writer,
-		cleanup: cleanup,
+		Reader:        reader,
+		Writer:        writer,
+		cleanup:       cleanup,
+		originalFd:    fd,
+		originalState: originalState,
 	}, nil
 }
 
