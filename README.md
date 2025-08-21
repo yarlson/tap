@@ -169,7 +169,8 @@ tap/
 │       └── terminal.go # Keyboard input & raw mode
 └── examples/           # Usage examples
     ├── text/
-    └── confirm/
+    ├── confirm/
+    └── multiple/
 ```
 
 ## 🤝 Contributing
@@ -189,6 +190,7 @@ go test ./...
 # Try examples
 go run examples/text/main.go
 go run examples/confirm/main.go
+go run examples/multiple/main.go
 ```
 
 ### What Needs Help
