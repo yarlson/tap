@@ -2,6 +2,11 @@ package prompts
 
 import "github.com/yarlson/tap/pkg/core"
 
+// Type aliases for convenience
+
+type Reader = core.Reader
+type Writer = core.Writer
+
 // TextOptions defines options for styled text prompt
 type TextOptions struct {
 	Message      string

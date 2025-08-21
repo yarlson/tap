@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/yarlson/tap/pkg/core"
 	"github.com/yarlson/tap/pkg/prompts"
@@ -169,7 +170,32 @@ func main() {
 		return
 	}
 
-	// Display the summary
+	// Show progress bar while generating the summary
+	profileProgress := prompts.NewProgress(prompts.ProgressOptions{
+		Style:  "heavy",
+		Max:    100,
+		Size:   45,
+		Output: term.Writer,
+	})
+
+	profileProgress.Start("Analyzing your responses...")
+	time.Sleep(1200 * time.Millisecond)
+
+	profileProgress.Advance(25, "Processing your preferences...")
+	time.Sleep(800 * time.Millisecond)
+
+	profileProgress.Advance(30, "Generating insights...")
+	time.Sleep(800 * time.Millisecond)
+
+	profileProgress.Advance(25, "Formatting summary...")
+	time.Sleep(800 * time.Millisecond)
+
+	profileProgress.Advance(20, "Finalizing report...")
+	time.Sleep(600 * time.Millisecond)
+
+	profileProgress.Stop("Profile summary ready! 📋", 0)
+
+	// Display the summary after the progress completes
 	fmt.Print("\r\n" + strings.Repeat("=", 50) + "\r\n")
 	fmt.Printf("📋 PROFILE SUMMARY\r\n")
 	fmt.Print(strings.Repeat("=", 50) + "\r\n")

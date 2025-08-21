@@ -1,4 +1,4 @@
-Output ./demo.gif
+Output ../../assets/demo.gif
 
 Set Shell zsh
 Set FontSize 28
@@ -6,7 +6,7 @@ Set Width 1200
 Set Height 800
 
 Sleep 1s
-Type "go run examples/multiple/main.go"
+Type "go run ./main.go"
 Enter
 Sleep 2s
 
@@ -42,4 +42,4 @@ Enter
 Sleep 3s
 
 # Let the summary display for a moment
-Sleep 2s
+Sleep 5s
