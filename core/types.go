@@ -41,6 +41,18 @@ type TextOptions struct {
 	Validate     func(string) error
 }
 
+// PasswordOptions defines options for the unstyled password input prompt
+// Behavior mirrors TextOptions but rendering masks user input.
+type PasswordOptions struct {
+	Message      string
+	Placeholder  string
+	DefaultValue string
+	InitialValue string
+	Input        Reader
+	Output       Writer
+	Validate     func(string) error
+}
+
 type ValidationError struct {
 	Message string
 }
