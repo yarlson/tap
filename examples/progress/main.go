@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/yarlson/tap/pkg/prompts"
-	"github.com/yarlson/tap/pkg/terminal"
+	"github.com/yarlson/tap/prompts"
+	"github.com/yarlson/tap/terminal"
 )
 
 func main() {

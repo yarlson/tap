@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yarlson/tap/pkg/core"
+
+	"github.com/yarlson/tap/core"
 )
 
 func TestProgress_RendersProgressBar(t *testing.T) {

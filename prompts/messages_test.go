@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yarlson/tap/pkg/core"
+
+	"github.com/yarlson/tap/core"
 )
 
 func TestIntro_WritesBarStartAndTitle(t *testing.T) {

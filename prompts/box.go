@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	runewidth "github.com/mattn/go-runewidth"
+	"github.com/mattn/go-runewidth"
 )
 
 type BoxAlignment string

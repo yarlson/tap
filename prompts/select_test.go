@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yarlson/tap/pkg/core"
+
+	"github.com/yarlson/tap/core"
 )
 
 func TestStyledSelect_RendersWithSymbolAndBars(t *testing.T) {

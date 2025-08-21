@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yarlson/tap/pkg/core"
+	"github.com/yarlson/tap/core"
 )
 
 func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {

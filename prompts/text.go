@@ -3,7 +3,7 @@ package prompts
 import (
 	"strings"
 
-	"github.com/yarlson/tap/pkg/core"
+	"github.com/yarlson/tap/core"
 )
 
 // Text creates a styled text input prompt

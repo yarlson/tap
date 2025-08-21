@@ -8,8 +8,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/yarlson/tap/core"
+
 	"github.com/eiannone/keyboard"
-	"github.com/yarlson/tap/pkg/core"
 )
 
 // Reader provides terminal input functionality.

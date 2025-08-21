@@ -1,6 +1,6 @@
 package prompts
 
-import "github.com/yarlson/tap/pkg/core"
+import "github.com/yarlson/tap/core"
 
 // Confirm creates a styled confirm prompt
 func Confirm(opts ConfirmOptions) any {

@@ -59,8 +59,8 @@ package main
 
 import (
     "fmt"
-    "github.com/yarlson/tap/pkg/prompts"
-    "github.com/yarlson/tap/pkg/terminal"
+    "github.com/yarlson/tap/prompts"
+    "github.com/yarlson/tap/terminal"
 )
 
 func main() {
@@ -147,9 +147,9 @@ prog.Stop("Done!", 0)
 
 Tap follows a clean, event-driven architecture:
 
-- **`pkg/core`** - Core prompt engine with unstyled, functional prompts
-- **`pkg/prompts`** - Beautifully styled prompts built on top of core
-- **`pkg/terminal`** - Terminal management and keyboard input handling
+- **`core`** - Core prompt engine with unstyled, functional prompts
+- **`prompts`** - Beautifully styled prompts built on top of core
+- **`terminal`** - Terminal management and keyboard input handling
 
 ### Event Loop Design
 
@@ -176,7 +176,7 @@ go test ./...
 go test -race ./...
 
 # Run specific package tests
-go test ./pkg/prompts -v
+go test ./prompts -v
 ```
 
 ## 📁 Project Structure
@@ -199,35 +199,34 @@ go/
 │   │   └── main.go
 │   └── text/
 │       └── main.go
-└── pkg/
-    ├── core/                 # Core prompt engine (unstyled)
-    │   ├── confirm.go
-    │   ├── confirm_test.go
-    │   ├── mock.go
-    │   ├── prompt.go
-    │   ├── prompt_test.go
-    │   ├── select.go
-    │   ├── select_test.go
-    │   ├── text.go
-    │   ├── text_test.go
-    │   └── types.go
-    ├── prompts/              # Styled prompts and primitives
-    │   ├── box.go
-    │   ├── box_test.go
-    │   ├── confirm.go
-    │   ├── confirm_test.go
-    │   ├── messages.go
-    │   ├── messages_test.go
-    │   ├── progress.go
-    │   ├── progress_test.go
-    │   ├── select.go
-    │   ├── select_test.go
-    │   ├── symbols.go
-    │   ├── text.go
-    │   ├── text_test.go
-    │   └── types.go
-    └── terminal/
-        └── terminal.go
+├── core/                 # Core prompt engine (unstyled)
+│   ├── confirm.go
+│   ├── confirm_test.go
+│   ├── mock.go
+│   ├── prompt.go
+│   ├── prompt_test.go
+│   ├── select.go
+│   ├── select_test.go
+│   ├── text.go
+│   ├── text_test.go
+│   └── types.go
+├── prompts/              # Styled prompts and primitives
+│   ├── box.go
+│   ├── box_test.go
+│   ├── confirm.go
+│   ├── confirm_test.go
+│   ├── messages.go
+│   ├── messages_test.go
+│   ├── progress.go
+│   ├── progress_test.go
+│   ├── select.go
+│   ├── select_test.go
+│   ├── symbols.go
+│   ├── text.go
+│   ├── text_test.go
+│   └── types.go
+└── terminal/
+	└── terminal.go
 ```
 
 ## 🤝 Contributing

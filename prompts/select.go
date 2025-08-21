@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/yarlson/tap/pkg/core"
+	"github.com/yarlson/tap/core"
 )
 
 // styledSelectState holds the state for a styled select prompt

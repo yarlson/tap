@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/yarlson/tap/pkg/core"
-	"github.com/yarlson/tap/pkg/prompts"
-	"github.com/yarlson/tap/pkg/terminal"
+	"github.com/yarlson/tap/core"
+	"github.com/yarlson/tap/prompts"
+	"github.com/yarlson/tap/terminal"
 )
 
 func main() {
