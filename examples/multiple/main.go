@@ -99,63 +99,52 @@ func main() {
 		return
 	}
 
-	// Final prompt: If confirmed, ask for final message preference
 	var detailed bool
-	if confirmed {
-		styleRes := prompts.Confirm(prompts.ConfirmOptions{
-			Message:      "Display summary in detailed format?",
-			Active:       "Detailed",
-			Inactive:     "Brief",
-			InitialValue: false,
-			Input:        term.Reader,
-			Output:       term.Writer,
-		})
-
-		if core.IsCancel(styleRes) {
-			fmt.Printf("Operation canceled.\r\n")
-			return
-		}
-
-		detailed, ok = styleRes.(bool)
-		if !ok {
-			fmt.Printf("Unexpected style result: %#v\r\n", styleRes)
-			return
-		}
-
-		// Display the summary
-		fmt.Print("\r\n" + strings.Repeat("=", 50) + "\r\n")
-		fmt.Printf("📋 PROFILE SUMMARY\r\n")
-		fmt.Print(strings.Repeat("=", 50) + "\r\n")
-
-		if detailed {
-			fmt.Printf("👤 Name: %s\r\n", name)
-			fmt.Printf("💻 Favorite Language: %s\r\n", language)
-			fmt.Printf("📈 Experience Level: %s years\r\n", experience)
-			fmt.Printf("\r\n🎯 Profile Analysis:\r\n")
-			if experience == "0" || experience == "1" {
-				fmt.Printf("   You're just getting started with %s - keep learning!\r\n", language)
-			} else {
-				fmt.Printf("   Great! You have solid experience with %s.\r\n", language)
-			}
-		} else {
-			fmt.Printf("%s • %s • %s years experience\r\n", name, language, experience)
-		}
-
-		fmt.Print(strings.Repeat("=", 50) + "\r\n")
-		fmt.Printf("Thanks for trying out the Tap prompts library! 🎉\r\n")
-	} else {
+	if !confirmed {
 		fmt.Printf("\r\nNo problem! Thanks for trying the example, %s! 👋\r\n", name)
+		return
 	}
 
-	// Print all entered responses
-	fmt.Print("\r\n" + strings.Repeat("-", 30) + "\r\n")
-	fmt.Printf("📝 ALL RESPONSES:\r\n")
-	fmt.Print(strings.Repeat("-", 30) + "\r\n")
-	fmt.Printf("Name: %s\r\n", name)
-	fmt.Printf("Language: %s\r\n", language)
-	fmt.Printf("Experience: %s years\r\n", experience)
-	fmt.Printf("Show summary: %t\r\n", confirmed)
-	if confirmed {
-		fmt.Printf("Detailed format: %t\r\n", detailed)
+	// Final prompt: If confirmed, ask for final message preference
+	styleRes := prompts.Confirm(prompts.ConfirmOptions{
+		Message:      "Display summary in detailed format?",
+		Active:       "Detailed",
+		Inactive:     "Brief",
+		InitialValue: false,
+		Input:        term.Reader,
+		Output:       term.Writer,
+	})
+
+	if core.IsCancel(styleRes) {
+		fmt.Printf("Operation canceled.\r\n")
+		return
 	}
+
+	detailed, ok = styleRes.(bool)
+	if !ok {
+		fmt.Printf("Unexpected style result: %#v\r\n", styleRes)
+		return
+	}
+
+	// Display the summary
+	fmt.Print("\r\n" + strings.Repeat("=", 50) + "\r\n")
+	fmt.Printf("📋 PROFILE SUMMARY\r\n")
+	fmt.Print(strings.Repeat("=", 50) + "\r\n")
+
+	if detailed {
+		fmt.Printf("👤 Name: %s\r\n", name)
+		fmt.Printf("💻 Favorite Language: %s\r\n", language)
+		fmt.Printf("📈 Experience Level: %s years\r\n", experience)
+		fmt.Printf("\r\n🎯 Profile Analysis:\r\n")
+		if experience == "0" || experience == "1" {
+			fmt.Printf("   You're just getting started with %s - keep learning!\r\n", language)
+		} else {
+			fmt.Printf("   Great! You have solid experience with %s.\r\n", language)
+		}
+	} else {
+		fmt.Printf("%s • %s • %s years experience\r\n", name, language, experience)
+	}
+
+	fmt.Print(strings.Repeat("=", 50) + "\r\n")
+	fmt.Printf("Thanks for trying out the Tap prompts library! 🎉\r\n")
 }
