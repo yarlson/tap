@@ -41,12 +41,13 @@ type Prompt struct {
 }
 
 type promptState struct {
-	State     ClackState
-	Error     string
-	Value     any
-	UserInput string
-	Cursor    int
-	PrevFrame string
+	State         ClackState
+	Error         string
+	Value         any
+	UserInput     string
+	Cursor        int
+	PrevFrame     string
+	PrevFrameLines int
 }
 
 func (p *Prompt) StateSnapshot() ClackState {
@@ -62,6 +63,16 @@ func (p *Prompt) UserInputSnapshot() string {
 func (p *Prompt) CursorSnapshot() int {
 	s := p.snap.Load().(promptState)
 	return s.Cursor
+}
+
+func (p *Prompt) ErrorSnapshot() string {
+	s := p.snap.Load().(promptState)
+	return s.Error
+}
+
+func (p *Prompt) ValueSnapshot() any {
+	s := p.snap.Load().(promptState)
+	return s.Value
 }
 
 func (p *Prompt) snapshot() (ClackState, string) {
@@ -408,6 +419,20 @@ func (p *Prompt) adoptPreSubscribers() {
 	}
 }
 
+// countLines counts the number of lines in a string
+func countLines(s string) int {
+	if s == "" {
+		return 0
+	}
+	lines := 1
+	for _, char := range s {
+		if char == '\n' {
+			lines++
+		}
+	}
+	return lines
+}
+
 // renderIfNeeded runs the render function, hides the cursor on the first frame,
 // writes the frame, and updates state to active. It only writes when the frame
 // content changes.
@@ -424,9 +449,19 @@ func (p *Prompt) renderIfNeeded(st *promptState) {
 	if st.State == StateInitial {
 		_, _ = p.output.Write([]byte(CursorHide))
 	} else {
-		// Clear current line and return to start
-		_, _ = p.output.Write([]byte("\r"))
-		_, _ = p.output.Write([]byte(EraseLine))
+		// Clear previous frame
+		if st.PrevFrameLines > 1 {
+			// Multi-line frame: move cursor up and clear from current position down
+			for i := 0; i < st.PrevFrameLines-1; i++ {
+				_, _ = p.output.Write([]byte(CursorUp))
+			}
+			_, _ = p.output.Write([]byte("\r"))
+			_, _ = p.output.Write([]byte(EraseDown))
+		} else {
+			// Single-line frame: use fast single-line clear
+			_, _ = p.output.Write([]byte("\r"))
+			_, _ = p.output.Write([]byte(EraseLine))
+		}
 	}
 
 	_, _ = p.output.Write([]byte(frame))
@@ -435,6 +470,7 @@ func (p *Prompt) renderIfNeeded(st *promptState) {
 	}
 
 	st.PrevFrame = frame
+	st.PrevFrameLines = countLines(frame)
 }
 
 func (p *Prompt) shouldFinalize(state ClackState) bool {

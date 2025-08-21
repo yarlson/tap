@@ -1,0 +1,62 @@
+package prompts
+
+import "github.com/yarlson/glack/pkg/core"
+
+// Unicode symbols for drawing styled prompts
+const (
+	// Step symbols
+	StepActive = "◆"
+	StepCancel = "■"
+	StepError  = "▲"
+	StepSubmit = "◇"
+
+	// Bar symbols
+	Bar    = "│"
+	BarEnd = "└"
+
+	// Radio symbols
+	RadioActive   = "●"
+	RadioInactive = "○"
+)
+
+// ANSI color codes
+const (
+	Reset = "\033[0m"
+
+	// Colors
+	Gray   = "\033[90m"
+	Red    = "\033[91m"
+	Green  = "\033[92m"
+	Yellow = "\033[93m"
+	Cyan   = "\033[96m"
+
+	// Text styles
+	Dim           = "\033[2m"
+	Inverse       = "\033[7m"
+	Strikethrough = "\033[9m"
+)
+
+// Color helper functions
+func gray(s string) string          { return Gray + s + Reset }
+func red(s string) string           { return Red + s + Reset }
+func green(s string) string         { return Green + s + Reset }
+func yellow(s string) string        { return Yellow + s + Reset }
+func cyan(s string) string          { return Cyan + s + Reset }
+func dim(s string) string           { return Dim + s + Reset }
+func inverse(s string) string       { return Inverse + s + Reset }
+func strikethrough(s string) string { return Strikethrough + s + Reset }
+
+// Symbol returns the appropriate symbol for a given state with color
+func Symbol(state core.ClackState) string {
+	switch state {
+	case core.StateInitial, core.StateActive:
+		return cyan(StepActive)
+	case core.StateCancel:
+		return red(StepCancel)
+	case core.StateError:
+		return yellow(StepError)
+	case core.StateSubmit:
+		return green(StepSubmit)
+	}
+	return StepActive
+}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/glack/pkg/prompts"
 	"github.com/yarlson/glack/pkg/terminal"
 )
 
@@ -15,10 +16,11 @@ func main() {
 	}
 	defer term.Close()
 
-	res := core.Text(core.TextOptions{
+	res := prompts.Text(prompts.TextOptions{
 		Message:      "Enter text:",
 		InitialValue: "initial",
 		DefaultValue: "anon",
+		Placeholder:  "Type something...",
 		Input:        term.Reader,
 		Output:       term.Writer,
 	})

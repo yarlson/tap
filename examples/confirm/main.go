@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/glack/pkg/prompts"
 	"github.com/yarlson/glack/pkg/terminal"
 )
 
@@ -15,8 +16,8 @@ func main() {
 	}
 	defer term.Close()
 
-	res := core.Confirm(core.ConfirmOptions{
-		Message:      "Proceed? (y/n)",
+	res := prompts.Confirm(prompts.ConfirmOptions{
+		Message:      "Proceed?",
 		InitialValue: true,
 		Input:        term.Reader,
 		Output:       term.Writer,

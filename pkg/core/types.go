@@ -65,9 +65,11 @@ type Writer interface {
 }
 
 const (
-	CursorHide = "\x1b[?25l"
-	CursorShow = "\x1b[?25h"
-	EraseLine  = "\x1b[K"
+	CursorHide    = "\x1b[?25l"
+	CursorShow    = "\x1b[?25h"
+	EraseLine     = "\x1b[K"
+	CursorUp      = "\x1b[A"
+	EraseDown     = "\x1b[J"
 )
 
 type CancelSymbol struct{}

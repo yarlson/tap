@@ -58,6 +58,11 @@ func (m *MockReadable) EmitKeypress(char string, key Key) {
 	}
 }
 
+// SendKey is a convenience method for testing
+func (m *MockReadable) SendKey(char string, key Key) {
+	m.EmitKeypress(char, key)
+}
+
 type MockWritable struct {
 	Buffer    []string
 	mutex     sync.Mutex
@@ -92,4 +97,11 @@ func (m *MockWritable) Emit(event string) {
 	for _, handler := range handlers {
 		handler()
 	}
+}
+
+// GetFrames returns all written frames for testing
+func (m *MockWritable) GetFrames() []string {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	return append([]string{}, m.Buffer...)
 }
