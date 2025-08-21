@@ -2,6 +2,10 @@
 
 **Tap** is a Go port of the popular TypeScript [Clack](https://clack.cc/) library for building beautiful, interactive command-line applications.
 
+<div align="center">
+  <img src="assets/demo.gif" alt="Tap Demo" width="800">
+</div>
+
 > ⚠️ **Heavy Development**: This project is currently in heavy development. APIs may change, and some features are still being implemented. Use with caution in production environments.
 
 ## 🎯 About
