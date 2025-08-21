@@ -29,6 +29,7 @@ Building interactive CLI applications shouldn't be complex. Tap brings the elega
 - **Confirm** - Yes/No prompts with customizable labels and keyboard navigation
 - **Select** - Single selection from typed options with hints and color-coded display
 - **Progress Bar** - Animated progress indicators with multiple styles (light, heavy, block)
+- **Spinner** - Loading indicators with dots, timer, or custom frames
 - **Message Primitives** - Intro, outro, cancel messages, and styled boxes
 - **Event System** - Race-condition-free event loop architecture
 
@@ -42,7 +43,6 @@ Building interactive CLI applications shouldn't be complex. Tap brings the elega
 
 - **Multi-Select** - Multiple selection from lists with checkboxes
 - **Autocomplete** - Text input with suggestion dropdown
-- **Spinner** - Loading indicators for long-running operations
 - **Group** - Grouped prompts for complex workflows
 
 ## Installation
@@ -123,6 +123,7 @@ email := prompts.Text(prompts.TextOptions{
     Output: term.Writer,
 })
 ```
+
 ### Password Input (masked)
 
 ```go
@@ -188,6 +189,37 @@ for i := 0; i <= 100; i += 10 {
     prog.Advance(10, fmt.Sprintf("Step %d/10", i/10+1))
 }
 prog.Stop("Complete!", 0) // 0=success, 1=cancel, 2=error
+```
+
+### Spinner
+
+```go
+// Default spinner (dots)
+spin := prompts.NewSpinner(prompts.SpinnerOptions{
+    Output: term.Writer,
+})
+spin.Start("Connecting")
+// ... do work ...
+spin.Stop("Connected", 0)
+
+// Timer indicator
+timerSpin := prompts.NewSpinner(prompts.SpinnerOptions{
+    Output:    term.Writer,
+    Indicator: "timer",
+})
+timerSpin.Start("Fetching data")
+// ... do work ...
+timerSpin.Stop("Done", 0)
+
+// Custom frames and delay
+customSpin := prompts.NewSpinner(prompts.SpinnerOptions{
+    Output: term.Writer,
+    Frames: []string{"-", "\\", "|", "/"},
+    Delay:  100 * time.Millisecond,
+})
+customSpin.Start("Working")
+// ... do work ...
+customSpin.Stop("Complete", 0)
 ```
 
 ## Architecture
@@ -263,6 +295,7 @@ go run examples/password/main.go  # Password input (masked)
 go run examples/confirm/main.go   # Yes/No confirmations
 go run examples/select/main.go    # Single selection menus
 go run examples/progress/main.go  # Progress bars and status
+go run examples/spinner/main.go   # Spinners (dots, timer, custom frames)
 go run examples/multiple/main.go  # Complete workflow example
 ```
 
