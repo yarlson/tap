@@ -20,17 +20,18 @@ Clack is a library that makes building interactive command-line applications eff
 
 - ✅ **Text Input** - Single-line text input with cursor navigation, validation, and default values
 - ✅ **Confirm** - Yes/No prompts with keyboard navigation
+- ✅ **Select** - Single selection from a list with cursor navigation and wrap-around
 
 ### Prompts (Styled - Prompts Package)
 
 - ✅ **Text Input** - Beautifully styled text prompts with symbols, bars, placeholders, and error states
 - ✅ **Confirm** - Styled confirmation prompts with radio button interface
+- ✅ **Select** - Styled selection prompts with radio buttons, hints, and color-coded options
 - ✅ **Symbols & Styling** - Unicode symbols, ANSI colors, and consistent visual design
 
 ### Still To Come
 
 - 🔄 **Password Input** - Masked text input
-- 🔄 **Select** - Single selection from a list
 - 🔄 **Multi-Select** - Multiple selection from a list
 - 🔄 **Autocomplete** - Text input with autocomplete suggestions
 - 🔄 **Spinner** - Loading indicators for long-running operations
@@ -160,16 +161,19 @@ tap/
 │   │   ├── prompt.go   # Main prompt implementation
 │   │   ├── text.go     # Text input prompt
 │   │   ├── confirm.go  # Confirmation prompt
+│   │   ├── select.go   # Selection prompt
 │   │   └── mock.go     # Testing utilities
 │   ├── prompts/        # Styled prompts
 │   │   ├── text.go     # Styled text input
 │   │   ├── confirm.go  # Styled confirmation
+│   │   ├── select.go   # Styled selection
 │   │   └── symbols.go  # Unicode symbols & colors
 │   └── terminal/       # Terminal management
 │       └── terminal.go # Keyboard input & raw mode
 └── examples/           # Usage examples
     ├── text/
     ├── confirm/
+    ├── select/
     └── multiple/
 ```
 
@@ -190,12 +194,13 @@ go test ./...
 # Try examples
 go run examples/text/main.go
 go run examples/confirm/main.go
+go run examples/select/main.go
 go run examples/multiple/main.go
 ```
 
 ### What Needs Help
 
-- **New Prompt Types**: Select, Multi-Select, Password, Autocomplete
+- **New Prompt Types**: Multi-Select, Password, Autocomplete
 - **Enhanced Styling**: Better color support, themes, custom symbols
 - **Documentation**: More examples, API documentation, tutorials
 - **Testing**: Edge cases, cross-platform testing, performance tests

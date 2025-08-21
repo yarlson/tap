@@ -33,7 +33,6 @@ func NewSelectPrompt[T any](opts SelectOptions[T]) *SelectPrompt[T] {
 		cursor:  0,
 	}
 
-	// Find initial cursor position
 	if opts.InitialValue != nil {
 		for i, option := range opts.Options {
 			if isEqual(*opts.InitialValue, option.Value) {
@@ -43,7 +42,6 @@ func NewSelectPrompt[T any](opts SelectOptions[T]) *SelectPrompt[T] {
 		}
 	}
 
-	// Create base prompt with custom render function
 	promptOpts := PromptOptions{
 		Render: func(p *Prompt) string {
 			return sp.render()
@@ -63,10 +61,8 @@ func NewSelectPrompt[T any](opts SelectOptions[T]) *SelectPrompt[T] {
 
 	sp.Prompt = NewPromptWithTracking(promptOpts, false)
 
-	// Set initial value
 	sp.SetImmediateValue(sp.getSelectedValue())
 
-	// Handle cursor navigation
 	sp.On("cursor", func(direction string) {
 		sp.handleCursor(direction)
 	})
@@ -106,7 +102,6 @@ func (sp *SelectPrompt[T]) handleCursor(direction string) {
 }
 
 func (sp *SelectPrompt[T]) render() string {
-	// This is a minimal unstyled render - just show the current option
 	if len(sp.options) == 0 {
 		return "No options available"
 	}

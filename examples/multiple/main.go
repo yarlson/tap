@@ -9,6 +9,21 @@ import (
 	"github.com/yarlson/tap/pkg/terminal"
 )
 
+func getProjectLabel(projectType string) string {
+	labels := map[string]string{
+		"web":     "Web Application",
+		"mobile":  "Mobile App",
+		"desktop": "Desktop Application",
+		"api":     "API/Backend Service",
+		"game":    "Game Development",
+		"data":    "Data Science/ML",
+	}
+	if label, exists := labels[projectType]; exists {
+		return label
+	}
+	return projectType
+}
+
 func main() {
 	term, err := terminal.New()
 	if err != nil {
@@ -60,7 +75,35 @@ func main() {
 		return
 	}
 
-	// Third prompt: Get years of experience
+	// Third prompt: Select project type
+	projectTypes := []prompts.SelectOption[string]{
+		{Value: "web", Label: "Web Application", Hint: "Frontend and backend web development"},
+		{Value: "mobile", Label: "Mobile App", Hint: "iOS and Android applications"},
+		{Value: "desktop", Label: "Desktop Application", Hint: "Cross-platform desktop software"},
+		{Value: "api", Label: "API/Backend Service", Hint: "REST APIs and microservices"},
+		{Value: "game", Label: "Game Development", Hint: "Video games and interactive media"},
+		{Value: "data", Label: "Data Science/ML", Hint: "Analytics, machine learning, AI"},
+	}
+
+	projectRes := prompts.Select(prompts.SelectOptions[string]{
+		Message: fmt.Sprintf("What type of %s projects do you work on?", language),
+		Options: projectTypes,
+		Input:   term.Reader,
+		Output:  term.Writer,
+	})
+
+	if core.IsCancel(projectRes) {
+		fmt.Printf("Operation canceled.\r\n")
+		return
+	}
+
+	projectType, ok := projectRes.(string)
+	if !ok {
+		fmt.Printf("Unexpected project type result: %#v\r\n", projectRes)
+		return
+	}
+
+	// Fourth prompt: Get years of experience
 	expRes := prompts.Text(prompts.TextOptions{
 		Message:      "How many years of experience do you have with " + language + "?",
 		Placeholder:  "Enter number of years...",
@@ -80,7 +123,7 @@ func main() {
 		return
 	}
 
-	// Fourth prompt: Confirm if they want to see a summary
+	// Fifth prompt: Confirm if they want to see a summary
 	confirmRes := prompts.Confirm(prompts.ConfirmOptions{
 		Message:      "Would you like to see a summary of your information?",
 		InitialValue: true,
@@ -105,7 +148,7 @@ func main() {
 		return
 	}
 
-	// Final prompt: If confirmed, ask for final message preference
+	// Sixth prompt: If confirmed, ask for final message preference
 	styleRes := prompts.Confirm(prompts.ConfirmOptions{
 		Message:      "Display summary in detailed format?",
 		Active:       "Detailed",
@@ -134,6 +177,7 @@ func main() {
 	if detailed {
 		fmt.Printf("👤 Name: %s\r\n", name)
 		fmt.Printf("💻 Favorite Language: %s\r\n", language)
+		fmt.Printf("🚀 Project Type: %s\r\n", getProjectLabel(projectType))
 		fmt.Printf("📈 Experience Level: %s years\r\n", experience)
 		fmt.Printf("\r\n🎯 Profile Analysis:\r\n")
 		if experience == "0" || experience == "1" {
@@ -141,8 +185,9 @@ func main() {
 		} else {
 			fmt.Printf("   Great! You have solid experience with %s.\r\n", language)
 		}
+		fmt.Printf("   %s development is a great choice!\r\n", getProjectLabel(projectType))
 	} else {
-		fmt.Printf("%s • %s • %s years experience\r\n", name, language, experience)
+		fmt.Printf("%s • %s • %s • %s years experience\r\n", name, language, getProjectLabel(projectType), experience)
 	}
 
 	fmt.Print(strings.Repeat("=", 50) + "\r\n")
