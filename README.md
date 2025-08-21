@@ -49,7 +49,7 @@ Clack is a library that makes building interactive command-line applications eff
 ### Installation
 
 ```bash
-go get github.com/yarlson/tap
+go get github.com/yarlson/tap@latest
 ```
 
 ### Basic Usage
