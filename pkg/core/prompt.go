@@ -41,12 +41,12 @@ type Prompt struct {
 }
 
 type promptState struct {
-	State         ClackState
-	Error         string
-	Value         any
-	UserInput     string
-	Cursor        int
-	PrevFrame     string
+	State          ClackState
+	Error          string
+	Value          any
+	UserInput      string
+	Cursor         int
+	PrevFrame      string
 	PrevFrameLines int
 }
 
@@ -94,11 +94,6 @@ func (p *Prompt) SetValue(v any) {
 // SetImmediateValue updates the value in the current event-loop tick if possible.
 // Falls back to enqueuing when called outside the loop.
 func (p *Prompt) SetImmediateValue(v any) {
-	if p.cur != nil {
-		p.cur.Value = v
-		p.Emit("value", v)
-		return
-	}
 	p.SetValue(v)
 }
 
@@ -245,13 +240,19 @@ func getMovementAlias(keyName string) string {
 	return aliases[keyName]
 }
 
-func (p *Prompt) handleInitialRender(s *promptState) {}
+func (p *Prompt) handleInitialRender(_ *promptState) {}
 
-func (p *Prompt) handleResize(s *promptState) {}
+func (p *Prompt) handleResize(_ *promptState) {}
 
 func (p *Prompt) handleAbort(s *promptState) { s.State = StateCancel }
 
 func (p *Prompt) handleKey(s *promptState, char string, key Key) {
+	// Clear error on any keypress other than return/cancel (do this first)
+	if s.State == StateError && key.Name != "return" && !isCancel(char, key) {
+		s.State = StateActive
+		s.Error = ""
+	}
+
 	// Track user input when tracking is enabled
 	if p.track && key.Name != "return" {
 		oldInput := s.UserInput
@@ -288,12 +289,17 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 		s.State = StateSubmit
 	}
 	p.Emit("key", strings.ToLower(char), key)
-	// Clear error on any keypress other than return/cancel
-	if s.State == StateError && key.Name != "return" && !isCancel(char, key) {
-		s.State = StateActive
-		s.Error = ""
-	}
+
 	if key.Name == "return" {
+		// For text input tracking, set value from user input if no value is set
+		if p.track && s.Value == nil {
+			if s.UserInput != "" {
+				s.Value = s.UserInput
+			} else if p.opts.InitialValue != nil {
+				s.Value = p.opts.InitialValue
+			}
+		}
+
 		if p.opts.Validate != nil {
 			if err := p.opts.Validate(s.Value); err != nil {
 				var ve *ValidationError
@@ -399,8 +405,8 @@ func (p *Prompt) loop() {
 		p.snap.Store(st)
 
 		if p.shouldFinalize(st.State) {
-			p.snap.Store(st)
 			p.renderIfNeeded(&st)
+			p.snap.Store(st)
 			res := p.finalize(&st)
 			p.doneCh <- res
 			close(p.stopped)

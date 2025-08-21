@@ -21,6 +21,7 @@ func Text(opts TextOptions) any {
 		Output:           opts.Output,
 		Validate:         validate,
 		InitialUserInput: opts.InitialValue,
+		InitialValue:     opts.DefaultValue,
 		Render: func(p *core.Prompt) string {
 			s := p.StateSnapshot()
 			userInput := p.UserInputSnapshot()
@@ -47,9 +48,9 @@ func Text(opts TextOptions) any {
 			case core.StateError:
 				errorText := ""
 				if err := p.ErrorSnapshot(); err != "" {
-					errorText = "  " + yellow(err)
+					errorText = " " + yellow("("+err+")")
 				}
-				return title + yellow(Bar) + "  " + displayInput + "\n" + yellow(BarEnd) + errorText + "\n"
+				return Symbol(s) + " " + opts.Message + " " + displayInput + errorText
 
 			case core.StateSubmit:
 				value := ""
@@ -85,14 +86,6 @@ func Text(opts TextOptions) any {
 
 	p.On("userInput", func(input string) {
 		p.SetImmediateValue(input)
-	})
-
-	p.On("finalize", func() {
-		if currentValue := p.StateSnapshot(); currentValue != core.StateCancel {
-			if userInput := p.UserInputSnapshot(); userInput == "" && opts.DefaultValue != "" {
-				p.SetImmediateValue(opts.DefaultValue)
-			}
-		}
 	})
 
 	return p.Prompt()

@@ -44,11 +44,7 @@ func Confirm(opts ConfirmOptions) any {
 				}
 			}
 
-			// Show radio button interface
 			currentValue := initial
-			if val, ok := p.ValueSnapshot().(bool); ok {
-				currentValue = val
-			}
 
 			var activeOption, inactiveOption string
 			if currentValue {

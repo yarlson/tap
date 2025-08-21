@@ -63,10 +63,12 @@ func TestText_ValidationBlocksSubmitThenClearsOnKey(t *testing.T) {
 	}()
 	time.Sleep(time.Millisecond)
 	in.EmitKeypress("a", Key{Name: "a"})
+	time.Sleep(time.Millisecond)
 	in.EmitKeypress("", Key{Name: "return"})
 	// still running (blocked by validation error)
 	time.Sleep(time.Millisecond)
 	in.EmitKeypress("b", Key{Name: "b"})
+	time.Sleep(time.Millisecond)
 	in.EmitKeypress("", Key{Name: "return"})
 	res := <-resCh
 	assert.Equal(t, "ab", res)
