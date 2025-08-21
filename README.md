@@ -1,6 +1,6 @@
 # 🚀 Tap
 
-**Tap** is a Go port of the popular TypeScript [Clack](https://clack.cc/) library for building beautiful, interactive command-line applications.
+**Beautiful, interactive command-line prompts for Go** - A Go port of the popular TypeScript [Clack](https://clack.cc/) library.
 
 <div>
   <img src="assets/demo.gif" alt="Tap Demo" width="1400">
@@ -8,57 +8,57 @@
 
 > ⚠️ **Heavy Development**: This project is currently in heavy development. APIs may change, and some features are still being implemented. Use with caution in production environments.
 
-## 🎯 About
+## Why Tap?
 
-Clack is a library that makes building interactive command-line applications effortless with beautiful, minimal, and opinionated CLI prompts. Tap brings this elegant experience to the Go ecosystem while maintaining the same design philosophy and user experience.
+Building interactive CLI applications shouldn't be complex. Tap brings the elegant, minimal design philosophy of Clack to the Go ecosystem, offering:
 
-## ✅ What's Ported
+- **Event-driven architecture** for responsive, race-condition-free prompts
+- **Beautiful styling** with consistent visual design and Unicode symbols
+- **Type-safe APIs** with generic support for strongly-typed selections
+- **Comprehensive testing** with built-in mock utilities
+- **Minimal dependencies** - Only essential terminal and keyboard libraries
 
-### Core Functionality
+## Features
 
-- ✅ **Event-driven prompt system** - Complete with proper state management and event loop architecture
-- ✅ **Terminal management** - Raw terminal mode, keyboard input handling, and cursor control
-- ✅ **Mock testing utilities** - Full test coverage with mock input/output for reliable testing
+### ✅ Available Now
 
-### Prompts (Unstyled - Core Package)
+**Core Components:**
 
-- ✅ **Text Input** - Single-line text input with cursor navigation, validation, and default values
-- ✅ **Confirm** - Yes/No prompts with keyboard navigation
-- ✅ **Select** - Single selection from a list with cursor navigation and wrap-around
+- **Text Input** - Single-line input with cursor navigation, validation, placeholders, and default values
+- **Confirm** - Yes/No prompts with customizable labels and keyboard navigation
+- **Select** - Single selection from typed options with hints and color-coded display
+- **Progress Bar** - Animated progress indicators with multiple styles (light, heavy, block)
+- **Message Primitives** - Intro, outro, cancel messages, and styled boxes
+- **Event System** - Race-condition-free event loop architecture
 
-### Prompts (Styled - Prompts Package)
+**Developer Experience:**
 
-- ✅ **Text Input** - Beautifully styled text prompts with symbols, bars, placeholders, and error states
-- ✅ **Confirm** - Styled confirmation prompts with radio button interface
-- ✅ **Select** - Styled selection prompts with radio buttons, hints, and color-coded options
-- ✅ **Progress Bar** - Animated progress with messages and final states
-- ✅ **Box** - Styled message boxes with rounded/square borders, alignment, and auto-wrapping
-- ✅ **Symbols & Styling** - Unicode symbols, ANSI colors, and consistent visual design
+- **Mock Testing** - Built-in utilities for reliable prompt testing
+- **Type Safety** - Generic APIs for strongly-typed selections
+- **Terminal Management** - Raw mode handling, keyboard input, and cursor control
 
-### Still To Come
+### 🔄 Coming Soon
 
-- 🔄 **Password Input** - Masked text input
-- 🔄 **Multi-Select** - Multiple selection from a list
-- 🔄 **Autocomplete** - Text input with autocomplete suggestions
-- 🔄 **Spinner** - Loading indicators for long-running operations
-- 🔄 **Group** - Grouped prompts for complex workflows
-- 🔄 **Note/Log** - Informational messages and logging utilities
+- **Password Input** - Masked text input for sensitive data
+- **Multi-Select** - Multiple selection from lists with checkboxes
+- **Autocomplete** - Text input with suggestion dropdown
+- **Spinner** - Loading indicators for long-running operations
+- **Group** - Grouped prompts for complex workflows
 
-## 🚀 Quick Start
-
-### Installation
+## Installation
 
 ```bash
 go get github.com/yarlson/tap@latest
 ```
 
-### Basic Usage
+## Quick Start
 
 ```go
 package main
 
 import (
     "fmt"
+    "github.com/yarlson/tap/core"
     "github.com/yarlson/tap/prompts"
     "github.com/yarlson/tap/terminal"
 )
@@ -78,6 +78,12 @@ func main() {
         Output:  term.Writer,
     })
 
+    // Check for cancellation
+    if core.IsCancel(name) {
+        prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer})
+        return
+    }
+
     // Confirmation
     confirmed := prompts.Confirm(prompts.ConfirmOptions{
         Message: fmt.Sprintf("Hello %s! Continue?", name),
@@ -85,16 +91,24 @@ func main() {
         Output:  term.Writer,
     })
 
+    if core.IsCancel(confirmed) {
+        prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer})
+        return
+    }
+
     if confirmed.(bool) {
-        fmt.Println("Let's go! 🎉")
+        prompts.Outro("Let's go! 🎉", prompts.MessageOptions{Output: term.Writer})
     }
 }
 ```
 
-### Advanced Features
+## API Examples
+
+### Text Input with Validation
 
 ```go
-// Text with validation and default value
+import "errors"
+
 email := prompts.Text(prompts.TextOptions{
     Message:      "Enter your email:",
     Placeholder:  "user@example.com",
@@ -108,8 +122,11 @@ email := prompts.Text(prompts.TextOptions{
     Input:  term.Reader,
     Output: term.Writer,
 })
+```
 
-// Confirmation with custom labels
+### Confirmation with Custom Labels
+
+```go
 proceed := prompts.Confirm(prompts.ConfirmOptions{
     Message:      "Deploy to production?",
     Active:       "Deploy",
@@ -120,170 +137,168 @@ proceed := prompts.Confirm(prompts.ConfirmOptions{
 })
 ```
 
+### Type-Safe Selection
+
+```go
+type Environment string
+
+envs := []prompts.SelectOption[Environment]{
+    {Value: "dev", Label: "Development", Hint: "Local development"},
+    {Value: "staging", Label: "Staging", Hint: "Pre-production testing"},
+    {Value: "prod", Label: "Production", Hint: "Live environment"},
+}
+
+env := prompts.Select(prompts.SelectOptions[Environment]{
+    Message: "Choose deployment target:",
+    Options: envs,
+    Input:   term.Reader,
+    Output:  term.Writer,
+})
+```
+
 ### Progress Bar
 
 ```go
-// Progress bar with animated frames and messages
 prog := prompts.NewProgress(prompts.ProgressOptions{
-    Style:  "heavy",   // "light", "heavy", or "block"
-    Max:    100,        // total units of work
-    Size:   40,         // bar width in characters
-    Output: term.Writer, // implements prompts.Writer
+    Style:  "heavy",     // "light", "heavy", or "block"
+    Max:    100,         // total units of work
+    Size:   40,          // bar width in characters
+    Output: term.Writer,
 })
 
 prog.Start("Processing...")
-
-// Update progress and optionally the message
 for i := 0; i <= 100; i += 10 {
     time.Sleep(200 * time.Millisecond)
-    prog.Advance(10, fmt.Sprintf("Processing... %d%%", i))
+    prog.Advance(10, fmt.Sprintf("Step %d/10", i/10+1))
 }
-
-// Stop with final status. code: 0=success, 1=cancel, other=error
-prog.Stop("Done!", 0)
+prog.Stop("Complete!", 0) // 0=success, 1=cancel, 2=error
 ```
 
-## 🏗️ Architecture
+## Architecture
 
-Tap follows a clean, event-driven architecture:
+Tap uses a clean, layered architecture designed for performance and reliability:
+
+### Package Structure
 
 - **`core`** - Core prompt engine with unstyled, functional prompts
 - **`prompts`** - Beautifully styled prompts built on top of core
-- **`terminal`** - Terminal management and keyboard input handling
+- **`terminal`** - Terminal management, keyboard input, and cursor control
 
-### Event Loop Design
+### Event-Driven Design
 
-Tap uses a pure event loop architecture (no mutexes or atomic operations) for excellent performance and race-condition-free operation:
+All prompts use a pure event loop architecture for race-condition-free operation:
 
 ```go
-// Events flow through a single event loop
+// Single event loop processes all state changes
 for event := range prompt.events {
-    event(&state)           // Update state
-    prompt.render(&state)   // Render changes
-    prompt.updateSnapshot(&state) // Update atomic snapshot
+    event(&state)                    // Update state
+    prompt.render(&state)            // Render changes
+    prompt.updateSnapshot(&state)    // Update atomic snapshot
 }
 ```
 
-## 🧪 Testing
+This approach eliminates the need for mutexes while providing excellent performance and thread safety through atomic snapshots.
 
-All prompts include comprehensive test coverage with mock input/output:
+## Testing
+
+Tap includes comprehensive test coverage with built-in mock utilities:
 
 ```bash
 # Run all tests
 go test ./...
 
-# Run with race detection
+# Test with race detection
 go test -race ./...
 
-# Run specific package tests
+# Test specific packages
 go test ./prompts -v
+go test ./core -v
 ```
 
-## 📁 Project Structure
+### Mock Testing Example
 
-```
-go/
-├── README.md
-├── go.mod
-├── go.sum
-├── LICENSE
-├── examples/
-│   ├── confirm/
-│   │   └── main.go
-│   ├── multiple/
-│   │   ├── demo.tape
-│   │   └── main.go
-│   ├── progress/
-│   │   └── main.go
-│   ├── select/
-│   │   └── main.go
-│   └── text/
-│       └── main.go
-├── core/                 # Core prompt engine (unstyled)
-│   ├── confirm.go
-│   ├── confirm_test.go
-│   ├── mock.go
-│   ├── prompt.go
-│   ├── prompt_test.go
-│   ├── select.go
-│   ├── select_test.go
-│   ├── text.go
-│   ├── text_test.go
-│   └── types.go
-├── prompts/              # Styled prompts and primitives
-│   ├── box.go
-│   ├── box_test.go
-│   ├── confirm.go
-│   ├── confirm_test.go
-│   ├── messages.go
-│   ├── messages_test.go
-│   ├── progress.go
-│   ├── progress_test.go
-│   ├── select.go
-│   ├── select_test.go
-│   ├── symbols.go
-│   ├── text.go
-│   ├── text_test.go
-│   └── types.go
-└── terminal/
-	└── terminal.go
+```go
+func TestTextPrompt(t *testing.T) {
+    mockInput := core.NewMockReader()
+    mockOutput := core.NewMockWriter()
+
+    // Simulate user typing "hello" and pressing enter
+    mockInput.SendString("hello")
+    mockInput.SendKey("return")
+
+    result := prompts.Text(prompts.TextOptions{
+        Message: "Enter text:",
+        Input:   mockInput,
+        Output:  mockOutput,
+    })
+
+    assert.Equal(t, "hello", result)
+}
 ```
 
-## 🤝 Contributing
+## Examples
 
-We welcome contributions! This project is in active development and there's lots to build.
+Explore working examples in the [`examples/`](examples/) directory:
+
+```bash
+# Try different prompt types
+go run examples/text/main.go      # Text input with validation
+go run examples/confirm/main.go   # Yes/No confirmations
+go run examples/select/main.go    # Single selection menus
+go run examples/progress/main.go  # Progress bars and status
+go run examples/multiple/main.go  # Complete workflow example
+```
+
+Each example demonstrates different features and can serve as starting points for your applications.
+
+## Development Status
+
+Tap is in **active development**. Core functionality is stable and tested, but APIs may evolve. Current status:
+
+- ✅ **Stable**: Text, Confirm, Select prompts with full styling
+- ✅ **Stable**: Progress bars and message primitives
+- ✅ **Stable**: Event loop architecture and terminal management
+- 🔄 **In Progress**: Additional prompt types and enhanced styling
+- 📋 **Planned**: Documentation site, themes, and advanced features
+
+## Contributing
+
+Contributions welcome! Areas where help is needed:
+
+- **New Prompt Types** - Multi-select, password, autocomplete
+- **Enhanced Styling** - Themes, custom symbols, color schemes
+- **Documentation** - API docs, tutorials, more examples
+- **Testing** - Cross-platform testing, edge cases, performance
+- **Bug Reports** - Issues with keyboard handling or rendering
 
 ### Development Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/yarlson/tap.git
 cd tap
-
-# Run tests
-go test ./...
-
-# Try examples
-go run examples/text/main.go
-go run examples/confirm/main.go
-go run examples/select/main.go
-go run examples/progress/main.go
-go run examples/multiple/main.go
+go test ./...                    # Run tests
+go run examples/text/main.go     # Try examples
 ```
 
-### What Needs Help
+Please follow Go best practices, maintain test coverage above 80%, and use the event-driven architecture patterns established in the codebase.
 
-- **New Prompt Types**: Multi-Select, Password, Autocomplete
-- **Enhanced Styling**: Better color support, themes, custom symbols
-- **Documentation**: More examples, API documentation, tutorials
-- **Testing**: Edge cases, cross-platform testing, performance tests
-- **Bug Fixes**: Race conditions, rendering issues, keyboard handling
-
-### Coding Standards
-
-- Follow Go best practices and `gofmt` formatting
-- Maintain test coverage above 80%
-- Use event-driven architecture (no mutexes/atomics)
-- Write clear, self-documenting code
-- Add examples for new features
-
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **[Clack](https://clack.cc/)** - The original TypeScript library that inspired this project
 - **[@eiannone/keyboard](https://github.com/eiannone/keyboard)** - Cross-platform keyboard input for Go
 - The Go community for excellent tooling and libraries
 
-## 🔗 Links
+## Links
 
-- **Original Clack**: https://clack.cc/
-- **TypeScript Source**: https://github.com/bombshell-dev/clack
-- **Go Port Issues**: https://github.com/yarlson/tap/issues
-- **Documentation**: Coming soon!
+- **Documentation**: [Package docs on pkg.go.dev](https://pkg.go.dev/github.com/yarlson/tap)
+- **Original Clack**: [clack.cc](https://clack.cc/)
+- **Issues & Feature Requests**: [GitHub Issues](https://github.com/yarlson/tap/issues)
+- **Examples**: [`examples/` directory](examples/)
 
 ---
 
-Made with ❤️ for the Go community. Building interactive CLIs shouldn't be so hard!
+_Making interactive CLI development effortless in Go._ 🚀
