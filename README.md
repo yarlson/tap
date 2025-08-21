@@ -31,6 +31,7 @@ Clack is a library that makes building interactive command-line applications eff
 - ✅ **Text Input** - Beautifully styled text prompts with symbols, bars, placeholders, and error states
 - ✅ **Confirm** - Styled confirmation prompts with radio button interface
 - ✅ **Select** - Styled selection prompts with radio buttons, hints, and color-coded options
+- ✅ **Progress Bar** - Animated progress with messages and final states
 - ✅ **Symbols & Styling** - Unicode symbols, ANSI colors, and consistent visual design
 
 ### Still To Come
@@ -39,7 +40,6 @@ Clack is a library that makes building interactive command-line applications eff
 - 🔄 **Multi-Select** - Multiple selection from a list
 - 🔄 **Autocomplete** - Text input with autocomplete suggestions
 - 🔄 **Spinner** - Loading indicators for long-running operations
-- 🔄 **Progress Bar** - Visual progress indicators
 - 🔄 **Group** - Grouped prompts for complex workflows
 - 🔄 **Note/Log** - Informational messages and logging utilities
 - 🔄 **Box** - Styled message boxes
@@ -120,6 +120,29 @@ proceed := prompts.Confirm(prompts.ConfirmOptions{
 })
 ```
 
+### Progress Bar
+
+```go
+// Progress bar with animated frames and messages
+prog := prompts.NewProgress(prompts.ProgressOptions{
+    Style:  "heavy",   // "light", "heavy", or "block"
+    Max:    100,        // total units of work
+    Size:   40,         // bar width in characters
+    Output: term.Writer, // implements prompts.Writer
+})
+
+prog.Start("Processing...")
+
+// Update progress and optionally the message
+for i := 0; i <= 100; i += 10 {
+    time.Sleep(200 * time.Millisecond)
+    prog.Advance(10, fmt.Sprintf("Processing... %d%%", i))
+}
+
+// Stop with final status. code: 0=success, 1=cancel, other=error
+prog.Stop("Done!", 0)
+```
+
 ## 🏗️ Architecture
 
 Tap follows a clean, event-driven architecture:
@@ -178,6 +201,7 @@ tap/
     ├── text/
     ├── confirm/
     ├── select/
+    ├── progress/
     └── multiple/
 ```
 
@@ -199,6 +223,7 @@ go test ./...
 go run examples/text/main.go
 go run examples/confirm/main.go
 go run examples/select/main.go
+go run examples/progress/main.go
 go run examples/multiple/main.go
 ```
 
