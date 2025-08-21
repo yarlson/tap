@@ -100,6 +100,7 @@ func main() {
 	}
 
 	// Final prompt: If confirmed, ask for final message preference
+	var detailed bool
 	if confirmed {
 		styleRes := prompts.Confirm(prompts.ConfirmOptions{
 			Message:      "Display summary in detailed format?",
@@ -115,7 +116,7 @@ func main() {
 			return
 		}
 
-		detailed, ok := styleRes.(bool)
+		detailed, ok = styleRes.(bool)
 		if !ok {
 			fmt.Printf("Unexpected style result: %#v\r\n", styleRes)
 			return
@@ -144,5 +145,17 @@ func main() {
 		fmt.Printf("Thanks for trying out the Tap prompts library! 🎉\r\n")
 	} else {
 		fmt.Printf("\r\nNo problem! Thanks for trying the example, %s! 👋\r\n", name)
+	}
+
+	// Print all entered responses
+	fmt.Print("\r\n" + strings.Repeat("-", 30) + "\r\n")
+	fmt.Printf("📝 ALL RESPONSES:\r\n")
+	fmt.Print(strings.Repeat("-", 30) + "\r\n")
+	fmt.Printf("Name: %s\r\n", name)
+	fmt.Printf("Language: %s\r\n", language)
+	fmt.Printf("Experience: %s years\r\n", experience)
+	fmt.Printf("Show summary: %t\r\n", confirmed)
+	if confirmed {
+		fmt.Printf("Detailed format: %t\r\n", detailed)
 	}
 }

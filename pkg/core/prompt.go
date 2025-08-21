@@ -282,7 +282,9 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 	if alias := getMovementAlias(key.Name); !p.track && alias != "" {
 		p.Emit("cursor", alias)
 	}
-	if char != "" && (strings.ToLower(char) == "y" || strings.ToLower(char) == "n") {
+
+	hasConfirmSubscribers := len(p.subscribers["confirm"]) > 0 || len(p.preSubs["confirm"]) > 0
+	if char != "" && (strings.ToLower(char) == "y" || strings.ToLower(char) == "n") && hasConfirmSubscribers {
 		val := strings.ToLower(char) == "y"
 		p.Emit("confirm", val)
 		s.Value = val
