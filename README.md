@@ -74,15 +74,15 @@ func main() {
     // Text input
     name := prompts.Text(prompts.TextOptions{
         Message: "What's your name?",
-        Input:   term,
-        Output:  term,
+        Input:   term.Reader,
+        Output:  term.Writer,
     })
 
     // Confirmation
     confirmed := prompts.Confirm(prompts.ConfirmOptions{
         Message: fmt.Sprintf("Hello %s! Continue?", name),
-        Input:   term,
-        Output:  term,
+        Input:   term.Reader,
+        Output:  term.Writer,
     })
 
     if confirmed.(bool) {
@@ -105,8 +105,8 @@ email := prompts.Text(prompts.TextOptions{
         }
         return nil
     },
-    Input:  term,
-    Output: term,
+    Input:  term.Reader,
+    Output: term.Writer,
 })
 
 // Confirmation with custom labels
@@ -115,8 +115,8 @@ proceed := prompts.Confirm(prompts.ConfirmOptions{
     Active:       "Deploy",
     Inactive:     "Cancel",
     InitialValue: false,
-    Input:        term,
-    Output:       term,
+    Input:        term.Reader,
+    Output:       term.Writer,
 })
 ```
 
