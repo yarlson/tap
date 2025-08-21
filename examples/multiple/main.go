@@ -33,9 +33,8 @@ func main() {
 	}
 	defer term.Close()
 
-	// Welcome message
-	fmt.Printf("🚀 Welcome to the Multiple Prompts Example!\r\n")
-	fmt.Printf("This demonstrates a sequence of prompts building on each other.\r\n\r\n")
+	// Intro using messages primitive
+	prompts.Intro("🚀 Multiple Prompts Example", prompts.MessageOptions{Output: term.Writer})
 
 	// First prompt: Get user's name
 	nameRes := prompts.Text(prompts.TextOptions{
@@ -46,7 +45,7 @@ func main() {
 	})
 
 	if core.IsCancel(nameRes) {
-		fmt.Printf("Operation canceled.\r\n")
+		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
 		return
 	}
 
@@ -66,7 +65,7 @@ func main() {
 	})
 
 	if core.IsCancel(langRes) {
-		fmt.Printf("Operation canceled.\r\n")
+		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
 		return
 	}
 
@@ -94,7 +93,7 @@ func main() {
 	})
 
 	if core.IsCancel(projectRes) {
-		fmt.Printf("Operation canceled.\r\n")
+		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
 		return
 	}
 
@@ -114,7 +113,7 @@ func main() {
 	})
 
 	if core.IsCancel(expRes) {
-		fmt.Printf("Operation canceled.\r\n")
+		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
 		return
 	}
 
@@ -133,7 +132,7 @@ func main() {
 	})
 
 	if core.IsCancel(confirmRes) {
-		fmt.Printf("Operation canceled.\r\n")
+		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
 		return
 	}
 
@@ -145,7 +144,7 @@ func main() {
 
 	var detailed bool
 	if !confirmed {
-		fmt.Printf("\r\nNo problem! Thanks for trying the example, %s! 👋\r\n", name)
+		prompts.Outro(fmt.Sprintf("No problem! Thanks for trying the example, %s! 👋", name), prompts.MessageOptions{Output: term.Writer})
 		return
 	}
 
@@ -160,7 +159,7 @@ func main() {
 	})
 
 	if core.IsCancel(styleRes) {
-		fmt.Printf("Operation canceled.\r\n")
+		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
 		return
 	}
 
@@ -216,6 +215,5 @@ func main() {
 		fmt.Printf("%s • %s • %s • %s years experience\r\n", name, language, getProjectLabel(projectType), experience)
 	}
 
-	fmt.Print(strings.Repeat("=", 50) + "\r\n")
-	fmt.Printf("Thanks for trying out the Tap prompts library! 🎉\r\n")
+	prompts.Outro("Thanks for trying out the Tap prompts library! 🎉", prompts.MessageOptions{Output: term.Writer})
 }

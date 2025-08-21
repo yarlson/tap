@@ -11,8 +11,9 @@ const (
 	StepSubmit = "◇"
 
 	// Bar symbols
-	Bar    = "│"
-	BarEnd = "└"
+	Bar      = "│"
+	BarStart = "┌"
+	BarEnd   = "└"
 
 	// Radio symbols
 	RadioActive   = "●"
