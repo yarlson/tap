@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/eiannone/keyboard"
 	"github.com/yarlson/tap/pkg/core"
@@ -43,6 +44,20 @@ func New() (*Terminal, error) {
 
 	// Keyboard input handling goroutine
 	go func() {
+		start := time.Now()
+		var escPending bool
+		var escStarted time.Time
+		var escPrefix rune // 0, '[' or 'O'
+		var escBuf []rune
+		// Window to assemble ESC-based sequences (keep small to reduce latency)
+		const escWindow = 10 * time.Millisecond
+		var escTimer *time.Timer
+		stopEscTimer := func() {
+			if escTimer != nil {
+				escTimer.Stop()
+				escTimer = nil
+			}
+		}
 		for {
 			select {
 			case <-stop:
@@ -59,6 +74,83 @@ func New() (*Terminal, error) {
 			name := ""
 			ctrl := false
 
+			// If we are assembling an escape sequence from a previous ESC
+			if escPending {
+				// If the library already decoded an arrow, use it immediately
+				if key == keyboard.KeyArrowUp || key == keyboard.KeyArrowDown || key == keyboard.KeyArrowLeft || key == keyboard.KeyArrowRight {
+					switch key {
+					case keyboard.KeyArrowUp:
+						name = "up"
+					case keyboard.KeyArrowDown:
+						name = "down"
+					case keyboard.KeyArrowLeft:
+						name = "left"
+					case keyboard.KeyArrowRight:
+						name = "right"
+					}
+					escPending = false
+					escPrefix = 0
+					escBuf = nil
+					k := core.Key{Name: name, Ctrl: false}
+					reader.emit("", k)
+					continue
+				}
+				// First follow-up may be '[' or 'O'
+				if escPrefix == 0 && (r == '[' || r == 'O') {
+					escPrefix = r
+					escBuf = append(escBuf, r)
+					continue
+				}
+				// If we have a prefix, map final byte
+				if escPrefix != 0 && (r == 'A' || r == 'B' || r == 'C' || r == 'D') {
+					switch r {
+					case 'A':
+						name = "up"
+					case 'B':
+						name = "down"
+					case 'C':
+						name = "right"
+					case 'D':
+						name = "left"
+					}
+					// Clear pending and emit arrow
+					escPending = false
+					escPrefix = 0
+					escBuf = nil
+					char = ""
+					stopEscTimer()
+					k := core.Key{Name: name, Ctrl: false}
+					reader.emit(char, k)
+					continue
+				}
+				// Timeout or unrelated key: if we saw a prefix, swallow; if not, emit escape
+				if time.Since(escStarted) >= escWindow || (escPrefix == 0 && r != '[' && r != 'O') {
+					if escPrefix == 0 && len(escBuf) == 0 {
+						// Plain ESC
+						escPending = false
+						kEsc := core.Key{Name: "escape", Ctrl: false}
+						stopEscTimer()
+						reader.emit("", kEsc)
+						// Fall through to process current event below
+					} else {
+						// Incomplete CSI/SS3 sequence: treat as a horizontal move to avoid cancel
+						escPending = false
+						escDir := "right"
+						kMv := core.Key{Name: escDir, Ctrl: false}
+						stopEscTimer()
+						reader.emit("", kMv)
+					}
+					escPrefix = 0
+					escBuf = nil
+				} else {
+					// Continue waiting for completion
+					if r != 0 {
+						escBuf = append(escBuf, r)
+					}
+					continue
+				}
+			}
+
 			switch key {
 			case keyboard.KeyArrowUp:
 				name = "up"
@@ -73,10 +165,42 @@ func New() (*Terminal, error) {
 			case keyboard.KeyBackspace, keyboard.KeyBackspace2:
 				name = "backspace"
 			case keyboard.KeyEsc:
-				if char == "" {
-					char = "escape"
+				// Some terminals emit a stray ESC on startup; ignore it within a short window
+				if time.Since(start) < 100*time.Millisecond {
+					continue
 				}
-				name = "escape"
+				// Begin ESC sequence collection; do not emit yet
+				escPending = true
+				escStarted = time.Now()
+				escPrefix = 0
+				escBuf = nil
+				// In some terminals, the ESC event carries '[' already
+				if r == '[' || r == 'O' {
+					escPrefix = r
+					escBuf = append(escBuf, r)
+				}
+				// Arm timer to emit fallback without needing another key event
+				stopEscTimer()
+				escTimer = time.AfterFunc(escWindow, func() {
+					// Timer callback runs concurrently; emit based on current pending state
+					if !escPending {
+						return
+					}
+					if escPrefix == 0 && len(escBuf) == 0 {
+						// Plain Escape
+						kEsc := core.Key{Name: "escape", Ctrl: false}
+						reader.emit("", kEsc)
+					} else {
+						// Incomplete sequence -> treat as right
+						kMv := core.Key{Name: "right", Ctrl: false}
+						reader.emit("", kMv)
+					}
+					escPending = false
+					escPrefix = 0
+					escBuf = nil
+					stopEscTimer()
+				})
+				continue
 			case keyboard.KeyCtrlC:
 				char = "\x03"
 				name = "c"
@@ -126,7 +250,7 @@ func (t *Terminal) Close() {
 	}
 }
 
-func (r *Reader) Read(p []byte) (int, error) { return 0, nil }
+func (r *Reader) Read(_ []byte) (int, error) { return 0, nil }
 
 func (r *Reader) On(event string, handler func(string, core.Key)) {
 	r.mu.Lock()
