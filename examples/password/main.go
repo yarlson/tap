@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/yarlson/tap/core"
+	"github.com/yarlson/tap/prompts"
 	"github.com/yarlson/tap/terminal"
 )
 
@@ -15,9 +16,8 @@ func main() {
 	}
 	defer term.Close()
 
-	res := core.Password(core.PasswordOptions{
+	res := prompts.Password(prompts.PasswordOptions{
 		Message:      "Enter password:",
-		Placeholder:  "your secret",
 		DefaultValue: "",
 		Input:        term.Reader,
 		Output:       term.Writer,

@@ -18,6 +18,16 @@ type TextOptions struct {
 	Output       core.Writer
 }
 
+// PasswordOptions defines options for styled password prompt
+type PasswordOptions struct {
+	Message      string
+	DefaultValue string
+	InitialValue string
+	Validate     func(string) error
+	Input        core.Reader
+	Output       core.Writer
+}
+
 // ConfirmOptions defines options for styled confirm prompt
 type ConfirmOptions struct {
 	Message      string
