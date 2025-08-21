@@ -1,0 +1,229 @@
+# 🚀 Tap
+
+**Tap** is a Go port of the popular TypeScript [Clack](https://clack.cc/) library for building beautiful, interactive command-line applications.
+
+> ⚠️ **Heavy Development**: This project is currently in heavy development. APIs may change, and some features are still being implemented. Use with caution in production environments.
+
+## 🎯 About
+
+Clack is a library that makes building interactive command-line applications effortless with beautiful, minimal, and opinionated CLI prompts. Tap brings this elegant experience to the Go ecosystem while maintaining the same design philosophy and user experience.
+
+## ✅ What's Ported
+
+### Core Functionality
+
+- ✅ **Event-driven prompt system** - Complete with proper state management and event loop architecture
+- ✅ **Terminal management** - Raw terminal mode, keyboard input handling, and cursor control
+- ✅ **Mock testing utilities** - Full test coverage with mock input/output for reliable testing
+
+### Prompts (Unstyled - Core Package)
+
+- ✅ **Text Input** - Single-line text input with cursor navigation, validation, and default values
+- ✅ **Confirm** - Yes/No prompts with keyboard navigation
+
+### Prompts (Styled - Prompts Package)
+
+- ✅ **Text Input** - Beautifully styled text prompts with symbols, bars, placeholders, and error states
+- ✅ **Confirm** - Styled confirmation prompts with radio button interface
+- ✅ **Symbols & Styling** - Unicode symbols, ANSI colors, and consistent visual design
+
+### Still To Come
+
+- 🔄 **Password Input** - Masked text input
+- 🔄 **Select** - Single selection from a list
+- 🔄 **Multi-Select** - Multiple selection from a list
+- 🔄 **Autocomplete** - Text input with autocomplete suggestions
+- 🔄 **Spinner** - Loading indicators for long-running operations
+- 🔄 **Progress Bar** - Visual progress indicators
+- 🔄 **Group** - Grouped prompts for complex workflows
+- 🔄 **Note/Log** - Informational messages and logging utilities
+- 🔄 **Box** - Styled message boxes
+
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+go get github.com/yarlson/tap
+```
+
+### Basic Usage
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/yarlson/tap/pkg/prompts"
+    "github.com/yarlson/tap/pkg/terminal"
+)
+
+func main() {
+    // Initialize terminal
+    term, err := terminal.New()
+    if err != nil {
+        panic(err)
+    }
+    defer term.Close()
+
+    // Text input
+    name := prompts.Text(prompts.TextOptions{
+        Message: "What's your name?",
+        Input:   term,
+        Output:  term,
+    })
+
+    // Confirmation
+    confirmed := prompts.Confirm(prompts.ConfirmOptions{
+        Message: fmt.Sprintf("Hello %s! Continue?", name),
+        Input:   term,
+        Output:  term,
+    })
+
+    if confirmed.(bool) {
+        fmt.Println("Let's go! 🎉")
+    }
+}
+```
+
+### Advanced Features
+
+```go
+// Text with validation and default value
+email := prompts.Text(prompts.TextOptions{
+    Message:      "Enter your email:",
+    Placeholder:  "user@example.com",
+    DefaultValue: "anonymous@example.com",
+    Validate: func(input string) error {
+        if !strings.Contains(input, "@") {
+            return errors.New("Please enter a valid email")
+        }
+        return nil
+    },
+    Input:  term,
+    Output: term,
+})
+
+// Confirmation with custom labels
+proceed := prompts.Confirm(prompts.ConfirmOptions{
+    Message:      "Deploy to production?",
+    Active:       "Deploy",
+    Inactive:     "Cancel",
+    InitialValue: false,
+    Input:        term,
+    Output:       term,
+})
+```
+
+## 🏗️ Architecture
+
+Tap follows a clean, event-driven architecture:
+
+- **`pkg/core`** - Core prompt engine with unstyled, functional prompts
+- **`pkg/prompts`** - Beautifully styled prompts built on top of core
+- **`pkg/terminal`** - Terminal management and keyboard input handling
+
+### Event Loop Design
+
+Tap uses a pure event loop architecture (no mutexes or atomic operations) for excellent performance and race-condition-free operation:
+
+```go
+// Events flow through a single event loop
+for event := range prompt.events {
+    event(&state)           // Update state
+    prompt.render(&state)   // Render changes
+    prompt.updateSnapshot(&state) // Update atomic snapshot
+}
+```
+
+## 🧪 Testing
+
+All prompts include comprehensive test coverage with mock input/output:
+
+```bash
+# Run all tests
+go test ./...
+
+# Run with race detection
+go test -race ./...
+
+# Run specific package tests
+go test ./pkg/prompts -v
+```
+
+## 📁 Project Structure
+
+```
+tap/
+├── pkg/
+│   ├── core/           # Core prompt engine (unstyled)
+│   │   ├── prompt.go   # Main prompt implementation
+│   │   ├── text.go     # Text input prompt
+│   │   ├── confirm.go  # Confirmation prompt
+│   │   └── mock.go     # Testing utilities
+│   ├── prompts/        # Styled prompts
+│   │   ├── text.go     # Styled text input
+│   │   ├── confirm.go  # Styled confirmation
+│   │   └── symbols.go  # Unicode symbols & colors
+│   └── terminal/       # Terminal management
+│       └── terminal.go # Keyboard input & raw mode
+└── examples/           # Usage examples
+    ├── text/
+    └── confirm/
+```
+
+## 🤝 Contributing
+
+We welcome contributions! This project is in active development and there's lots to build.
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yarlson/tap.git
+cd tap
+
+# Run tests
+go test ./...
+
+# Try examples
+go run examples/text/main.go
+go run examples/confirm/main.go
+```
+
+### What Needs Help
+
+- **New Prompt Types**: Select, Multi-Select, Password, Autocomplete
+- **Enhanced Styling**: Better color support, themes, custom symbols
+- **Documentation**: More examples, API documentation, tutorials
+- **Testing**: Edge cases, cross-platform testing, performance tests
+- **Bug Fixes**: Race conditions, rendering issues, keyboard handling
+
+### Coding Standards
+
+- Follow Go best practices and `gofmt` formatting
+- Maintain test coverage above 80%
+- Use event-driven architecture (no mutexes/atomics)
+- Write clear, self-documenting code
+- Add examples for new features
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **[Clack](https://clack.cc/)** - The original TypeScript library that inspired this project
+- **[@eiannone/keyboard](https://github.com/eiannone/keyboard)** - Cross-platform keyboard input for Go
+- The Go community for excellent tooling and libraries
+
+## 🔗 Links
+
+- **Original Clack**: https://clack.cc/
+- **TypeScript Source**: https://github.com/bombshell-dev/clack
+- **Go Port Issues**: https://github.com/yarlson/tap/issues
+- **Documentation**: Coming soon!
+
+---
+
+Made with ❤️ for the Go community. Building interactive CLIs shouldn't be so hard!
