@@ -79,7 +79,7 @@ func Text(opts TextOptions) any {
 				return result
 
 			default:
-				return title + cyan(Bar) + "  " + displayInput + "\n" + cyan(BarEnd) + "\n"
+				return title + cyan(Bar) + "  " + displayInput + "\n" + cyan(BarEnd)
 			}
 		},
 	})

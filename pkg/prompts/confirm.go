@@ -53,7 +53,7 @@ func Confirm(opts ConfirmOptions) any {
 				inactiveOption = green(RadioActive) + " " + inactive
 			}
 
-			return title + cyan(Bar) + "  " + activeOption + " " + dim("/") + " " + inactiveOption + "\n" + cyan(BarEnd) + "\n"
+			return title + cyan(Bar) + "  " + activeOption + " " + dim("/") + " " + inactiveOption + "\n" + cyan(BarEnd)
 		},
 	})
 

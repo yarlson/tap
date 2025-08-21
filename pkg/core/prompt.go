@@ -3,8 +3,12 @@ package core
 import (
 	"context"
 	"errors"
+	"os"
+	"regexp"
 	"strings"
 	"sync/atomic"
+
+	xterm "golang.org/x/term"
 )
 
 type PromptOptions struct {
@@ -427,18 +431,48 @@ func (p *Prompt) adoptPreSubscribers() {
 	}
 }
 
-// countLines counts the number of lines in a string
-func countLines(s string) int {
+// Strip ANSI sequences for width calculations
+var ansiRegexp = regexp.MustCompile("\x1b\\[[0-9;?]*[ -/]*[@-~]")
+
+// Detect terminal width; fall back to 80
+func getColumns() int {
+	fd := int(os.Stdout.Fd())
+	if cols, _, err := xterm.GetSize(fd); err == nil && cols > 0 {
+		return cols
+	}
+	return 80
+}
+
+// Printable width ignoring ANSI; rune-count approximation
+func visibleWidth(s string) int {
+	clean := ansiRegexp.ReplaceAllString(s, "")
+	return len([]rune(clean))
+}
+
+// Rows occupied by frame, accounting for soft-wrapping
+func countPhysicalLines(s string) int {
 	if s == "" {
 		return 0
 	}
-	lines := 1
-	for _, char := range s {
-		if char == '\n' {
-			lines++
-		}
+	cols := getColumns()
+	if cols <= 0 {
+		cols = 80
 	}
-	return lines
+
+	total := 0
+	// Split by hard newlines, then estimate wraps for each logical line
+	segments := strings.Split(s, "\n")
+	for _, line := range segments {
+		w := visibleWidth(line)
+		if w == 0 {
+			total += 1
+			continue
+		}
+		// rows = ceil(w / cols)
+		rows := (w-1)/cols + 1
+		total += rows
+	}
+	return total
 }
 
 // renderIfNeeded runs the render function, hides the cursor on the first frame,
@@ -478,7 +512,7 @@ func (p *Prompt) renderIfNeeded(st *promptState) {
 	}
 
 	st.PrevFrame = frame
-	st.PrevFrameLines = countLines(frame)
+	st.PrevFrameLines = countPhysicalLines(frame)
 }
 
 func (p *Prompt) shouldFinalize(state ClackState) bool {
