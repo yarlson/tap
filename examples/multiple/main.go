@@ -194,26 +194,38 @@ func main() {
 
 	profileProgress.Stop("Profile summary ready! 📋", 0)
 
-	// Display the summary after the progress completes
-	fmt.Print("\r\n" + strings.Repeat("=", 50) + "\r\n")
-	fmt.Printf("📋 PROFILE SUMMARY\r\n")
-	fmt.Print(strings.Repeat("=", 50) + "\r\n")
-
-	if detailed {
-		fmt.Printf("👤 Name: %s\r\n", name)
-		fmt.Printf("💻 Favorite Language: %s\r\n", language)
-		fmt.Printf("🚀 Project Type: %s\r\n", getProjectLabel(projectType))
-		fmt.Printf("📈 Experience Level: %s years\r\n", experience)
-		fmt.Printf("\r\n🎯 Profile Analysis:\r\n")
-		if experience == "0" || experience == "1" {
-			fmt.Printf("   You're just getting started with %s - keep learning!\r\n", language)
-		} else {
-			fmt.Printf("   Great! You have solid experience with %s.\r\n", language)
-		}
-		fmt.Printf("   %s development is a great choice!\r\n", getProjectLabel(projectType))
-	} else {
-		fmt.Printf("%s • %s • %s • %s years experience\r\n", name, language, getProjectLabel(projectType), experience)
-	}
+	// Display the summary after the progress completes using a box
+	prompts.Box(
+		func() string {
+			if detailed {
+				var b strings.Builder
+				fmt.Fprintf(&b, "👤 Name: %s\n", name)
+				fmt.Fprintf(&b, "💻 Favorite Language: %s\n", language)
+				fmt.Fprintf(&b, "🚀 Project Type: %s\n", getProjectLabel(projectType))
+				fmt.Fprintf(&b, "📈 Experience Level: %s years\n", experience)
+				fmt.Fprintf(&b, "\n🎯 Profile Analysis:\n")
+				if experience == "0" || experience == "1" {
+					fmt.Fprintf(&b, "   You're just getting started with %s - keep learning!\n", language)
+				} else {
+					fmt.Fprintf(&b, "   Great! You have solid experience with %s.\n", language)
+				}
+				fmt.Fprintf(&b, "   %s development is a great choice!", getProjectLabel(projectType))
+				return b.String()
+			}
+			return fmt.Sprintf("%s • %s • %s • %s years experience", name, language, getProjectLabel(projectType), experience)
+		}(),
+		"📋 PROFILE SUMMARY",
+		prompts.BoxOptions{
+			Output:         term.Writer,
+			Columns:        80,
+			WidthFraction:  1.0,
+			TitlePadding:   1,
+			ContentPadding: 1,
+			Rounded:        true,
+			IncludePrefix:  true,
+			FormatBorder:   prompts.GrayBorder,
+		},
+	)
 
 	prompts.Outro("Thanks for trying out the Tap prompts library! 🎉", prompts.MessageOptions{Output: term.Writer})
 }

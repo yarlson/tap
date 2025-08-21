@@ -2,8 +2,8 @@
 
 **Tap** is a Go port of the popular TypeScript [Clack](https://clack.cc/) library for building beautiful, interactive command-line applications.
 
-<div align="center">
-  <img src="assets/demo.gif" alt="Tap Demo" width="800">
+<div>
+  <img src="assets/demo.gif" alt="Tap Demo" width="1400">
 </div>
 
 > ⚠️ **Heavy Development**: This project is currently in heavy development. APIs may change, and some features are still being implemented. Use with caution in production environments.
@@ -32,6 +32,7 @@ Clack is a library that makes building interactive command-line applications eff
 - ✅ **Confirm** - Styled confirmation prompts with radio button interface
 - ✅ **Select** - Styled selection prompts with radio buttons, hints, and color-coded options
 - ✅ **Progress Bar** - Animated progress with messages and final states
+- ✅ **Box** - Styled message boxes with rounded/square borders, alignment, and auto-wrapping
 - ✅ **Symbols & Styling** - Unicode symbols, ANSI colors, and consistent visual design
 
 ### Still To Come
@@ -42,7 +43,6 @@ Clack is a library that makes building interactive command-line applications eff
 - 🔄 **Spinner** - Loading indicators for long-running operations
 - 🔄 **Group** - Grouped prompts for complex workflows
 - 🔄 **Note/Log** - Informational messages and logging utilities
-- 🔄 **Box** - Styled message boxes
 
 ## 🚀 Quick Start
 
@@ -182,27 +182,52 @@ go test ./pkg/prompts -v
 ## 📁 Project Structure
 
 ```
-tap/
-├── pkg/
-│   ├── core/           # Core prompt engine (unstyled)
-│   │   ├── prompt.go   # Main prompt implementation
-│   │   ├── text.go     # Text input prompt
-│   │   ├── confirm.go  # Confirmation prompt
-│   │   ├── select.go   # Selection prompt
-│   │   └── mock.go     # Testing utilities
-│   ├── prompts/        # Styled prompts
-│   │   ├── text.go     # Styled text input
-│   │   ├── confirm.go  # Styled confirmation
-│   │   ├── select.go   # Styled selection
-│   │   └── symbols.go  # Unicode symbols & colors
-│   └── terminal/       # Terminal management
-│       └── terminal.go # Keyboard input & raw mode
-└── examples/           # Usage examples
-    ├── text/
-    ├── confirm/
-    ├── select/
-    ├── progress/
-    └── multiple/
+go/
+├── README.md
+├── go.mod
+├── go.sum
+├── LICENSE
+├── examples/
+│   ├── confirm/
+│   │   └── main.go
+│   ├── multiple/
+│   │   ├── demo.tape
+│   │   └── main.go
+│   ├── progress/
+│   │   └── main.go
+│   ├── select/
+│   │   └── main.go
+│   └── text/
+│       └── main.go
+└── pkg/
+    ├── core/                 # Core prompt engine (unstyled)
+    │   ├── confirm.go
+    │   ├── confirm_test.go
+    │   ├── mock.go
+    │   ├── prompt.go
+    │   ├── prompt_test.go
+    │   ├── select.go
+    │   ├── select_test.go
+    │   ├── text.go
+    │   ├── text_test.go
+    │   └── types.go
+    ├── prompts/              # Styled prompts and primitives
+    │   ├── box.go
+    │   ├── box_test.go
+    │   ├── confirm.go
+    │   ├── confirm_test.go
+    │   ├── messages.go
+    │   ├── messages_test.go
+    │   ├── progress.go
+    │   ├── progress_test.go
+    │   ├── select.go
+    │   ├── select_test.go
+    │   ├── symbols.go
+    │   ├── text.go
+    │   ├── text_test.go
+    │   └── types.go
+    └── terminal/
+        └── terminal.go
 ```
 
 ## 🤝 Contributing

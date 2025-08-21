@@ -2,7 +2,7 @@ Output ../../assets/demo.gif
 
 Set Shell zsh
 Set FontSize 28
-Set Width 1200
+Set Width 1400
 Set Height 800
 
 Sleep 1s

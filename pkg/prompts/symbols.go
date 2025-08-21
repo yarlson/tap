@@ -11,9 +11,18 @@ const (
 	StepSubmit = "◇"
 
 	// Bar symbols
-	Bar      = "│"
-	BarStart = "┌"
-	BarEnd   = "└"
+	Bar           = "│"
+	BarH          = "─"
+	BarStart      = "┌"
+	BarStartRight = "┐"
+	BarEnd        = "└"
+	BarEndRight   = "┘"
+
+	// Corner symbols (rounded)
+	CornerTopLeft     = "╭"
+	CornerTopRight    = "╮"
+	CornerBottomLeft  = "╰"
+	CornerBottomRight = "╯"
 
 	// Radio symbols
 	RadioActive   = "●"
