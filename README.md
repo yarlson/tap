@@ -25,6 +25,7 @@ Building interactive CLI applications shouldn't be complex. Tap brings the elega
 **Core Components:**
 
 - **Text Input** - Single-line input with cursor navigation, validation, placeholders, and default values
+- **Password Input** - Masked text input for sensitive data
 - **Confirm** - Yes/No prompts with customizable labels and keyboard navigation
 - **Select** - Single selection from typed options with hints and color-coded display
 - **Progress Bar** - Animated progress indicators with multiple styles (light, heavy, block)
@@ -39,7 +40,6 @@ Building interactive CLI applications shouldn't be complex. Tap brings the elega
 
 ### 🔄 Coming Soon
 
-- **Password Input** - Masked text input for sensitive data
 - **Multi-Select** - Multiple selection from lists with checkboxes
 - **Autocomplete** - Text input with suggestion dropdown
 - **Spinner** - Loading indicators for long-running operations
@@ -122,6 +122,22 @@ email := prompts.Text(prompts.TextOptions{
     Input:  term.Reader,
     Output: term.Writer,
 })
+```
+### Password Input (masked)
+
+```go
+pwd := prompts.Password(prompts.PasswordOptions{
+    Message: "Enter your password:",
+    Input:   term.Reader,
+    Output:  term.Writer,
+})
+
+if core.IsCancel(pwd) {
+    prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer})
+    return
+}
+
+fmt.Printf("Password length: %d\n", len(pwd.(string)))
 ```
 
 ### Confirmation with Custom Labels
@@ -243,6 +259,7 @@ Explore working examples in the [`examples/`](examples/) directory:
 ```bash
 # Try different prompt types
 go run examples/text/main.go      # Text input with validation
+go run examples/password/main.go  # Password input (masked)
 go run examples/confirm/main.go   # Yes/No confirmations
 go run examples/select/main.go    # Single selection menus
 go run examples/progress/main.go  # Progress bars and status
@@ -265,7 +282,7 @@ Tap is in **active development**. Core functionality is stable and tested, but A
 
 Contributions welcome! Areas where help is needed:
 
-- **New Prompt Types** - Multi-select, password, autocomplete
+- **New Prompt Types** - Multi-select, autocomplete
 - **Enhanced Styling** - Themes, custom symbols, color schemes
 - **Documentation** - API docs, tutorials, more examples
 - **Testing** - Cross-platform testing, edge cases, performance
