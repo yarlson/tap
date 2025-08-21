@@ -3,7 +3,7 @@ package prompts
 import (
 	"strings"
 
-	"github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/tap/pkg/core"
 )
 
 // Text creates a styled text input prompt

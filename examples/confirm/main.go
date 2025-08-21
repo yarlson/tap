@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/yarlson/glack/pkg/core"
-	"github.com/yarlson/glack/pkg/prompts"
-	"github.com/yarlson/glack/pkg/terminal"
+	"github.com/yarlson/tap/pkg/core"
+	"github.com/yarlson/tap/pkg/prompts"
+	"github.com/yarlson/tap/pkg/terminal"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/tap/pkg/core"
 )
 
 func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {

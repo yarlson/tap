@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/eiannone/keyboard"
-	"github.com/yarlson/glack/pkg/core"
+	"github.com/yarlson/tap/pkg/core"
 )
 
 // Reader provides terminal input functionality.

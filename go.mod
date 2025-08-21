@@ -1,4 +1,4 @@
-module github.com/yarlson/glack
+module github.com/yarlson/tap
 
 go 1.24
 

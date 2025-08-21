@@ -1,6 +1,6 @@
 package prompts
 
-import "github.com/yarlson/glack/pkg/core"
+import "github.com/yarlson/tap/pkg/core"
 
 // TextOptions defines options for styled text prompt
 type TextOptions struct {
