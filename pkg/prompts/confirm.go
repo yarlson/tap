@@ -14,7 +14,7 @@ func Confirm(opts ConfirmOptions) any {
 	}
 
 	initial := opts.InitialValue
-	var lastPressed string
+	currentValue := initial
 
 	p := core.NewPrompt(core.PromptOptions{
 		Input:  opts.Input,
@@ -25,8 +25,8 @@ func Confirm(opts ConfirmOptions) any {
 			// Create title with symbol and message
 			title := gray(Bar) + "\n" + Symbol(s) + "  " + opts.Message + "\n"
 
-			// If we have a pressed key and we're submitting, show simplified version
-			if (s == core.StateSubmit || s == core.StateCancel) && lastPressed != "" {
+			// If we're submitting or canceling, show simplified version
+			if s == core.StateSubmit || s == core.StateCancel {
 				value := ""
 				if val, ok := p.ValueSnapshot().(bool); ok {
 					if val {
@@ -44,8 +44,6 @@ func Confirm(opts ConfirmOptions) any {
 				}
 			}
 
-			currentValue := initial
-
 			var activeOption, inactiveOption string
 			if currentValue {
 				activeOption = green(RadioActive) + " " + active
@@ -61,19 +59,13 @@ func Confirm(opts ConfirmOptions) any {
 
 	p.On("cursor", func(dir string) {
 		if dir == "left" || dir == "right" {
-			initial = !initial
-			p.SetValue(initial)
+			currentValue = !currentValue
+			p.SetValue(currentValue)
 		}
 	})
 
-	p.On("confirm", func(val bool) {
-		if val {
-			lastPressed = "y"
-		} else {
-			lastPressed = "n"
-		}
-	})
+	p.On("confirm", func(val bool) {})
 
-	p.SetValue(initial)
+	p.SetValue(currentValue)
 	return p.Prompt()
 }
