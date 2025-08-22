@@ -1,30 +1,20 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"strings"
+    "fmt"
+    "os"
+    "strings"
 
-	"github.com/yarlson/tap/core"
-	"github.com/yarlson/tap/prompts"
-	"github.com/yarlson/tap/terminal"
+    "github.com/yarlson/tap/tap"
 )
 
 func main() {
-	// Initialize terminal
-	t, err := terminal.New()
-	if err != nil {
-		fmt.Printf("Failed to initialize terminal: %v\n", err)
-		os.Exit(1)
-	}
-	defer t.Close()
-
 	fmt.Println("Styled Select Example")
 	fmt.Println("Use arrow keys (or hjkl) to navigate, Enter to select, Ctrl+C to cancel")
 	fmt.Println()
 
 	// Example 1: Color selection with hints
-	colors := []prompts.SelectOption[string]{
+    colors := []tap.SelectOption[string]{
 		{Value: "red", Label: "Red", Hint: "The color of passion and energy"},
 		{Value: "blue", Label: "Blue", Hint: "The color of calm and trust"},
 		{Value: "green", Label: "Green", Hint: "The color of nature and growth"},
@@ -32,14 +22,12 @@ func main() {
 		{Value: "purple", Label: "Purple", Hint: "The color of creativity and mystery"},
 	}
 
-	result := prompts.Select(prompts.SelectOptions[string]{
+    result := tap.Select(tap.SelectOptions[string]{
 		Message: "What's your favorite color?",
 		Options: colors,
-		Input:   t.Reader,
-		Output:  t.Writer,
 	})
 
-	if core.IsCancel(result) {
+    if tap.IsCancel(result) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}
@@ -56,7 +44,7 @@ func main() {
 	fmt.Println("\n" + strings.Repeat("─", 50))
 	fmt.Println("Framework Selection Example:")
 
-	frameworks := []prompts.SelectOption[string]{
+    frameworks := []tap.SelectOption[string]{
 		{Value: "react", Label: "React", Hint: "A JavaScript library for building user interfaces"},
 		{Value: "vue", Label: "Vue.js", Hint: "The Progressive JavaScript Framework"},
 		{Value: "angular", Label: "Angular", Hint: "Platform for building mobile and desktop web apps"},
@@ -65,15 +53,13 @@ func main() {
 	}
 
 	initialValue := "react"
-	result2 := prompts.Select(prompts.SelectOptions[string]{
+    result2 := tap.Select(tap.SelectOptions[string]{
 		Message:      "Which frontend framework do you prefer?",
 		Options:      frameworks,
 		InitialValue: &initialValue,
-		Input:        t.Reader,
-		Output:       t.Writer,
 	})
 
-	if core.IsCancel(result2) {
+    if tap.IsCancel(result2) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}
@@ -90,21 +76,19 @@ func main() {
 	fmt.Println("\n" + strings.Repeat("─", 50))
 	fmt.Println("Priority Selection Example:")
 
-	priorities := []prompts.SelectOption[int]{
+    priorities := []tap.SelectOption[int]{
 		{Value: 1, Label: "Low Priority", Hint: "Can be done when time permits"},
 		{Value: 2, Label: "Medium Priority", Hint: "Should be completed this week"},
 		{Value: 3, Label: "High Priority", Hint: "Needs attention today"},
 		{Value: 4, Label: "Critical", Hint: "Drop everything and do this now"},
 	}
 
-	result3 := prompts.Select(prompts.SelectOptions[int]{
+    result3 := tap.Select(tap.SelectOptions[int]{
 		Message: "What's the priority level for this task?",
 		Options: priorities,
-		Input:   t.Reader,
-		Output:  t.Writer,
 	})
 
-	if core.IsCancel(result3) {
+    if tap.IsCancel(result3) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}
@@ -121,20 +105,18 @@ func main() {
 	fmt.Println("\n" + strings.Repeat("─", 50))
 	fmt.Println("Simple Options Example:")
 
-	environments := []prompts.SelectOption[string]{
+    environments := []tap.SelectOption[string]{
 		{Value: "development"},
 		{Value: "staging"},
 		{Value: "production"},
 	}
 
-	result4 := prompts.Select(prompts.SelectOptions[string]{
+    result4 := tap.Select(tap.SelectOptions[string]{
 		Message: "Which environment to deploy to?",
 		Options: environments,
-		Input:   t.Reader,
-		Output:  t.Writer,
 	})
 
-	if core.IsCancel(result4) {
+    if tap.IsCancel(result4) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}

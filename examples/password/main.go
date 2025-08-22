@@ -1,29 +1,18 @@
 package main
 
 import (
-	"fmt"
+    "fmt"
 
-	"github.com/yarlson/tap/core"
-	"github.com/yarlson/tap/prompts"
-	"github.com/yarlson/tap/terminal"
+    "github.com/yarlson/tap/tap"
 )
 
 func main() {
-	term, err := terminal.New()
-	if err != nil {
-		fmt.Printf("init terminal: %v\r\n", err)
-		return
-	}
-	defer term.Close()
+    res := tap.Password(tap.PasswordOptions{
+        Message:      "Enter password:",
+        DefaultValue: "",
+    })
 
-	res := prompts.Password(prompts.PasswordOptions{
-		Message:      "Enter password:",
-		DefaultValue: "",
-		Input:        term.Reader,
-		Output:       term.Writer,
-	})
-
-	if core.IsCancel(res) {
+    if tap.IsCancel(res) {
 		fmt.Printf("Canceled\r\n")
 		return
 	}

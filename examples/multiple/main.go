@@ -1,13 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-	"time"
+    "fmt"
+    "strings"
+    "time"
 
-	"github.com/yarlson/tap/core"
-	"github.com/yarlson/tap/prompts"
-	"github.com/yarlson/tap/terminal"
+    "github.com/yarlson/tap/tap"
 )
 
 func getProjectLabel(projectType string) string {
@@ -26,26 +24,16 @@ func getProjectLabel(projectType string) string {
 }
 
 func main() {
-	term, err := terminal.New()
-	if err != nil {
-		fmt.Printf("init terminal: %v\r\n", err)
-		return
-	}
-	defer term.Close()
-
-	// Intro using messages primitive
-	prompts.Intro("🚀 Multiple Prompts Example", prompts.MessageOptions{Output: term.Writer})
+    tap.Intro("🚀 Multiple Prompts Example")
 
 	// First prompt: Get user's name
-	nameRes := prompts.Text(prompts.TextOptions{
-		Message:     "What's your name?",
-		Placeholder: "Enter your name...",
-		Input:       term.Reader,
-		Output:      term.Writer,
-	})
+    nameRes := tap.Text(tap.TextOptions{
+        Message:     "What's your name?",
+        Placeholder: "Enter your name...",
+    })
 
-	if core.IsCancel(nameRes) {
-		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
+    if tap.IsCancel(nameRes) {
+        tap.Cancel("Operation canceled.")
 		return
 	}
 
@@ -56,16 +44,14 @@ func main() {
 	}
 
 	// Second prompt: Get user's favorite programming language
-	langRes := prompts.Text(prompts.TextOptions{
+    langRes := tap.Text(tap.TextOptions{
 		Message:      fmt.Sprintf("Hi %s! What's your favorite programming language?", name),
 		Placeholder:  "e.g., Go, Python, JavaScript...",
 		DefaultValue: "Go",
-		Input:        term.Reader,
-		Output:       term.Writer,
 	})
 
-	if core.IsCancel(langRes) {
-		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
+    if tap.IsCancel(langRes) {
+        tap.Cancel("Operation canceled.")
 		return
 	}
 
@@ -76,7 +62,7 @@ func main() {
 	}
 
 	// Third prompt: Select project type
-	projectTypes := []prompts.SelectOption[string]{
+    projectTypes := []tap.SelectOption[string]{
 		{Value: "web", Label: "Web Application", Hint: "Frontend and backend web development"},
 		{Value: "mobile", Label: "Mobile App", Hint: "iOS and Android applications"},
 		{Value: "desktop", Label: "Desktop Application", Hint: "Cross-platform desktop software"},
@@ -85,15 +71,13 @@ func main() {
 		{Value: "data", Label: "Data Science/ML", Hint: "Analytics, machine learning, AI"},
 	}
 
-	projectRes := prompts.Select(prompts.SelectOptions[string]{
+    projectRes := tap.Select(tap.SelectOptions[string]{
 		Message: fmt.Sprintf("What type of %s projects do you work on?", language),
 		Options: projectTypes,
-		Input:   term.Reader,
-		Output:  term.Writer,
 	})
 
-	if core.IsCancel(projectRes) {
-		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
+    if tap.IsCancel(projectRes) {
+        tap.Cancel("Operation canceled.")
 		return
 	}
 
@@ -104,16 +88,14 @@ func main() {
 	}
 
 	// Fourth prompt: Get years of experience
-	expRes := prompts.Text(prompts.TextOptions{
+    expRes := tap.Text(tap.TextOptions{
 		Message:      "How many years of experience do you have with " + language + "?",
 		Placeholder:  "Enter number of years...",
 		DefaultValue: "1",
-		Input:        term.Reader,
-		Output:       term.Writer,
 	})
 
-	if core.IsCancel(expRes) {
-		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
+    if tap.IsCancel(expRes) {
+        tap.Cancel("Operation canceled.")
 		return
 	}
 
@@ -124,15 +106,13 @@ func main() {
 	}
 
 	// Fifth prompt: Confirm if they want to see a summary
-	confirmRes := prompts.Confirm(prompts.ConfirmOptions{
+    confirmRes := tap.Confirm(tap.ConfirmOptions{
 		Message:      "Would you like to see a summary of your information?",
 		InitialValue: true,
-		Input:        term.Reader,
-		Output:       term.Writer,
 	})
 
-	if core.IsCancel(confirmRes) {
-		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
+    if tap.IsCancel(confirmRes) {
+        tap.Cancel("Operation canceled.")
 		return
 	}
 
@@ -143,23 +123,21 @@ func main() {
 	}
 
 	var detailed bool
-	if !confirmed {
-		prompts.Outro(fmt.Sprintf("No problem! Thanks for trying the example, %s! 👋", name), prompts.MessageOptions{Output: term.Writer})
+    if !confirmed {
+        tap.Outro(fmt.Sprintf("No problem! Thanks for trying the example, %s! 👋", name))
 		return
 	}
 
 	// Sixth prompt: If confirmed, ask for final message preference
-	styleRes := prompts.Confirm(prompts.ConfirmOptions{
+    styleRes := tap.Confirm(tap.ConfirmOptions{
 		Message:      "Display summary in detailed format?",
 		Active:       "Detailed",
 		Inactive:     "Brief",
 		InitialValue: false,
-		Input:        term.Reader,
-		Output:       term.Writer,
 	})
 
-	if core.IsCancel(styleRes) {
-		prompts.Cancel("Operation canceled.", prompts.MessageOptions{Output: term.Writer})
+    if tap.IsCancel(styleRes) {
+        tap.Cancel("Operation canceled.")
 		return
 	}
 
@@ -170,11 +148,10 @@ func main() {
 	}
 
 	// Show progress bar while generating the summary
-	profileProgress := prompts.NewProgress(prompts.ProgressOptions{
+    profileProgress := tap.NewProgress(tap.ProgressOptions{
 		Style:  "heavy",
 		Max:    100,
 		Size:   45,
-		Output: term.Writer,
 	})
 
 	profileProgress.Start("Analyzing your responses...")
@@ -195,7 +172,7 @@ func main() {
 	profileProgress.Stop("Profile summary ready! 📋", 0)
 
 	// Display the summary after the progress completes using a box
-	prompts.Box(
+    tap.Box(
 		func() string {
 			if detailed {
 				var b strings.Builder
@@ -215,17 +192,16 @@ func main() {
 			return fmt.Sprintf("%s • %s • %s • %s years experience", name, language, getProjectLabel(projectType), experience)
 		}(),
 		"📋 PROFILE SUMMARY",
-		prompts.BoxOptions{
-			Output:         term.Writer,
+        tap.BoxOptions{
 			Columns:        80,
 			WidthFraction:  1.0,
 			TitlePadding:   1,
 			ContentPadding: 1,
 			Rounded:        true,
 			IncludePrefix:  true,
-			FormatBorder:   prompts.GrayBorder,
+            FormatBorder:   tap.GrayBorder,
 		},
 	)
 
-	prompts.Outro("Thanks for trying out the Tap prompts library! 🎉", prompts.MessageOptions{Output: term.Writer})
+    tap.Outro("Thanks for trying out the Tap prompts library! 🎉")
 }

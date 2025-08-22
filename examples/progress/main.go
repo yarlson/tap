@@ -1,34 +1,23 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"time"
+    "fmt"
+    "time"
 
-	"github.com/yarlson/tap/prompts"
-	"github.com/yarlson/tap/terminal"
+    "github.com/yarlson/tap/tap"
 )
 
 func main() {
-	// Initialize terminal
-	term, err := terminal.New()
-	if err != nil {
-		fmt.Printf("Failed to initialize terminal: %v\n", err)
-		os.Exit(1)
-	}
-	defer term.Close()
-
 	fmt.Println("Progress Bar Examples")
 	fmt.Println("This demonstrates different progress bar styles and behaviors")
 	fmt.Println()
 
 	// Example 1: File download simulation (heavy style)
 	fmt.Println("Example 1: File Download Simulation (Heavy Style)")
-	downloadProgress := prompts.NewProgress(prompts.ProgressOptions{
+    downloadProgress := tap.NewProgress(tap.ProgressOptions{
 		Style:  "heavy",
 		Max:    100,
 		Size:   40,
-		Output: term.Writer,
 	})
 
 	downloadProgress.Start("Downloading file...")
@@ -45,11 +34,10 @@ func main() {
 
 	// Example 2: Data processing (block style)
 	fmt.Println("Example 2: Data Processing (Block Style)")
-	processProgress := prompts.NewProgress(prompts.ProgressOptions{
+    processProgress := tap.NewProgress(tap.ProgressOptions{
 		Style:  "block",
 		Max:    50,
 		Size:   30,
-		Output: term.Writer,
 	})
 
 	processProgress.Start("Processing data...")
@@ -79,11 +67,10 @@ func main() {
 
 	// Example 3: Installation progress (light style)
 	fmt.Println("Example 3: Package Installation (Light Style)")
-	installProgress := prompts.NewProgress(prompts.ProgressOptions{
+    installProgress := tap.NewProgress(tap.ProgressOptions{
 		Style:  "light",
 		Max:    20,
 		Size:   50,
-		Output: term.Writer,
 	})
 
 	installProgress.Start("Installing packages...")
@@ -106,11 +93,10 @@ func main() {
 
 	// Example 4: Task with message updates (no progress advancement)
 	fmt.Println("Example 4: Task Status Updates")
-	statusProgress := prompts.NewProgress(prompts.ProgressOptions{
+    statusProgress := tap.NewProgress(tap.ProgressOptions{
 		Style:  "heavy",
 		Max:    10,
 		Size:   25,
-		Output: term.Writer,
 	})
 
 	statusProgress.Start("Initializing...")
@@ -141,11 +127,10 @@ func main() {
 
 	// Example 5: Demonstrate cancellation
 	fmt.Println("Example 5: Cancelled Task")
-	cancelProgress := prompts.NewProgress(prompts.ProgressOptions{
+    cancelProgress := tap.NewProgress(tap.ProgressOptions{
 		Style:  "heavy",
 		Max:    100,
 		Size:   35,
-		Output: term.Writer,
 	})
 
 	cancelProgress.Start("Running long task...")
@@ -162,11 +147,10 @@ func main() {
 
 	// Example 6: Error scenario
 	fmt.Println("Example 6: Task with Error")
-	errorProgress := prompts.NewProgress(prompts.ProgressOptions{
+    errorProgress := tap.NewProgress(tap.ProgressOptions{
 		Style:  "block",
 		Max:    10,
 		Size:   20,
-		Output: term.Writer,
 	})
 
 	errorProgress.Start("Attempting risky operation...")
