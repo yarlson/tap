@@ -336,4 +336,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-_Making interactive CLI development effortless in Go._ 🚀
+Built with ❤️ for developers who value simplicity and speed.
