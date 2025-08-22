@@ -1,11 +1,11 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "strings"
+	"fmt"
+	"os"
+	"strings"
 
-    "github.com/yarlson/tap"
+	"github.com/yarlson/tap"
 )
 
 func main() {
@@ -14,7 +14,7 @@ func main() {
 	fmt.Println()
 
 	// Example 1: Color selection with hints
-    colors := []tap.SelectOption[string]{
+	colors := []tap.SelectOption[string]{
 		{Value: "red", Label: "Red", Hint: "The color of passion and energy"},
 		{Value: "blue", Label: "Blue", Hint: "The color of calm and trust"},
 		{Value: "green", Label: "Green", Hint: "The color of nature and growth"},
@@ -22,12 +22,12 @@ func main() {
 		{Value: "purple", Label: "Purple", Hint: "The color of creativity and mystery"},
 	}
 
-    result := tap.Select(tap.SelectOptions[string]{
+	result := tap.Select(tap.SelectOptions[string]{
 		Message: "What's your favorite color?",
 		Options: colors,
 	})
 
-    if tap.IsCancel(result) {
+	if tap.IsCancel(result) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}
@@ -44,7 +44,7 @@ func main() {
 	fmt.Println("\n" + strings.Repeat("─", 50))
 	fmt.Println("Framework Selection Example:")
 
-    frameworks := []tap.SelectOption[string]{
+	frameworks := []tap.SelectOption[string]{
 		{Value: "react", Label: "React", Hint: "A JavaScript library for building user interfaces"},
 		{Value: "vue", Label: "Vue.js", Hint: "The Progressive JavaScript Framework"},
 		{Value: "angular", Label: "Angular", Hint: "Platform for building mobile and desktop web apps"},
@@ -53,13 +53,13 @@ func main() {
 	}
 
 	initialValue := "react"
-    result2 := tap.Select(tap.SelectOptions[string]{
+	result2 := tap.Select(tap.SelectOptions[string]{
 		Message:      "Which frontend framework do you prefer?",
 		Options:      frameworks,
 		InitialValue: &initialValue,
 	})
 
-    if tap.IsCancel(result2) {
+	if tap.IsCancel(result2) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}
@@ -76,19 +76,19 @@ func main() {
 	fmt.Println("\n" + strings.Repeat("─", 50))
 	fmt.Println("Priority Selection Example:")
 
-    priorities := []tap.SelectOption[int]{
+	priorities := []tap.SelectOption[int]{
 		{Value: 1, Label: "Low Priority", Hint: "Can be done when time permits"},
 		{Value: 2, Label: "Medium Priority", Hint: "Should be completed this week"},
 		{Value: 3, Label: "High Priority", Hint: "Needs attention today"},
 		{Value: 4, Label: "Critical", Hint: "Drop everything and do this now"},
 	}
 
-    result3 := tap.Select(tap.SelectOptions[int]{
+	result3 := tap.Select(tap.SelectOptions[int]{
 		Message: "What's the priority level for this task?",
 		Options: priorities,
 	})
 
-    if tap.IsCancel(result3) {
+	if tap.IsCancel(result3) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}
@@ -105,18 +105,18 @@ func main() {
 	fmt.Println("\n" + strings.Repeat("─", 50))
 	fmt.Println("Simple Options Example:")
 
-    environments := []tap.SelectOption[string]{
+	environments := []tap.SelectOption[string]{
 		{Value: "development"},
 		{Value: "staging"},
 		{Value: "production"},
 	}
 
-    result4 := tap.Select(tap.SelectOptions[string]{
+	result4 := tap.Select(tap.SelectOptions[string]{
 		Message: "Which environment to deploy to?",
 		Options: environments,
 	})
 
-    if tap.IsCancel(result4) {
+	if tap.IsCancel(result4) {
 		fmt.Println("Selection cancelled.")
 		os.Exit(1)
 	}

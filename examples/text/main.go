@@ -1,20 +1,20 @@
 package main
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/yarlson/tap"
+	"github.com/yarlson/tap"
 )
 
 func main() {
-    res := tap.Text(tap.TextOptions{
-        Message:      "Enter text:",
-        InitialValue: "initial",
-        DefaultValue: "anon",
-        Placeholder:  "Type something...",
-    })
+	res := tap.Text(tap.TextOptions{
+		Message:      "Enter text:",
+		InitialValue: "initial",
+		DefaultValue: "anon",
+		Placeholder:  "Type something...",
+	})
 
-    if tap.IsCancel(res) {
+	if tap.IsCancel(res) {
 		fmt.Printf("Canceled\r\n")
 		return
 	}

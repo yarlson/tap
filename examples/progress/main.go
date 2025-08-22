@@ -1,10 +1,10 @@
 package main
 
 import (
-    "fmt"
-    "time"
+	"fmt"
+	"time"
 
-    "github.com/yarlson/tap"
+	"github.com/yarlson/tap"
 )
 
 func main() {
@@ -14,10 +14,10 @@ func main() {
 
 	// Example 1: File download simulation (heavy style)
 	fmt.Println("Example 1: File Download Simulation (Heavy Style)")
-    downloadProgress := tap.NewProgress(tap.ProgressOptions{
-		Style:  "heavy",
-		Max:    100,
-		Size:   40,
+	downloadProgress := tap.NewProgress(tap.ProgressOptions{
+		Style: "heavy",
+		Max:   100,
+		Size:  40,
 	})
 
 	downloadProgress.Start("Downloading file...")
@@ -34,10 +34,10 @@ func main() {
 
 	// Example 2: Data processing (block style)
 	fmt.Println("Example 2: Data Processing (Block Style)")
-    processProgress := tap.NewProgress(tap.ProgressOptions{
-		Style:  "block",
-		Max:    50,
-		Size:   30,
+	processProgress := tap.NewProgress(tap.ProgressOptions{
+		Style: "block",
+		Max:   50,
+		Size:  30,
 	})
 
 	processProgress.Start("Processing data...")
@@ -67,10 +67,10 @@ func main() {
 
 	// Example 3: Installation progress (light style)
 	fmt.Println("Example 3: Package Installation (Light Style)")
-    installProgress := tap.NewProgress(tap.ProgressOptions{
-		Style:  "light",
-		Max:    20,
-		Size:   50,
+	installProgress := tap.NewProgress(tap.ProgressOptions{
+		Style: "light",
+		Max:   20,
+		Size:  50,
 	})
 
 	installProgress.Start("Installing packages...")
@@ -93,10 +93,10 @@ func main() {
 
 	// Example 4: Task with message updates (no progress advancement)
 	fmt.Println("Example 4: Task Status Updates")
-    statusProgress := tap.NewProgress(tap.ProgressOptions{
-		Style:  "heavy",
-		Max:    10,
-		Size:   25,
+	statusProgress := tap.NewProgress(tap.ProgressOptions{
+		Style: "heavy",
+		Max:   10,
+		Size:  25,
 	})
 
 	statusProgress.Start("Initializing...")
@@ -127,10 +127,10 @@ func main() {
 
 	// Example 5: Demonstrate cancellation
 	fmt.Println("Example 5: Cancelled Task")
-    cancelProgress := tap.NewProgress(tap.ProgressOptions{
-		Style:  "heavy",
-		Max:    100,
-		Size:   35,
+	cancelProgress := tap.NewProgress(tap.ProgressOptions{
+		Style: "heavy",
+		Max:   100,
+		Size:  35,
 	})
 
 	cancelProgress.Start("Running long task...")
@@ -147,10 +147,10 @@ func main() {
 
 	// Example 6: Error scenario
 	fmt.Println("Example 6: Task with Error")
-    errorProgress := tap.NewProgress(tap.ProgressOptions{
-		Style:  "block",
-		Max:    10,
-		Size:   20,
+	errorProgress := tap.NewProgress(tap.ProgressOptions{
+		Style: "block",
+		Max:   10,
+		Size:  20,
 	})
 
 	errorProgress.Start("Attempting risky operation...")

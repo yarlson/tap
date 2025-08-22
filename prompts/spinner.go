@@ -10,12 +10,12 @@ import (
 
 // SpinnerOptions configures the spinner behavior
 type SpinnerOptions struct {
-    Indicator     string   // "dots" (default) or "timer"
-    Frames        []string // custom frames; defaults to unicode spinner frames
+	Indicator     string   // "dots" (default) or "timer"
+	Frames        []string // custom frames; defaults to unicode spinner frames
 	Delay         time.Duration
 	Output        Writer
-    CancelMessage string
-    ErrorMessage  string
+	CancelMessage string
+	ErrorMessage  string
 }
 
 // Spinner represents an animated spinner
@@ -34,8 +34,8 @@ type Spinner struct {
 	lastFrameLength int
 	dotTick         int
 
-    ticker *time.Ticker
-    stopCh chan struct{}
+	ticker *time.Ticker
+	stopCh chan struct{}
 }
 
 // NewSpinner creates a new Spinner with defaults
@@ -216,10 +216,10 @@ func removeTrailingDots(in string) string {
 func formatTimer(start time.Time) string {
 	d := time.Since(start)
 	secs := int(d.Seconds())
-	min := secs / 60
+	m := secs / 60
 	sec := secs % 60
-	if min > 0 {
-		return fmt.Sprintf("[%dm %ds]", min, sec)
+	if m > 0 {
+		return fmt.Sprintf("[%dm %ds]", m, sec)
 	}
 	return fmt.Sprintf("[%ds]", sec)
 }

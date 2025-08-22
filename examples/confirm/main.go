@@ -1,18 +1,18 @@
 package main
 
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/yarlson/tap"
+	"github.com/yarlson/tap"
 )
 
 func main() {
-    res := tap.Confirm(tap.ConfirmOptions{
-        Message:      "Proceed?",
-        InitialValue: true,
-    })
+	res := tap.Confirm(tap.ConfirmOptions{
+		Message:      "Proceed?",
+		InitialValue: true,
+	})
 
-    if tap.IsCancel(res) {
+	if tap.IsCancel(res) {
 		fmt.Printf("Canceled\r\n")
 		return
 	}

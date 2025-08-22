@@ -1,12 +1,12 @@
 package tap
 
 import (
-    "sync"
-    "time"
+	"sync"
+	"time"
 
-    "github.com/yarlson/tap/core"
-    "github.com/yarlson/tap/prompts"
-    "github.com/yarlson/tap/terminal"
+	"github.com/yarlson/tap/core"
+	"github.com/yarlson/tap/prompts"
+	"github.com/yarlson/tap/terminal"
 )
 
 // Session owns a terminal and provides high-level prompt helpers
@@ -182,25 +182,25 @@ func Select[T any](opts SelectOptions[T]) any {
 	if s == nil {
 		return core.GetCancelSymbol()
 	}
-    items := make([]prompts.SelectOption[T], len(opts.Options))
-    for i, o := range opts.Options {
-        items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
-    }
-    return prompts.Select(prompts.SelectOptions[T]{
-        Message:      opts.Message,
-        Options:      items,
-        InitialValue: opts.InitialValue,
-        MaxItems:     opts.MaxItems,
-        Input:        s.term.Reader,
-        Output:       s.term.Writer,
-    })
+	items := make([]prompts.SelectOption[T], len(opts.Options))
+	for i, o := range opts.Options {
+		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
+	}
+	return prompts.Select(prompts.SelectOptions[T]{
+		Message:      opts.Message,
+		Options:      items,
+		InitialValue: opts.InitialValue,
+		MaxItems:     opts.MaxItems,
+		Input:        s.term.Reader,
+		Output:       s.term.Writer,
+	})
 }
 
 // SpinnerOptions mirrors prompts.SpinnerOptions but without Output.
 type SpinnerOptions struct {
 	Indicator     string
 	Frames        []string
-    Delay         time.Duration
+	Delay         time.Duration
 	CancelMessage string
 	ErrorMessage  string
 }
@@ -214,7 +214,7 @@ func (s *Session) NewSpinner(opts SpinnerOptions) *prompts.Spinner {
 		CancelMessage: opts.CancelMessage,
 		ErrorMessage:  opts.ErrorMessage,
 	}
-    po.Delay = opts.Delay
+	po.Delay = opts.Delay
 	return prompts.NewSpinner(po)
 }
 
@@ -292,40 +292,40 @@ func Cancel(message string) {
 type BoxAlignment = prompts.BoxAlignment
 
 type BoxOptions struct {
-    Columns        int
-    WidthFraction  float64
-    WidthAuto      bool
-    TitlePadding   int
-    ContentPadding int
-    TitleAlign     BoxAlignment
-    ContentAlign   BoxAlignment
-    Rounded        bool
-    IncludePrefix  bool
-    FormatBorder   func(string) string
+	Columns        int
+	WidthFraction  float64
+	WidthAuto      bool
+	TitlePadding   int
+	ContentPadding int
+	TitleAlign     BoxAlignment
+	ContentAlign   BoxAlignment
+	Rounded        bool
+	IncludePrefix  bool
+	FormatBorder   func(string) string
 }
 
 func (s *Session) Box(message string, title string, opts BoxOptions) {
-    prompts.Box(message, title, prompts.BoxOptions{
-        Output:         s.term.Writer,
-        Columns:        opts.Columns,
-        WidthFraction:  opts.WidthFraction,
-        WidthAuto:      opts.WidthAuto,
-        TitlePadding:   opts.TitlePadding,
-        ContentPadding: opts.ContentPadding,
-        TitleAlign:     opts.TitleAlign,
-        ContentAlign:   opts.ContentAlign,
-        Rounded:        opts.Rounded,
-        IncludePrefix:  opts.IncludePrefix,
-        FormatBorder:   opts.FormatBorder,
-    })
+	prompts.Box(message, title, prompts.BoxOptions{
+		Output:         s.term.Writer,
+		Columns:        opts.Columns,
+		WidthFraction:  opts.WidthFraction,
+		WidthAuto:      opts.WidthAuto,
+		TitlePadding:   opts.TitlePadding,
+		ContentPadding: opts.ContentPadding,
+		TitleAlign:     opts.TitleAlign,
+		ContentAlign:   opts.ContentAlign,
+		Rounded:        opts.Rounded,
+		IncludePrefix:  opts.IncludePrefix,
+		FormatBorder:   opts.FormatBorder,
+	})
 }
 
 func Box(message string, title string, opts BoxOptions) {
-    s := ensureDefault()
-    if s == nil {
-        return
-    }
-    s.Box(message, title, opts)
+	s := ensureDefault()
+	if s == nil {
+		return
+	}
+	s.Box(message, title, opts)
 }
 
 // Re-export common border formatters for convenience
