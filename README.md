@@ -53,6 +53,65 @@ go get github.com/yarlson/tap@latest
 
 ## Quick Start
 
+### Simpler API (no Input/Output plumbing)
+
+Use the high-level `tap` package to hide terminal handling and avoid passing `Input`/`Output` everywhere.
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/yarlson/tap/tap"
+)
+
+func main() {
+    // Use package-level helpers (auto-inits a session under the hood)
+    name := tap.Text(tap.TextOptions{Message: "What's your name?"})
+    if tap.IsCancel(name) {
+        tap.Cancel("Operation cancelled.")
+        return
+    }
+
+    confirmed := tap.Confirm(tap.ConfirmOptions{Message: fmt.Sprintf("Hello %v! Continue?", name)})
+    if tap.IsCancel(confirmed) {
+        tap.Cancel("Operation cancelled.")
+        return
+    }
+
+    if confirmed.(bool) {
+        tap.Outro("Let's go! 🎉")
+    }
+}
+```
+
+Alternatively, manage a session explicitly (ensures cleanup on exit):
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/yarlson/tap/tap"
+)
+
+func main() {
+    s, err := tap.Init() // or tap.New()
+    if err != nil { panic(err) }
+    defer tap.CloseDefault() // or s.Close()
+
+    name := tap.Text(tap.TextOptions{Message: "What's your name?"})
+    if tap.IsCancel(name) { tap.Cancel("Operation cancelled."); return }
+
+    confirmed := tap.Confirm(tap.ConfirmOptions{Message: fmt.Sprintf("Hello %v! Continue?", name)})
+    if tap.IsCancel(confirmed) { tap.Cancel("Operation cancelled."); return }
+
+    if confirmed.(bool) { tap.Outro("Let's go! 🎉") }
+}
+```
+
+### Manual API (full control)
+
 ```go
 package main
 
@@ -66,39 +125,16 @@ import (
 func main() {
     // Initialize terminal
     term, err := terminal.New()
-    if err != nil {
-        panic(err)
-    }
+    if err != nil { panic(err) }
     defer term.Close()
 
-    // Text input
-    name := prompts.Text(prompts.TextOptions{
-        Message: "What's your name?",
-        Input:   term.Reader,
-        Output:  term.Writer,
-    })
+    name := prompts.Text(prompts.TextOptions{Message: "What's your name?", Input: term.Reader, Output: term.Writer})
+    if core.IsCancel(name) { prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer}); return }
 
-    // Check for cancellation
-    if core.IsCancel(name) {
-        prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer})
-        return
-    }
+    confirmed := prompts.Confirm(prompts.ConfirmOptions{Message: fmt.Sprintf("Hello %s! Continue?", name), Input: term.Reader, Output: term.Writer})
+    if core.IsCancel(confirmed) { prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer}); return }
 
-    // Confirmation
-    confirmed := prompts.Confirm(prompts.ConfirmOptions{
-        Message: fmt.Sprintf("Hello %s! Continue?", name),
-        Input:   term.Reader,
-        Output:  term.Writer,
-    })
-
-    if core.IsCancel(confirmed) {
-        prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer})
-        return
-    }
-
-    if confirmed.(bool) {
-        prompts.Outro("Let's go! 🎉", prompts.MessageOptions{Output: term.Writer})
-    }
+    if confirmed.(bool) { prompts.Outro("Let's go! 🎉", prompts.MessageOptions{Output: term.Writer}) }
 }
 ```
 
