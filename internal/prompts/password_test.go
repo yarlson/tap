@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yarlson/tap/core"
+	"github.com/yarlson/tap/internal/core"
 )
 
 func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {

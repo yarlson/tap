@@ -110,34 +110,6 @@ func main() {
 }
 ```
 
-### Manual API (full control)
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/yarlson/tap/core"
-    "github.com/yarlson/tap/prompts"
-    "github.com/yarlson/tap/terminal"
-)
-
-func main() {
-    // Initialize terminal
-    term, err := terminal.New()
-    if err != nil { panic(err) }
-    defer term.Close()
-
-    name := prompts.Text(prompts.TextOptions{Message: "What's your name?", Input: term.Reader, Output: term.Writer})
-    if core.IsCancel(name) { prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer}); return }
-
-    confirmed := prompts.Confirm(prompts.ConfirmOptions{Message: fmt.Sprintf("Hello %s! Continue?", name), Input: term.Reader, Output: term.Writer})
-    if core.IsCancel(confirmed) { prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer}); return }
-
-    if confirmed.(bool) { prompts.Outro("Let's go! 🎉", prompts.MessageOptions{Output: term.Writer}) }
-}
-```
-
 ## API Examples
 
 ### Text Input with Validation (tap API)

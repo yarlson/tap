@@ -1,6 +1,6 @@
 package prompts
 
-import "github.com/yarlson/tap/core"
+import "github.com/yarlson/tap/internal/core"
 
 // Unicode symbols for drawing styled prompts
 const (

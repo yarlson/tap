@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/yarlson/tap/core"
+	"github.com/yarlson/tap/internal/core"
 )
 
 func TestBox_SquareBasic(t *testing.T) {

@@ -8,10 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yarlson/tap/core"
-
 	"github.com/eiannone/keyboard"
 	"golang.org/x/term"
+
+	"github.com/yarlson/tap/internal/core"
 )
 
 // Reader provides terminal input functionality.

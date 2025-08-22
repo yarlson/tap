@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yarlson/tap/core"
+
+	"github.com/yarlson/tap/internal/core"
 )
 
 func TestSpinner_API(t *testing.T) {

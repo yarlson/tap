@@ -4,9 +4,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yarlson/tap/core"
-	"github.com/yarlson/tap/prompts"
-	"github.com/yarlson/tap/terminal"
+	"github.com/yarlson/tap/internal/core"
+	"github.com/yarlson/tap/internal/prompts"
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 // Session owns a terminal and provides high-level prompt helpers
