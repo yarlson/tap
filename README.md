@@ -140,12 +140,12 @@ func main() {
 
 ## API Examples
 
-### Text Input with Validation
+### Text Input with Validation (tap API)
 
 ```go
 import "errors"
 
-email := prompts.Text(prompts.TextOptions{
+email := tap.Text(tap.TextOptions{
     Message:      "Enter your email:",
     Placeholder:  "user@example.com",
     DefaultValue: "anonymous@example.com",
@@ -155,38 +155,25 @@ email := prompts.Text(prompts.TextOptions{
         }
         return nil
     },
-    Input:  term.Reader,
-    Output: term.Writer,
 })
 ```
 
 ### Password Input (masked)
 
 ```go
-pwd := prompts.Password(prompts.PasswordOptions{
-    Message: "Enter your password:",
-    Input:   term.Reader,
-    Output:  term.Writer,
-})
-
-if core.IsCancel(pwd) {
-    prompts.Cancel("Operation cancelled.", prompts.MessageOptions{Output: term.Writer})
-    return
-}
-
+pwd := tap.Password(tap.PasswordOptions{Message: "Enter your password:"})
+if tap.IsCancel(pwd) { tap.Cancel("Operation cancelled."); return }
 fmt.Printf("Password length: %d\n", len(pwd.(string)))
 ```
 
 ### Confirmation with Custom Labels
 
 ```go
-proceed := prompts.Confirm(prompts.ConfirmOptions{
+proceed := tap.Confirm(tap.ConfirmOptions{
     Message:      "Deploy to production?",
     Active:       "Deploy",
     Inactive:     "Cancel",
     InitialValue: false,
-    Input:        term.Reader,
-    Output:       term.Writer,
 })
 ```
 
@@ -195,28 +182,25 @@ proceed := prompts.Confirm(prompts.ConfirmOptions{
 ```go
 type Environment string
 
-envs := []prompts.SelectOption[Environment]{
+envs := []tap.SelectOption[Environment]{
     {Value: "dev", Label: "Development", Hint: "Local development"},
     {Value: "staging", Label: "Staging", Hint: "Pre-production testing"},
     {Value: "prod", Label: "Production", Hint: "Live environment"},
 }
 
-env := prompts.Select(prompts.SelectOptions[Environment]{
+env := tap.Select(tap.SelectOptions[Environment]{
     Message: "Choose deployment target:",
     Options: envs,
-    Input:   term.Reader,
-    Output:  term.Writer,
 })
 ```
 
 ### Progress Bar
 
 ```go
-prog := prompts.NewProgress(prompts.ProgressOptions{
+prog := tap.NewProgress(tap.ProgressOptions{
     Style:  "heavy",     // "light", "heavy", or "block"
     Max:    100,         // total units of work
     Size:   40,          // bar width in characters
-    Output: term.Writer,
 })
 
 prog.Start("Processing...")
@@ -231,28 +215,19 @@ prog.Stop("Complete!", 0) // 0=success, 1=cancel, 2=error
 
 ```go
 // Default spinner (dots)
-spin := prompts.NewSpinner(prompts.SpinnerOptions{
-    Output: term.Writer,
-})
+spin := tap.NewSpinner(tap.SpinnerOptions{})
 spin.Start("Connecting")
 // ... do work ...
 spin.Stop("Connected", 0)
 
 // Timer indicator
-timerSpin := prompts.NewSpinner(prompts.SpinnerOptions{
-    Output:    term.Writer,
-    Indicator: "timer",
-})
+timerSpin := tap.NewSpinner(tap.SpinnerOptions{Indicator: "timer"})
 timerSpin.Start("Fetching data")
 // ... do work ...
 timerSpin.Stop("Done", 0)
 
 // Custom frames and delay
-customSpin := prompts.NewSpinner(prompts.SpinnerOptions{
-    Output: term.Writer,
-    Frames: []string{"-", "\\", "|", "/"},
-    Delay:  100 * time.Millisecond,
-})
+customSpin := tap.NewSpinner(tap.SpinnerOptions{Frames: []string{"-", "\\", "|", "/"}, Delay: 100 * time.Millisecond})
 customSpin.Start("Working")
 // ... do work ...
 customSpin.Stop("Complete", 0)
