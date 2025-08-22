@@ -3,7 +3,7 @@ package main
 import (
     "fmt"
 
-    "github.com/yarlson/tap/tap"
+    "github.com/yarlson/tap"
 )
 
 func main() {

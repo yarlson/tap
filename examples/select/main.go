@@ -5,7 +5,7 @@ import (
     "os"
     "strings"
 
-    "github.com/yarlson/tap/tap"
+    "github.com/yarlson/tap"
 )
 
 func main() {

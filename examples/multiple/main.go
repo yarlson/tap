@@ -5,7 +5,7 @@ import (
     "strings"
     "time"
 
-    "github.com/yarlson/tap/tap"
+    "github.com/yarlson/tap"
 )
 
 func getProjectLabel(projectType string) string {

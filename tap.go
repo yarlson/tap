@@ -286,3 +286,48 @@ func Cancel(message string) {
 	}
 	s.Cancel(message)
 }
+
+// Box wrappers to render framed messages via high-level API
+
+type BoxAlignment = prompts.BoxAlignment
+
+type BoxOptions struct {
+    Columns        int
+    WidthFraction  float64
+    WidthAuto      bool
+    TitlePadding   int
+    ContentPadding int
+    TitleAlign     BoxAlignment
+    ContentAlign   BoxAlignment
+    Rounded        bool
+    IncludePrefix  bool
+    FormatBorder   func(string) string
+}
+
+func (s *Session) Box(message string, title string, opts BoxOptions) {
+    prompts.Box(message, title, prompts.BoxOptions{
+        Output:         s.term.Writer,
+        Columns:        opts.Columns,
+        WidthFraction:  opts.WidthFraction,
+        WidthAuto:      opts.WidthAuto,
+        TitlePadding:   opts.TitlePadding,
+        ContentPadding: opts.ContentPadding,
+        TitleAlign:     opts.TitleAlign,
+        ContentAlign:   opts.ContentAlign,
+        Rounded:        opts.Rounded,
+        IncludePrefix:  opts.IncludePrefix,
+        FormatBorder:   opts.FormatBorder,
+    })
+}
+
+func Box(message string, title string, opts BoxOptions) {
+    s := ensureDefault()
+    if s == nil {
+        return
+    }
+    s.Box(message, title, opts)
+}
+
+// Re-export common border formatters for convenience
+func GrayBorder(s string) string { return prompts.GrayBorder(s) }
+func CyanBorder(s string) string { return prompts.CyanBorder(s) }
