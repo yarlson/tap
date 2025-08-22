@@ -53,15 +53,16 @@ go get github.com/yarlson/tap@latest
 
 ## Quick Start
 
-### Simpler API (no Input/Output plumbing)
+### Usage
 
-Use the high-level `tap` package to hide terminal handling and avoid passing `Input`/`Output` everywhere.
+Use the `tap` package:
 
 ```go
 package main
 
 import (
     "fmt"
+
     "github.com/yarlson/tap"
 )
 
@@ -85,13 +86,14 @@ func main() {
 }
 ```
 
-Alternatively, manage a session explicitly (ensures cleanup on exit):
+Optionally manage a session explicitly:
 
 ```go
 package main
 
 import (
     "fmt"
+
     "github.com/yarlson/tap"
 )
 

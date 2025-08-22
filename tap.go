@@ -1,13 +1,13 @@
 package tap
 
 import (
-    "os"
-    "sync"
-    "time"
+	"os"
+	"sync"
+	"time"
 
-    "github.com/yarlson/tap/internal/core"
-    "github.com/yarlson/tap/internal/prompts"
-    "github.com/yarlson/tap/internal/terminal"
+	"github.com/yarlson/tap/internal/core"
+	"github.com/yarlson/tap/internal/prompts"
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 // Session owns a terminal and provides high-level prompt helpers
@@ -62,16 +62,48 @@ func CloseDefault() {
 	}
 }
 
-func ensureDefault() *Session {
+// getOrCreateDefault returns a session and whether it was created by this call.
+func getOrCreateDefault() (s *Session, created bool) {
 	defaultMu.Lock()
 	defer defaultMu.Unlock()
-	if defaultSession == nil {
-		// Best-effort init; ignore error to keep API simple.
-		if s, err := New(); err == nil {
-			defaultSession = s
-		}
+
+	if defaultSession != nil {
+		return defaultSession, false
 	}
-	return defaultSession
+
+	if ns, err := New(); err == nil {
+		defaultSession = ns
+		return ns, true
+	}
+
+	return nil, false
+}
+
+// withOneOffSession acquires a session for the duration of fn and closes it
+// afterwards if it was created by this function.
+func withOneOffSession(fn func(*Session) any) any {
+	s, created := getOrCreateDefault()
+	if s == nil {
+		return core.GetCancelSymbol()
+	}
+
+	defer func() {
+		if created {
+			CloseDefault()
+		}
+	}()
+
+	return fn(s)
+}
+
+// sessionWriterOrStdout returns the writer bound to the active session or
+// a stdout-backed writer if no session is active.
+func sessionWriterOrStdout() core.Writer {
+	if s := currentSession(); s != nil {
+		return s.term.Writer
+	}
+
+	return newStdoutWriter()
 }
 
 // Re-export cancel helpers for convenience.
@@ -102,26 +134,7 @@ func (s *Session) Text(opts TextOptions) any {
 }
 
 func Text(opts TextOptions) any {
-    // Create a temporary session if none exists and close it after
-    created := false
-    defaultMu.Lock()
-    s := defaultSession
-    if s == nil {
-        if ns, err := New(); err == nil {
-            defaultSession = ns
-            s = ns
-            created = true
-        }
-    }
-    defaultMu.Unlock()
-    if s == nil {
-        return core.GetCancelSymbol()
-    }
-    res := s.Text(opts)
-    if created {
-        CloseDefault()
-    }
-    return res
+	return withOneOffSession(func(s *Session) any { return s.Text(opts) })
 }
 
 // PasswordOptions mirrors prompts.PasswordOptions but without Input/Output.
@@ -144,25 +157,7 @@ func (s *Session) Password(opts PasswordOptions) any {
 }
 
 func Password(opts PasswordOptions) any {
-    created := false
-    defaultMu.Lock()
-    s := defaultSession
-    if s == nil {
-        if ns, err := New(); err == nil {
-            defaultSession = ns
-            s = ns
-            created = true
-        }
-    }
-    defaultMu.Unlock()
-    if s == nil {
-        return core.GetCancelSymbol()
-    }
-    res := s.Password(opts)
-    if created {
-        CloseDefault()
-    }
-    return res
+	return withOneOffSession(func(s *Session) any { return s.Password(opts) })
 }
 
 // ConfirmOptions mirrors prompts.ConfirmOptions but without Input/Output.
@@ -185,25 +180,7 @@ func (s *Session) Confirm(opts ConfirmOptions) any {
 }
 
 func Confirm(opts ConfirmOptions) any {
-    created := false
-    defaultMu.Lock()
-    s := defaultSession
-    if s == nil {
-        if ns, err := New(); err == nil {
-            defaultSession = ns
-            s = ns
-            created = true
-        }
-    }
-    defaultMu.Unlock()
-    if s == nil {
-        return core.GetCancelSymbol()
-    }
-    res := s.Confirm(opts)
-    if created {
-        CloseDefault()
-    }
-    return res
+	return withOneOffSession(func(s *Session) any { return s.Confirm(opts) })
 }
 
 // SelectOption mirrors prompts.SelectOption.
@@ -222,36 +199,21 @@ type SelectOptions[T any] struct {
 }
 
 func Select[T any](opts SelectOptions[T]) any {
-    created := false
-    defaultMu.Lock()
-    s := defaultSession
-    if s == nil {
-        if ns, err := New(); err == nil {
-            defaultSession = ns
-            s = ns
-            created = true
-        }
-    }
-    defaultMu.Unlock()
-    if s == nil {
-        return core.GetCancelSymbol()
-    }
-	items := make([]prompts.SelectOption[T], len(opts.Options))
-	for i, o := range opts.Options {
-		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
-	}
-    res := prompts.Select(prompts.SelectOptions[T]{
-		Message:      opts.Message,
-		Options:      items,
-		InitialValue: opts.InitialValue,
-		MaxItems:     opts.MaxItems,
-		Input:        s.term.Reader,
-		Output:       s.term.Writer,
+	return withOneOffSession(func(s *Session) any {
+		items := make([]prompts.SelectOption[T], len(opts.Options))
+		for i, o := range opts.Options {
+			items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
+		}
+
+		return prompts.Select(prompts.SelectOptions[T]{
+			Message:      opts.Message,
+			Options:      items,
+			InitialValue: opts.InitialValue,
+			MaxItems:     opts.MaxItems,
+			Input:        s.term.Reader,
+			Output:       s.term.Writer,
+		})
 	})
-    if created {
-        CloseDefault()
-    }
-    return res
 }
 
 // SpinnerOptions mirrors prompts.SpinnerOptions but without Output.
@@ -273,23 +235,19 @@ func (s *Session) NewSpinner(opts SpinnerOptions) *prompts.Spinner {
 		ErrorMessage:  opts.ErrorMessage,
 	}
 	po.Delay = opts.Delay
+
 	return prompts.NewSpinner(po)
 }
 
 func NewSpinner(opts SpinnerOptions) *prompts.Spinner {
-    // Do not open a keyboard session for spinner-only usage
-    s := currentSession()
-    if s == nil {
-        return prompts.NewSpinner(prompts.SpinnerOptions{
-            Indicator:     opts.Indicator,
-            Frames:        opts.Frames,
-            Delay:         opts.Delay,
-            Output:        newStdoutWriter(),
-            CancelMessage: opts.CancelMessage,
-            ErrorMessage:  opts.ErrorMessage,
-        })
-    }
-    return s.NewSpinner(opts)
+	return prompts.NewSpinner(prompts.SpinnerOptions{
+		Indicator:     opts.Indicator,
+		Frames:        opts.Frames,
+		Delay:         opts.Delay,
+		Output:        sessionWriterOrStdout(),
+		CancelMessage: opts.CancelMessage,
+		ErrorMessage:  opts.ErrorMessage,
+	})
 }
 
 // ProgressOptions mirrors prompts.ProgressOptions but without Output.
@@ -309,17 +267,12 @@ func (s *Session) NewProgress(opts ProgressOptions) *prompts.Progress {
 }
 
 func NewProgress(opts ProgressOptions) *prompts.Progress {
-    // Avoid opening keyboard if one is not already present
-    s := currentSession()
-    if s == nil {
-        return prompts.NewProgress(prompts.ProgressOptions{
-            Style:  opts.Style,
-            Max:    opts.Max,
-            Size:   opts.Size,
-            Output: newStdoutWriter(),
-        })
-    }
-    return s.NewProgress(opts)
+	return prompts.NewProgress(prompts.ProgressOptions{
+		Style:  opts.Style,
+		Max:    opts.Max,
+		Size:   opts.Size,
+		Output: sessionWriterOrStdout(),
+	})
 }
 
 // Message helpers bound to the session writer.
@@ -328,11 +281,7 @@ func (s *Session) Intro(title string) {
 }
 
 func Intro(title string) {
-    if s := currentSession(); s != nil {
-        s.Intro(title)
-        return
-    }
-    prompts.Intro(title, prompts.MessageOptions{Output: newStdoutWriter()})
+	prompts.Intro(title, prompts.MessageOptions{Output: sessionWriterOrStdout()})
 }
 
 func (s *Session) Outro(message string) {
@@ -340,11 +289,7 @@ func (s *Session) Outro(message string) {
 }
 
 func Outro(message string) {
-    if s := currentSession(); s != nil {
-        s.Outro(message)
-        return
-    }
-    prompts.Outro(message, prompts.MessageOptions{Output: newStdoutWriter()})
+	prompts.Outro(message, prompts.MessageOptions{Output: sessionWriterOrStdout()})
 }
 
 func (s *Session) Cancel(message string) {
@@ -352,11 +297,7 @@ func (s *Session) Cancel(message string) {
 }
 
 func Cancel(message string) {
-    if s := currentSession(); s != nil {
-        s.Cancel(message)
-        return
-    }
-    prompts.Cancel(message, prompts.MessageOptions{Output: newStdoutWriter()})
+	prompts.Cancel(message, prompts.MessageOptions{Output: sessionWriterOrStdout()})
 }
 
 // Box wrappers to render framed messages via high-level API
@@ -393,24 +334,19 @@ func (s *Session) Box(message string, title string, opts BoxOptions) {
 }
 
 func Box(message string, title string, opts BoxOptions) {
-    if s := currentSession(); s != nil {
-        s.Box(message, title, opts)
-        return
-    }
-    // Writer-only fallback
-    prompts.Box(message, title, prompts.BoxOptions{
-        Output:         newStdoutWriter(),
-        Columns:        opts.Columns,
-        WidthFraction:  opts.WidthFraction,
-        WidthAuto:      opts.WidthAuto,
-        TitlePadding:   opts.TitlePadding,
-        ContentPadding: opts.ContentPadding,
-        TitleAlign:     opts.TitleAlign,
-        ContentAlign:   opts.ContentAlign,
-        Rounded:        opts.Rounded,
-        IncludePrefix:  opts.IncludePrefix,
-        FormatBorder:   opts.FormatBorder,
-    })
+	prompts.Box(message, title, prompts.BoxOptions{
+		Output:         sessionWriterOrStdout(),
+		Columns:        opts.Columns,
+		WidthFraction:  opts.WidthFraction,
+		WidthAuto:      opts.WidthAuto,
+		TitlePadding:   opts.TitlePadding,
+		ContentPadding: opts.ContentPadding,
+		TitleAlign:     opts.TitleAlign,
+		ContentAlign:   opts.ContentAlign,
+		Rounded:        opts.Rounded,
+		IncludePrefix:  opts.IncludePrefix,
+		FormatBorder:   opts.FormatBorder,
+	})
 }
 
 // Re-export common border formatters for convenience
@@ -419,29 +355,29 @@ func CyanBorder(s string) string { return prompts.CyanBorder(s) }
 
 // currentSession returns existing default session without creating one.
 func currentSession() *Session {
-    defaultMu.Lock()
-    defer defaultMu.Unlock()
-    return defaultSession
+	defaultMu.Lock()
+	defer defaultMu.Unlock()
+	return defaultSession
 }
 
 // stdout writer that satisfies core.Writer without opening keyboard
 type stdoutWriter struct {
-    mu        sync.Mutex
-    listeners map[string][]func()
+	mu        sync.Mutex
+	listeners map[string][]func()
 }
 
-func newStdoutWriter() *stdoutWriter { return &stdoutWriter{listeners: make(map[string][]func())} }
+func newStdoutWriter() *stdoutWriter                { return &stdoutWriter{listeners: make(map[string][]func())} }
 func (w *stdoutWriter) Write(b []byte) (int, error) { return os.Stdout.Write(b) }
 func (w *stdoutWriter) On(event string, handler func()) {
-    w.mu.Lock()
-    defer w.mu.Unlock()
-    w.listeners[event] = append(w.listeners[event], handler)
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.listeners[event] = append(w.listeners[event], handler)
 }
 func (w *stdoutWriter) Emit(event string) {
-    w.mu.Lock()
-    hs := append([]func(){}, w.listeners[event]...)
-    w.mu.Unlock()
-    for _, h := range hs {
-        h()
-    }
+	w.mu.Lock()
+	hs := append([]func(){}, w.listeners[event]...)
+	w.mu.Unlock()
+	for _, h := range hs {
+		h()
+	}
 }
