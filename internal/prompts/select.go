@@ -107,14 +107,6 @@ func renderStyledSelect[T any](p *core.Prompt, opts SelectOptions[T], coreOption
 		}
 		return fmt.Sprintf("%s%s  %s", title, gray(Bar), dim(label))
 
-	case core.StateCancel:
-		selected := coreOptions[cursor]
-		label := selected.Label
-		if label == "" {
-			label = fmt.Sprintf("%v", selected.Value)
-		}
-		return fmt.Sprintf("%s%s  %s\n%s", title, gray(Bar), strikethrough(dim(label)), gray(Bar))
-
 	default:
 		var lines []string
 		for i, option := range coreOptions {

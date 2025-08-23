@@ -46,11 +46,8 @@ func Text(opts TextOptions) string {
 
 			switch s {
 			case core.StateError:
-				errorText := ""
-				if err := p.ErrorSnapshot(); err != "" {
-					errorText = " " + yellow("("+err+")")
-				}
-				return Symbol(s) + " " + opts.Message + " " + displayInput + errorText
+				errMsg := p.ErrorSnapshot()
+				return title + yellow(Bar) + "  " + displayInput + "\n" + yellow(BarEnd) + "  " + yellow(errMsg)
 
 			case core.StateSubmit:
 				value := ""

@@ -59,6 +59,15 @@ func main() {
 		Message:      "How many years of experience do you have with " + language + "?",
 		Placeholder:  "Enter number of years...",
 		DefaultValue: "1",
+		Validate: func(s string) error {
+			var years int
+			_, err := fmt.Sscanf(s, "%d", &years)
+			if err != nil || years < 0 {
+				return fmt.Errorf("please enter a valid non-negative number")
+			}
+
+			return nil
+		},
 	})
 
 	// Fifth prompt: Confirm if they want to see a summary

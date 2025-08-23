@@ -4,6 +4,7 @@ Set Shell zsh
 Set FontSize 28
 Set Width 1400
 Set Height 800
+Set TypingSpeed 100ms
 
 Sleep 1s
 Type "go run ./main.go"
@@ -26,6 +27,12 @@ Enter
 Sleep 1.5s
 
 # Fourth prompt: Years of experience (change from default)
+Type "none"
+Enter
+Sleep 3s
+Backspace
+Backspace
+Backspace
 Backspace
 Type "3"
 Enter

@@ -25,8 +25,8 @@ func Confirm(opts ConfirmOptions) bool {
 			// Create title with symbol and message
 			title := gray(Bar) + "\n" + Symbol(s) + "  " + opts.Message + "\n"
 
-			// If we're submitting or canceling, show simplified version
-			if s == core.StateSubmit || s == core.StateCancel {
+			// If we're submitting, show simplified version
+			if s == core.StateSubmit {
 				value := ""
 				if val, ok := p.ValueSnapshot().(bool); ok {
 					if val {
@@ -35,13 +35,7 @@ func Confirm(opts ConfirmOptions) bool {
 						value = inactive
 					}
 				}
-
-				switch s {
-				case core.StateSubmit:
-					return title + gray(Bar) + "  " + dim(value)
-				case core.StateCancel:
-					return title + gray(Bar) + "  " + strikethrough(dim(value)) + "\n" + gray(Bar)
-				}
+				return title + gray(Bar) + "  " + dim(value)
 			}
 
 			var activeOption, inactiveOption string
