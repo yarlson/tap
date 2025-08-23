@@ -6,25 +6,21 @@ package tap
 import (
 	"time"
 
-	"github.com/yarlson/tap/internal/core"
 	"github.com/yarlson/tap/internal/prompts"
 	"github.com/yarlson/tap/internal/terminal"
 )
 
 // runWithTerminal creates a temporary terminal for interactive prompts and
 // ensures cleanup after the prompt completes.
-func runWithTerminal(fn func(*terminal.Terminal) any) any {
+func runWithTerminal[T any](fn func(*terminal.Terminal) T) T {
 	t, err := terminal.New()
 	if err != nil {
-		return core.GetCancelSymbol()
+		var zero T
+		return zero
 	}
 	defer t.Close()
 	return fn(t)
 }
-
-// IsCancel reports whether v is the cancel sentinel returned when the user
-// cancels a prompt. Use this to branch on user cancellation.
-func IsCancel(v any) bool { return core.IsCancel(v) }
 
 // TextOptions configures the Text prompt. I/O fields are managed by tap.
 type TextOptions struct {
@@ -36,10 +32,9 @@ type TextOptions struct {
 }
 
 // Text displays an interactive single-line text input prompt and returns the
-// entered value, or a CancelSymbol if the user cancels (check with IsCancel).
-// A default session is created and cleaned up automatically if needed.
-func Text(opts TextOptions) any {
-	return runWithTerminal(func(t *terminal.Terminal) any {
+// entered value. A terminal is created and cleaned up automatically per call.
+func Text(opts TextOptions) string {
+	return runWithTerminal(func(t *terminal.Terminal) string {
 		return prompts.Text(prompts.TextOptions{
 			Message:      opts.Message,
 			Placeholder:  opts.Placeholder,
@@ -60,11 +55,10 @@ type PasswordOptions struct {
 	Validate     func(string) error
 }
 
-// Password displays a masked text input prompt and returns the entered value,
-// or a CancelSymbol if the user cancels (check with IsCancel).
-// A default session is created and cleaned up automatically if needed.
-func Password(opts PasswordOptions) any {
-	return runWithTerminal(func(t *terminal.Terminal) any {
+// Password displays a masked text input prompt and returns the entered value.
+// A terminal is created and cleaned up automatically per call.
+func Password(opts PasswordOptions) string {
+	return runWithTerminal(func(t *terminal.Terminal) string {
 		return prompts.Password(prompts.PasswordOptions{
 			Message:      opts.Message,
 			DefaultValue: opts.DefaultValue,
@@ -84,11 +78,10 @@ type ConfirmOptions struct {
 	InitialValue bool
 }
 
-// Confirm displays a yes/no confirmation prompt and returns a bool indicating
-// the choice, or a CancelSymbol if the user cancels (check with IsCancel).
-// A default session is created and cleaned up automatically if needed.
-func Confirm(opts ConfirmOptions) any {
-	return runWithTerminal(func(t *terminal.Terminal) any {
+// Confirm displays a yes/no confirmation prompt and returns the selection.
+// A terminal is created and cleaned up automatically per call.
+func Confirm(opts ConfirmOptions) bool {
+	return runWithTerminal(func(t *terminal.Terminal) bool {
 		return prompts.Confirm(prompts.ConfirmOptions{
 			Message:      opts.Message,
 			Active:       opts.Active,
@@ -116,17 +109,16 @@ type SelectOptions[T any] struct {
 	MaxItems     *int
 }
 
-// Select displays a single-selection list and returns the chosen typed value,
-// or a CancelSymbol if the user cancels (check with IsCancel).
-// A default session is created and cleaned up automatically if needed.
-func Select[T any](opts SelectOptions[T]) any {
+// Select displays a single-selection list and returns the chosen typed value.
+// A terminal is created and cleaned up automatically per call.
+func Select[T any](opts SelectOptions[T]) T {
 	items := make([]prompts.SelectOption[T], len(opts.Options))
 	for i, o := range opts.Options {
 		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
 	}
 
-	return runWithTerminal(func(t *terminal.Terminal) any {
-		return prompts.Select(prompts.SelectOptions[T]{
+	return runWithTerminal(func(t *terminal.Terminal) T {
+		return prompts.Select[T](prompts.SelectOptions[T]{
 			Message:      opts.Message,
 			Options:      items,
 			InitialValue: opts.InitialValue,
@@ -251,15 +243,6 @@ func Intro(title string) {
 func Outro(message string) {
 	_ = runWithTerminal(func(t *terminal.Terminal) any {
 		prompts.Outro(message, prompts.MessageOptions{Output: t.Writer})
-		return nil
-	})
-}
-
-// Cancel prints a cancellation message using the current session writer or
-// stdout if no session is active.
-func Cancel(message string) {
-	_ = runWithTerminal(func(t *terminal.Terminal) any {
-		prompts.Cancel(message, prompts.MessageOptions{Output: t.Writer})
 		return nil
 	})
 }

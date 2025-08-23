@@ -84,15 +84,4 @@ const (
 	EraseDown  = "\x1b[J"
 )
 
-type CancelSymbol struct{}
-
-var cancelSymbol = &CancelSymbol{}
-
-func IsCancel(value any) bool {
-	_, ok := value.(*CancelSymbol)
-	return ok
-}
-
-func GetCancelSymbol() *CancelSymbol {
-	return cancelSymbol
-}
+// CancelSymbol and IsCancel removed in typed API.

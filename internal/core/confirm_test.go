@@ -11,35 +11,31 @@ func TestConfirm_SubmitsTrueOnY(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	resultCh := make(chan any, 1)
+	resultCh := make(chan bool, 1)
 	go func() { resultCh <- Confirm(ConfirmOptions{Input: input, Output: output, Message: "Are you sure?"}) }()
 	time.Sleep(time.Millisecond)
 	input.EmitKeypress("y", Key{Name: "y"})
 	result := <-resultCh
-	b, ok := result.(bool)
-	assert.True(t, ok)
-	assert.True(t, b)
+	assert.True(t, result)
 }
 
 func TestConfirm_SubmitsFalseOnN(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	resultCh := make(chan any, 1)
+	resultCh := make(chan bool, 1)
 	go func() { resultCh <- Confirm(ConfirmOptions{Input: input, Output: output, Message: "Are you sure?"}) }()
 	time.Sleep(time.Millisecond)
 	input.EmitKeypress("n", Key{Name: "n"})
 	result := <-resultCh
-	b, ok := result.(bool)
-	assert.True(t, ok)
-	assert.False(t, b)
+	assert.False(t, result)
 }
 
 func TestConfirm_ToggleWithArrowsAndEnter(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	resultCh := make(chan any, 1)
+	resultCh := make(chan bool, 1)
 	go func() {
 		resultCh <- Confirm(ConfirmOptions{Input: input, Output: output, Message: "Proceed?", InitialValue: true})
 	}()
@@ -49,19 +45,18 @@ func TestConfirm_ToggleWithArrowsAndEnter(t *testing.T) {
 	time.Sleep(time.Millisecond)
 	input.EmitKeypress("", Key{Name: "return"})
 	result := <-resultCh
-	b, ok := result.(bool)
-	assert.True(t, ok)
-	assert.False(t, b)
+	assert.False(t, result)
 }
 
 func TestConfirm_CancelOnCtrlC(t *testing.T) {
 	input := NewMockReadable()
 	output := NewMockWritable()
 
-	resultCh := make(chan any, 1)
+	resultCh := make(chan bool, 1)
 	go func() { resultCh <- Confirm(ConfirmOptions{Input: input, Output: output, Message: "Cancel?"}) }()
 	time.Sleep(time.Millisecond)
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 	result := <-resultCh
-	assert.True(t, IsCancel(result))
+	// with typed API, cancel returns false (same as explicit false). Behavior preserved semantically in styled layer.
+	assert.False(t, result)
 }

@@ -27,39 +27,17 @@ func main() {
 	tap.Intro("🚀 Multiple Prompts Example")
 
 	// First prompt: Get user's name
-	nameRes := tap.Text(tap.TextOptions{
+	name := tap.Text(tap.TextOptions{
 		Message:     "What's your name?",
 		Placeholder: "Enter your name...",
 	})
 
-	if tap.IsCancel(nameRes) {
-		tap.Cancel("Operation canceled.")
-		return
-	}
-
-	name, ok := nameRes.(string)
-	if !ok {
-		fmt.Printf("Unexpected name result: %#v\r\n", nameRes)
-		return
-	}
-
 	// Second prompt: Get user's favorite programming language
-	langRes := tap.Text(tap.TextOptions{
+	language := tap.Text(tap.TextOptions{
 		Message:      fmt.Sprintf("Hi %s! What's your favorite programming language?", name),
 		Placeholder:  "e.g., Go, Python, JavaScript...",
 		DefaultValue: "Go",
 	})
-
-	if tap.IsCancel(langRes) {
-		tap.Cancel("Operation canceled.")
-		return
-	}
-
-	language, ok := langRes.(string)
-	if !ok {
-		fmt.Printf("Unexpected language result: %#v\r\n", langRes)
-		return
-	}
 
 	// Third prompt: Select project type
 	projectTypes := []tap.SelectOption[string]{
@@ -71,56 +49,23 @@ func main() {
 		{Value: "data", Label: "Data Science/ML", Hint: "Analytics, machine learning, AI"},
 	}
 
-	projectRes := tap.Select(tap.SelectOptions[string]{
+	projectType := tap.Select[string](tap.SelectOptions[string]{
 		Message: fmt.Sprintf("What type of %s projects do you work on?", language),
 		Options: projectTypes,
 	})
 
-	if tap.IsCancel(projectRes) {
-		tap.Cancel("Operation canceled.")
-		return
-	}
-
-	projectType, ok := projectRes.(string)
-	if !ok {
-		fmt.Printf("Unexpected project type result: %#v\r\n", projectRes)
-		return
-	}
-
 	// Fourth prompt: Get years of experience
-	expRes := tap.Text(tap.TextOptions{
+	experience := tap.Text(tap.TextOptions{
 		Message:      "How many years of experience do you have with " + language + "?",
 		Placeholder:  "Enter number of years...",
 		DefaultValue: "1",
 	})
 
-	if tap.IsCancel(expRes) {
-		tap.Cancel("Operation canceled.")
-		return
-	}
-
-	experience, ok := expRes.(string)
-	if !ok {
-		fmt.Printf("Unexpected experience result: %#v\r\n", expRes)
-		return
-	}
-
 	// Fifth prompt: Confirm if they want to see a summary
-	confirmRes := tap.Confirm(tap.ConfirmOptions{
+	confirmed := tap.Confirm(tap.ConfirmOptions{
 		Message:      "Would you like to see a summary of your information?",
 		InitialValue: true,
 	})
-
-	if tap.IsCancel(confirmRes) {
-		tap.Cancel("Operation canceled.")
-		return
-	}
-
-	confirmed, ok := confirmRes.(bool)
-	if !ok {
-		fmt.Printf("Unexpected confirmation result: %#v\r\n", confirmRes)
-		return
-	}
 
 	var detailed bool
 	if !confirmed {
@@ -129,23 +74,12 @@ func main() {
 	}
 
 	// Sixth prompt: If confirmed, ask for final message preference
-	styleRes := tap.Confirm(tap.ConfirmOptions{
+	detailed = tap.Confirm(tap.ConfirmOptions{
 		Message:      "Display summary in detailed format?",
 		Active:       "Detailed",
 		Inactive:     "Brief",
 		InitialValue: false,
 	})
-
-	if tap.IsCancel(styleRes) {
-		tap.Cancel("Operation canceled.")
-		return
-	}
-
-	detailed, ok = styleRes.(bool)
-	if !ok {
-		fmt.Printf("Unexpected style result: %#v\r\n", styleRes)
-		return
-	}
 
 	// Show progress bar while generating the summary
 	profileProgress := tap.NewProgress(tap.ProgressOptions{

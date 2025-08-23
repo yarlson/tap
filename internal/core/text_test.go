@@ -11,7 +11,7 @@ import (
 func TestText_SubmitsTypedStringOnEnter(t *testing.T) {
 	in := NewMockReadable()
 	out := NewMockWritable()
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() { resCh <- Text(TextOptions{Message: "Your name:", Input: in, Output: out}) }()
 	time.Sleep(time.Millisecond)
 	in.EmitKeypress("a", Key{Name: "a"})
@@ -25,7 +25,7 @@ func TestText_SubmitsTypedStringOnEnter(t *testing.T) {
 func TestText_DefaultAppliedOnEmptySubmit(t *testing.T) {
 	in := NewMockReadable()
 	out := NewMockWritable()
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Text(TextOptions{Message: "Your name:", DefaultValue: "anon", Input: in, Output: out})
 	}()
@@ -38,7 +38,7 @@ func TestText_DefaultAppliedOnEmptySubmit(t *testing.T) {
 func TestText_BackspaceEditing(t *testing.T) {
 	in := NewMockReadable()
 	out := NewMockWritable()
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() { resCh <- Text(TextOptions{Message: "Input:", Input: in, Output: out}) }()
 	time.Sleep(time.Millisecond)
 	in.EmitKeypress("a", Key{Name: "a"})

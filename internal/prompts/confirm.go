@@ -3,7 +3,7 @@ package prompts
 import "github.com/yarlson/tap/internal/core"
 
 // Confirm creates a styled confirm prompt
-func Confirm(opts ConfirmOptions) any {
+func Confirm(opts ConfirmOptions) bool {
 	active := opts.Active
 	if active == "" {
 		active = "Yes"
@@ -67,5 +67,10 @@ func Confirm(opts ConfirmOptions) any {
 	p.On("confirm", func(val bool) {})
 
 	p.SetValue(currentValue)
-	return p.Prompt()
+	v := p.Prompt()
+	if b, ok := v.(bool); ok {
+		return b
+	}
+
+	return false
 }

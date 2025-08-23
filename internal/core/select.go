@@ -116,7 +116,12 @@ func (sp *SelectPrompt[T]) render() string {
 }
 
 // Select creates and runs a select prompt
-func Select[T any](opts SelectOptions[T]) any {
+func Select[T any](opts SelectOptions[T]) T {
 	prompt := NewSelectPrompt(opts)
-	return prompt.Prompt.Prompt()
+	v := prompt.Prompt.Prompt()
+	if t, ok := v.(T); ok {
+		return t
+	}
+	var zero T
+	return zero
 }

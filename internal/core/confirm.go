@@ -1,6 +1,6 @@
 package core
 
-func Confirm(opts ConfirmOptions) any {
+func Confirm(opts ConfirmOptions) bool {
 	// Defaults are kept to mirror TS API, but not yet used in rendering
 	if opts.Active == "" {
 		opts.Active = "Yes"
@@ -44,5 +44,9 @@ func Confirm(opts ConfirmOptions) any {
 	})
 
 	p.SetValue(initial)
-	return p.Prompt()
+	v := p.Prompt()
+	if b, ok := v.(bool); ok {
+		return b
+	}
+	return false
 }

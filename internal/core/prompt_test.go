@@ -68,7 +68,6 @@ func TestPrompt_SubmitsOnReturn(t *testing.T) {
 	result := <-resultCh
 
 	assert.Equal(t, nil, result)
-	assert.False(t, IsCancel(result))
 	assert.Equal(t, StateSubmit, p.StateSnapshot())
 
 	expectedOutput := []string{"\x1b[?25l", "foo", "\r\n", "\x1b[?25h"}
@@ -103,7 +102,7 @@ func TestPrompt_CancelsOnCtrlC(t *testing.T) {
 	// Wait for result
 	result := <-resultCh
 
-	assert.True(t, IsCancel(result))
+	assert.Nil(t, result)
 	assert.Equal(t, StateCancel, p.StateSnapshot())
 
 	expectedOutput := []string{"\x1b[?25l", "foo", "\r\n", "\x1b[?25h"}
@@ -132,9 +131,7 @@ func TestPrompt_CancelsOnEscape(t *testing.T) {
 	input.EmitKeypress("escape", Key{Name: "escape"})
 
 	result := <-resultCh
-	if !IsCancel(result) {
-		t.Fatalf("expected cancel symbol, got %#v", result)
-	}
+	assert.Nil(t, result)
 	assert.Equal(t, StateCancel, p.StateSnapshot())
 }
 
@@ -212,7 +209,7 @@ func TestPrompt_ReturnsCancelSymbolOnImmediateAbort(t *testing.T) {
 
 	// Return cancel symbol without blocking
 	result := p.Prompt()
-	assert.True(t, IsCancel(result))
+	assert.Nil(t, result)
 }
 
 func TestPrompt_EmitsSubmitAndCancelEventsWithPayload(t *testing.T) {
@@ -249,13 +246,13 @@ func TestPrompt_EmitsSubmitAndCancelEventsWithPayload(t *testing.T) {
 	submitted = atomic.Value{}
 	cancelled = atomic.Value{}
 	p2.On("submit", func(v any) { submitted.Store(v) })
-	p2.On("cancel", func(v any) { cancelled.Store(v) })
+	p2.On("cancel", func(v any) { cancelled.Store(true) })
 
 	go func() { _ = p2.Prompt() }()
 	time.Sleep(time.Millisecond)
 	input.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 	time.Sleep(time.Millisecond)
-	assert.True(t, IsCancel(cancelled.Load()))
+	assert.Equal(t, true, cancelled.Load())
 }
 
 func TestPrompt_DoesNotWriteInitialValueToValue(t *testing.T) {
@@ -620,7 +617,7 @@ func TestPrompt_ReturnsImmediatelyIfSignalIsAlreadyAborted(t *testing.T) {
 	})
 
 	result := p.Prompt()
-	assert.True(t, IsCancel(result))
+	assert.Nil(t, result)
 }
 
 func TestPrompt_AcceptsInvalidInitialValue(t *testing.T) {

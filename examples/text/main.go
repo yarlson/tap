@@ -14,13 +14,5 @@ func main() {
 		Placeholder:  "Type something...",
 	})
 
-	if tap.IsCancel(res) {
-		fmt.Printf("Canceled\r\n")
-		return
-	}
-	if s, ok := res.(string); ok {
-		fmt.Printf("Result: %s\r\n", s)
-	} else {
-		fmt.Printf("Unexpected result: %#v\r\n", res)
-	}
+	fmt.Printf("Result: %s\r\n", res)
 }

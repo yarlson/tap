@@ -111,7 +111,7 @@ func TestStyledSelect_ShowsSubmitState(t *testing.T) {
 		{Value: "selected", Label: "Selected Item"},
 	}
 
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{
 			Message: "Choose:",
@@ -160,8 +160,8 @@ func TestStyledSelect_ShowsCancelState(t *testing.T) {
 	// Cancel the selection
 	in.EmitKeypress("\x03", core.Key{Name: "c", Ctrl: true})
 	res := <-resCh
-
-	assert.True(t, core.IsCancel(res), "Should return cancel symbol")
+	// typed API returns zero value on cancel for string
+	assert.Equal(t, "", res, "Should return zero value on cancel")
 
 	frames := out.GetFrames()
 
@@ -186,7 +186,7 @@ func TestStyledSelect_InitialValuePositioning(t *testing.T) {
 	}
 	initialValue := "second"
 
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{
 			Message:      "Choose:",

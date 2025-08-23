@@ -5,7 +5,7 @@ import (
 )
 
 // Password implements an unstyled password prompt that masks user input
-func Password(opts PasswordOptions) any {
+func Password(opts PasswordOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
@@ -42,7 +42,11 @@ func Password(opts PasswordOptions) any {
 		p.SetImmediateValue(input)
 	})
 
-	return p.Prompt()
+	v := p.Prompt()
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
 }
 
 // maskWithCursor returns a string of mask characters the same length as the

@@ -175,7 +175,7 @@ func (p *Prompt) Prompt() any {
 	if p.opts.Signal != nil {
 		select {
 		case <-p.opts.Signal.Done():
-			return GetCancelSymbol()
+			return nil
 		default:
 		}
 	}
@@ -538,9 +538,8 @@ func (p *Prompt) finalize(st *promptState) any {
 	}
 
 	if st.State == StateCancel {
-		res := GetCancelSymbol()
+		var res any = nil
 		p.Emit("cancel", res)
-
 		return res
 	}
 

@@ -15,7 +15,7 @@ func TestSelect_SubmitsSelectedOptionOnEnter(t *testing.T) {
 		{Value: "blue", Label: "Blue"},
 		{Value: "green", Label: "Green"},
 	}
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{Message: "Pick color:", Options: options, Input: in, Output: out})
 	}()
@@ -34,7 +34,7 @@ func TestSelect_NavigateWithArrowKeys(t *testing.T) {
 		{Value: "b", Label: "Option B"},
 		{Value: "c", Label: "Option C"},
 	}
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{Message: "Pick:", Options: options, Input: in, Output: out})
 	}()
@@ -56,7 +56,7 @@ func TestSelect_WrapAroundNavigation(t *testing.T) {
 		{Value: "first", Label: "First"},
 		{Value: "last", Label: "Last"},
 	}
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{Message: "Pick:", Options: options, Input: in, Output: out})
 	}()
@@ -78,7 +78,7 @@ func TestSelect_InitialValueSetsCorrectCursor(t *testing.T) {
 		{Value: "green", Label: "Green"},
 	}
 	initialValue := "blue"
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{
 			Message:      "Pick color:",
@@ -101,14 +101,15 @@ func TestSelect_CancelWithCtrlC(t *testing.T) {
 	options := []SelectOption[string]{
 		{Value: "option1", Label: "Option 1"},
 	}
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{Message: "Pick:", Options: options, Input: in, Output: out})
 	}()
 	time.Sleep(time.Millisecond)
 	in.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 	res := <-resCh
-	assert.True(t, IsCancel(res))
+	// typed API returns zero value on cancel; for string that's ""
+	assert.Equal(t, "", res)
 }
 
 func TestSelect_LeftRightKeysAlsoNavigateUpDown(t *testing.T) {
@@ -119,7 +120,7 @@ func TestSelect_LeftRightKeysAlsoNavigateUpDown(t *testing.T) {
 		{Value: "second", Label: "Second"},
 		{Value: "third", Label: "Third"},
 	}
-	resCh := make(chan any, 1)
+	resCh := make(chan string, 1)
 	go func() {
 		resCh <- Select(SelectOptions[string]{Message: "Pick:", Options: options, Input: in, Output: out})
 	}()

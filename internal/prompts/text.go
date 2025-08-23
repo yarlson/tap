@@ -7,7 +7,7 @@ import (
 )
 
 // Text creates a styled text input prompt
-func Text(opts TextOptions) any {
+func Text(opts TextOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
@@ -88,7 +88,11 @@ func Text(opts TextOptions) any {
 		p.SetImmediateValue(input)
 	})
 
-	return p.Prompt()
+	v := p.Prompt()
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
 }
 
 // renderTextWithCursor renders text with a cursor indicator

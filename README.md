@@ -67,48 +67,11 @@ import (
 )
 
 func main() {
-    // Use package-level helpers (auto-inits a session under the hood)
     name := tap.Text(tap.TextOptions{Message: "What's your name?"})
-    if tap.IsCancel(name) {
-        tap.Cancel("Operation cancelled.")
-        return
-    }
-
     confirmed := tap.Confirm(tap.ConfirmOptions{Message: fmt.Sprintf("Hello %v! Continue?", name)})
-    if tap.IsCancel(confirmed) {
-        tap.Cancel("Operation cancelled.")
-        return
-    }
-
-    if confirmed.(bool) {
+    if confirmed {
         tap.Outro("Let's go! 🎉")
     }
-}
-```
-
-Optionally manage a session explicitly:
-
-```go
-package main
-
-import (
-    "fmt"
-
-    "github.com/yarlson/tap"
-)
-
-func main() {
-    s, err := tap.Init() // or tap.New()
-    if err != nil { panic(err) }
-    defer tap.CloseDefault() // or s.Close()
-
-    name := tap.Text(tap.TextOptions{Message: "What's your name?"})
-    if tap.IsCancel(name) { tap.Cancel("Operation cancelled."); return }
-
-    confirmed := tap.Confirm(tap.ConfirmOptions{Message: fmt.Sprintf("Hello %v! Continue?", name)})
-    if tap.IsCancel(confirmed) { tap.Cancel("Operation cancelled."); return }
-
-    if confirmed.(bool) { tap.Outro("Let's go! 🎉") }
 }
 ```
 
@@ -136,8 +99,7 @@ email := tap.Text(tap.TextOptions{
 
 ```go
 pwd := tap.Password(tap.PasswordOptions{Message: "Enter your password:"})
-if tap.IsCancel(pwd) { tap.Cancel("Operation cancelled."); return }
-fmt.Printf("Password length: %d\n", len(pwd.(string)))
+fmt.Printf("Password length: %d\n", len(pwd))
 ```
 
 ### Confirmation with Custom Labels

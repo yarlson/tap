@@ -14,7 +14,7 @@ type styledSelectState[T any] struct {
 }
 
 // Select creates a styled select prompt
-func Select[T any](opts SelectOptions[T]) any {
+func Select[T any](opts SelectOptions[T]) T {
 	coreOptions := make([]core.SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
 		coreOptions[i] = core.SelectOption[T]{
@@ -69,7 +69,12 @@ func Select[T any](opts SelectOptions[T]) any {
 		styledPrompt.SetImmediateValue(newValue)
 	})
 
-	return styledPrompt.Prompt()
+	v := styledPrompt.Prompt()
+	if t, ok := v.(T); ok {
+		return t
+	}
+	var zero T
+	return zero
 }
 
 func getInitialValue[T any](opts SelectOptions[T], coreOptions []core.SelectOption[T]) T {

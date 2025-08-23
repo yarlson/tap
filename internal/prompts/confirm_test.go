@@ -12,7 +12,7 @@ func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
 	mock := core.NewMockReadable()
 	out := core.NewMockWritable()
 
-	done := make(chan any, 1)
+	done := make(chan bool, 1)
 	go func() {
 		result := Confirm(ConfirmOptions{
 			Message: "Continue?",
@@ -53,7 +53,7 @@ func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
 	mock := core.NewMockReadable()
 	out := core.NewMockWritable()
 
-	done := make(chan any, 1)
+	done := make(chan bool, 1)
 	go func() {
 		result := Confirm(ConfirmOptions{
 			Message:  "Delete file?",
@@ -95,7 +95,7 @@ func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
 	mock := core.NewMockReadable()
 	out := core.NewMockWritable()
 
-	done := make(chan any, 1)
+	done := make(chan bool, 1)
 	go func() {
 		result := Confirm(ConfirmOptions{
 			Message: "Proceed?",
@@ -135,7 +135,7 @@ func TestStyledConfirm_ShowsInitialValue(t *testing.T) {
 	mock := core.NewMockReadable()
 	out := core.NewMockWritable()
 
-	done := make(chan any, 1)
+	done := make(chan bool, 1)
 	go func() {
 		result := Confirm(ConfirmOptions{
 			Message:      "Continue?",
@@ -175,9 +175,9 @@ func TestStyledConfirm_ShowsCancelState(t *testing.T) {
 	time.Sleep(time.Millisecond)
 	mock.EmitKeypress("\x03", core.Key{Ctrl: true, Name: "c"}) // Ctrl+C
 	result := <-done
-
-	if !core.IsCancel(result) {
-		t.Error("Expected cancel symbol")
+	// typed API: cancel returns false
+	if result != false {
+		t.Error("Expected false on cancel")
 	}
 
 	frames := out.GetFrames()
