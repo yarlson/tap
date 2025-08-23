@@ -6,20 +6,37 @@ package tap
 import (
 	"time"
 
+	"github.com/yarlson/tap/internal/core"
 	"github.com/yarlson/tap/internal/prompts"
 	"github.com/yarlson/tap/internal/terminal"
 )
 
+// Optional test I/O override. When set, helpers use these instead of opening
+// a real terminal.
+var (
+	ioReader core.Reader
+	ioWriter core.Writer
+)
+
+// SetTermIO sets a custom reader and writer used by helpers. Pass nil values to
+// restore default terminal behavior.
+func SetTermIO(in core.Reader, out core.Writer) { ioReader, ioWriter = in, out }
+
 // runWithTerminal creates a temporary terminal for interactive prompts and
 // ensures cleanup after the prompt completes.
-func runWithTerminal[T any](fn func(*terminal.Terminal) T) T {
+func runWithTerminal[T any](fn func(core.Reader, core.Writer) T) T {
+	if ioReader != nil || ioWriter != nil {
+		return fn(ioReader, ioWriter)
+	}
+
 	t, err := terminal.New()
 	if err != nil {
 		var zero T
 		return zero
 	}
 	defer t.Close()
-	return fn(t)
+
+	return fn(t.Reader, t.Writer)
 }
 
 // TextOptions configures the Text prompt. I/O fields are managed by tap.
@@ -34,15 +51,15 @@ type TextOptions struct {
 // Text displays an interactive single-line text input prompt and returns the
 // entered value. A terminal is created and cleaned up automatically per call.
 func Text(opts TextOptions) string {
-	return runWithTerminal(func(t *terminal.Terminal) string {
+	return runWithTerminal(func(in core.Reader, out core.Writer) string {
 		return prompts.Text(prompts.TextOptions{
 			Message:      opts.Message,
 			Placeholder:  opts.Placeholder,
 			DefaultValue: opts.DefaultValue,
 			InitialValue: opts.InitialValue,
 			Validate:     opts.Validate,
-			Input:        t.Reader,
-			Output:       t.Writer,
+			Input:        in,
+			Output:       out,
 		})
 	})
 }
@@ -58,14 +75,14 @@ type PasswordOptions struct {
 // Password displays a masked text input prompt and returns the entered value.
 // A terminal is created and cleaned up automatically per call.
 func Password(opts PasswordOptions) string {
-	return runWithTerminal(func(t *terminal.Terminal) string {
+	return runWithTerminal(func(in core.Reader, out core.Writer) string {
 		return prompts.Password(prompts.PasswordOptions{
 			Message:      opts.Message,
 			DefaultValue: opts.DefaultValue,
 			InitialValue: opts.InitialValue,
 			Validate:     opts.Validate,
-			Input:        t.Reader,
-			Output:       t.Writer,
+			Input:        in,
+			Output:       out,
 		})
 	})
 }
@@ -81,14 +98,14 @@ type ConfirmOptions struct {
 // Confirm displays a yes/no confirmation prompt and returns the selection.
 // A terminal is created and cleaned up automatically per call.
 func Confirm(opts ConfirmOptions) bool {
-	return runWithTerminal(func(t *terminal.Terminal) bool {
+	return runWithTerminal(func(in core.Reader, out core.Writer) bool {
 		return prompts.Confirm(prompts.ConfirmOptions{
 			Message:      opts.Message,
 			Active:       opts.Active,
 			Inactive:     opts.Inactive,
 			InitialValue: opts.InitialValue,
-			Input:        t.Reader,
-			Output:       t.Writer,
+			Input:        in,
+			Output:       out,
 		})
 	})
 }
@@ -117,14 +134,14 @@ func Select[T any](opts SelectOptions[T]) T {
 		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
 	}
 
-	return runWithTerminal(func(t *terminal.Terminal) T {
+	return runWithTerminal(func(in core.Reader, out core.Writer) T {
 		return prompts.Select[T](prompts.SelectOptions[T]{
 			Message:      opts.Message,
 			Options:      items,
 			InitialValue: opts.InitialValue,
 			MaxItems:     opts.MaxItems,
-			Input:        t.Reader,
-			Output:       t.Writer,
+			Input:        in,
+			Output:       out,
 		})
 	})
 }
@@ -151,9 +168,13 @@ func (s *Spinner) Start(msg string) { s.inner.Start(msg) }
 func (s *Spinner) Message(msg string) { s.inner.Message(msg) }
 
 // IsCancelled reports whether the spinner was cancelled by the user.
+// Deprecated: Use IsCanceled for Go-idiomatic spelling.
 func (s *Spinner) IsCancelled() bool { return s.inner.IsCancelled() }
 
-// Stop stops the spinner with a final message and exit code (0=success, 1=error).
+// IsCanceled reports whether the spinner was canceled by the user.
+func (s *Spinner) IsCanceled() bool { return s.inner.IsCancelled() }
+
+// Stop stops the spinner with a final message and exit code (0=success, 1=cancel, >1=error).
 func (s *Spinner) Stop(msg string, code int) {
 	s.inner.Stop(msg, code)
 	if s.term != nil {
@@ -162,23 +183,21 @@ func (s *Spinner) Stop(msg string, code int) {
 	}
 }
 
-// NewSpinner creates a spinner that writes to the current session'term writer, or
-// to stdout if no session is active.
-// Spinner wraps the prompts.Spinner and ensures terminal cleanup on Stop.
+// NewSpinner creates a spinner bound to a terminal writer (or the override
+// writer set via SetTermIO in tests). The underlying terminal, when created,
+// is cleaned up on Stop.
 func NewSpinner(opts SpinnerOptions) *Spinner {
-	t, err := terminal.New()
-	if err != nil {
-		return &Spinner{inner: prompts.NewSpinner(prompts.SpinnerOptions{Output: nil})}
-	}
+	out, term := resolveWriter()
 	sp := prompts.NewSpinner(prompts.SpinnerOptions{
 		Indicator:     opts.Indicator,
 		Frames:        opts.Frames,
 		Delay:         opts.Delay,
-		Output:        t.Writer,
+		Output:        out,
 		CancelMessage: opts.CancelMessage,
 		ErrorMessage:  opts.ErrorMessage,
 	})
-	return &Spinner{inner: sp, term: t}
+
+	return &Spinner{inner: sp, term: term}
 }
 
 // ProgressOptions configures a progress bar. Output is managed by tap.
@@ -203,7 +222,7 @@ func (p *Progress) Advance(step int, msg string) { p.inner.Advance(step, msg) }
 // Message updates the progress bar message.
 func (p *Progress) Message(msg string) { p.inner.Message(msg) }
 
-// Stop stops the progress bar with a final message and exit code (0=success, 1=error).
+// Stop stops the progress bar with a final message and exit code (0=success, 1=cancel, >1=error).
 func (p *Progress) Stop(msg string, code int) {
 	p.inner.Stop(msg, code)
 	if p.term != nil {
@@ -212,28 +231,40 @@ func (p *Progress) Stop(msg string, code int) {
 	}
 }
 
-// NewProgress creates a progress bar that writes to the current session'term
-// writer, or to stdout if no session is active.
-// Progress wraps prompts.Progress and ensures terminal cleanup on Stop.
+// NewProgress creates a progress bar bound to a terminal writer (or the
+// override writer set via SetTermIO in tests). The underlying terminal, when
+// created, is cleaned up on Stop.
 func NewProgress(opts ProgressOptions) *Progress {
-	t, err := terminal.New()
-	if err != nil {
-		return &Progress{inner: prompts.NewProgress(prompts.ProgressOptions{Output: nil})}
-	}
+	out, term := resolveWriter()
 	pr := prompts.NewProgress(prompts.ProgressOptions{
 		Style:  opts.Style,
 		Max:    opts.Max,
 		Size:   opts.Size,
-		Output: t.Writer,
+		Output: out,
 	})
-	return &Progress{inner: pr, term: t}
+
+	return &Progress{inner: pr, term: term}
+}
+
+// resolveWriter returns the output writer and an optional terminal to close.
+func resolveWriter() (core.Writer, *terminal.Terminal) {
+	if ioWriter != nil {
+		return ioWriter, nil
+	}
+
+	t, err := terminal.New()
+	if err != nil {
+		return nil, nil
+	}
+
+	return t.Writer, t
 }
 
 // Intro prints an introductory message using the current session writer or
 // stdout if no session is active.
 func Intro(title string) {
-	_ = runWithTerminal(func(t *terminal.Terminal) any {
-		prompts.Intro(title, prompts.MessageOptions{Output: t.Writer})
+	_ = runWithTerminal(func(_ core.Reader, out core.Writer) any {
+		prompts.Intro(title, prompts.MessageOptions{Output: out})
 		return nil
 	})
 }
@@ -241,8 +272,8 @@ func Intro(title string) {
 // Outro prints a closing message using the current session writer or stdout if
 // no session is active.
 func Outro(message string) {
-	_ = runWithTerminal(func(t *terminal.Terminal) any {
-		prompts.Outro(message, prompts.MessageOptions{Output: t.Writer})
+	_ = runWithTerminal(func(_ core.Reader, out core.Writer) any {
+		prompts.Outro(message, prompts.MessageOptions{Output: out})
 		return nil
 	})
 }
@@ -268,9 +299,9 @@ type BoxOptions struct {
 // Box renders a framed message with optional title and alignment using the
 // current session writer or stdout if no session is active.
 func Box(message string, title string, opts BoxOptions) {
-	_ = runWithTerminal(func(t *terminal.Terminal) any {
+	_ = runWithTerminal(func(_ core.Reader, out core.Writer) any {
 		prompts.Box(message, title, prompts.BoxOptions{
-			Output:         t.Writer,
+			Output:         out,
 			Columns:        opts.Columns,
 			WidthFraction:  opts.WidthFraction,
 			WidthAuto:      opts.WidthAuto,
