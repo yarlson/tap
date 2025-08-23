@@ -8,10 +8,14 @@ import (
 
 	"github.com/yarlson/tap/internal/core"
 	"github.com/yarlson/tap/internal/prompts"
-	"github.com/yarlson/tap/session"
+	"github.com/yarlson/tap/internal/terminal"
 )
 
-// Note: default-session helpers now live in the session package.
+var term *terminal.Terminal
+
+func init() {
+	term, _ = terminal.New()
+}
 
 // IsCancel reports whether v is the cancel sentinel returned when the user
 // cancels a prompt. Use this to branch on user cancellation.
@@ -30,16 +34,14 @@ type TextOptions struct {
 // entered value, or a CancelSymbol if the user cancels (check with IsCancel).
 // A default session is created and cleaned up automatically if needed.
 func Text(opts TextOptions) any {
-	return session.RunWithDefault(func(s *session.Session) any {
-		return prompts.Text(prompts.TextOptions{
-			Message:      opts.Message,
-			Placeholder:  opts.Placeholder,
-			DefaultValue: opts.DefaultValue,
-			InitialValue: opts.InitialValue,
-			Validate:     opts.Validate,
-			Input:        s.Reader(),
-			Output:       s.Writer(),
-		})
+	return prompts.Text(prompts.TextOptions{
+		Message:      opts.Message,
+		Placeholder:  opts.Placeholder,
+		DefaultValue: opts.DefaultValue,
+		InitialValue: opts.InitialValue,
+		Validate:     opts.Validate,
+		Input:        term.Reader,
+		Output:       term.Writer,
 	})
 }
 
@@ -55,15 +57,13 @@ type PasswordOptions struct {
 // or a CancelSymbol if the user cancels (check with IsCancel).
 // A default session is created and cleaned up automatically if needed.
 func Password(opts PasswordOptions) any {
-	return session.RunWithDefault(func(s *session.Session) any {
-		return prompts.Password(prompts.PasswordOptions{
-			Message:      opts.Message,
-			DefaultValue: opts.DefaultValue,
-			InitialValue: opts.InitialValue,
-			Validate:     opts.Validate,
-			Input:        s.Reader(),
-			Output:       s.Writer(),
-		})
+	return prompts.Password(prompts.PasswordOptions{
+		Message:      opts.Message,
+		DefaultValue: opts.DefaultValue,
+		InitialValue: opts.InitialValue,
+		Validate:     opts.Validate,
+		Input:        term.Reader,
+		Output:       term.Writer,
 	})
 }
 
@@ -79,15 +79,13 @@ type ConfirmOptions struct {
 // the choice, or a CancelSymbol if the user cancels (check with IsCancel).
 // A default session is created and cleaned up automatically if needed.
 func Confirm(opts ConfirmOptions) any {
-	return session.RunWithDefault(func(s *session.Session) any {
-		return prompts.Confirm(prompts.ConfirmOptions{
-			Message:      opts.Message,
-			Active:       opts.Active,
-			Inactive:     opts.Inactive,
-			InitialValue: opts.InitialValue,
-			Input:        s.Reader(),
-			Output:       s.Writer(),
-		})
+	return prompts.Confirm(prompts.ConfirmOptions{
+		Message:      opts.Message,
+		Active:       opts.Active,
+		Inactive:     opts.Inactive,
+		InitialValue: opts.InitialValue,
+		Input:        term.Reader,
+		Output:       term.Writer,
 	})
 }
 
@@ -111,20 +109,18 @@ type SelectOptions[T any] struct {
 // or a CancelSymbol if the user cancels (check with IsCancel).
 // A default session is created and cleaned up automatically if needed.
 func Select[T any](opts SelectOptions[T]) any {
-	return session.RunWithDefault(func(s *session.Session) any {
-		items := make([]prompts.SelectOption[T], len(opts.Options))
-		for i, o := range opts.Options {
-			items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
-		}
+	items := make([]prompts.SelectOption[T], len(opts.Options))
+	for i, o := range opts.Options {
+		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
+	}
 
-		return prompts.Select(prompts.SelectOptions[T]{
-			Message:      opts.Message,
-			Options:      items,
-			InitialValue: opts.InitialValue,
-			MaxItems:     opts.MaxItems,
-			Input:        s.Reader(),
-			Output:       s.Writer(),
-		})
+	return prompts.Select(prompts.SelectOptions[T]{
+		Message:      opts.Message,
+		Options:      items,
+		InitialValue: opts.InitialValue,
+		MaxItems:     opts.MaxItems,
+		Input:        term.Reader,
+		Output:       term.Writer,
 	})
 }
 
@@ -137,14 +133,14 @@ type SpinnerOptions struct {
 	ErrorMessage  string
 }
 
-// NewSpinner creates a spinner that writes to the current session's writer, or
+// NewSpinner creates a spinner that writes to the current session'term writer, or
 // to stdout if no session is active.
 func NewSpinner(opts SpinnerOptions) *prompts.Spinner {
 	return prompts.NewSpinner(prompts.SpinnerOptions{
 		Indicator:     opts.Indicator,
 		Frames:        opts.Frames,
 		Delay:         opts.Delay,
-		Output:        session.CurrentWriter(),
+		Output:        term.Writer,
 		CancelMessage: opts.CancelMessage,
 		ErrorMessage:  opts.ErrorMessage,
 	})
@@ -157,28 +153,34 @@ type ProgressOptions struct {
 	Size  int
 }
 
-// NewProgress creates a progress bar that writes to the current session's
+// NewProgress creates a progress bar that writes to the current session'term
 // writer, or to stdout if no session is active.
 func NewProgress(opts ProgressOptions) *prompts.Progress {
 	return prompts.NewProgress(prompts.ProgressOptions{
 		Style:  opts.Style,
 		Max:    opts.Max,
 		Size:   opts.Size,
-		Output: session.CurrentWriter(),
+		Output: term.Writer,
 	})
 }
 
 // Intro prints an introductory message using the current session writer or
 // stdout if no session is active.
-func Intro(title string) { prompts.Intro(title, prompts.MessageOptions{Output: session.CurrentWriter()}) }
+func Intro(title string) {
+	prompts.Intro(title, prompts.MessageOptions{Output: term.Writer})
+}
 
 // Outro prints a closing message using the current session writer or stdout if
 // no session is active.
-func Outro(message string) { prompts.Outro(message, prompts.MessageOptions{Output: session.CurrentWriter()}) }
+func Outro(message string) {
+	prompts.Outro(message, prompts.MessageOptions{Output: term.Writer})
+}
 
 // Cancel prints a cancellation message using the current session writer or
 // stdout if no session is active.
-func Cancel(message string) { prompts.Cancel(message, prompts.MessageOptions{Output: session.CurrentWriter()}) }
+func Cancel(message string) {
+	prompts.Cancel(message, prompts.MessageOptions{Output: term.Writer})
+}
 
 // BoxAlignment is an alias of prompts.BoxAlignment to control box content
 // alignment.
@@ -202,7 +204,7 @@ type BoxOptions struct {
 // current session writer or stdout if no session is active.
 func Box(message string, title string, opts BoxOptions) {
 	prompts.Box(message, title, prompts.BoxOptions{
-		Output:         session.CurrentWriter(),
+		Output:         term.Writer,
 		Columns:        opts.Columns,
 		WidthFraction:  opts.WidthFraction,
 		WidthAuto:      opts.WidthAuto,
