@@ -1,118 +1,23 @@
+// Package tap provides high-level, clack-style terminal prompts, spinners,
+// progress bars, and message helpers. The package exposes simple synchronous
+// helper functions and manages a default interactive session under the hood.
 package tap
 
 import (
-	"os"
-	"sync"
 	"time"
 
 	"github.com/yarlson/tap/internal/core"
 	"github.com/yarlson/tap/internal/prompts"
-	"github.com/yarlson/tap/internal/terminal"
+	"github.com/yarlson/tap/session"
 )
 
-// Session owns a terminal and provides high-level prompt helpers
-// that hide reader/writer from the caller.
-type Session struct {
-	term *terminal.Terminal
-}
+// Note: default-session helpers now live in the session package.
 
-// New creates a new Session with its own terminal.
-func New() (*Session, error) {
-	term, err := terminal.New()
-	if err != nil {
-		return nil, err
-	}
-	return &Session{term: term}, nil
-}
-
-// Close releases session resources.
-func (s *Session) Close() {
-	if s != nil && s.term != nil {
-		s.term.Close()
-	}
-}
-
-var (
-	defaultMu      sync.Mutex
-	defaultSession *Session
-)
-
-// Init initializes a default session for package-level helpers.
-func Init() (*Session, error) {
-	defaultMu.Lock()
-	defer defaultMu.Unlock()
-	if defaultSession != nil {
-		return defaultSession, nil
-	}
-	s, err := New()
-	if err != nil {
-		return nil, err
-	}
-	defaultSession = s
-	return s, nil
-}
-
-// CloseDefault closes the default session, if any.
-func CloseDefault() {
-	defaultMu.Lock()
-	defer defaultMu.Unlock()
-	if defaultSession != nil {
-		defaultSession.Close()
-		defaultSession = nil
-	}
-}
-
-// getOrCreateDefault returns a session and whether it was created by this call.
-func getOrCreateDefault() (s *Session, created bool) {
-	defaultMu.Lock()
-	defer defaultMu.Unlock()
-
-	if defaultSession != nil {
-		return defaultSession, false
-	}
-
-	if ns, err := New(); err == nil {
-		defaultSession = ns
-		return ns, true
-	}
-
-	return nil, false
-}
-
-// withOneOffSession acquires a session for the duration of fn and closes it
-// afterwards if it was created by this function.
-func withOneOffSession(fn func(*Session) any) any {
-	s, created := getOrCreateDefault()
-	if s == nil {
-		return core.GetCancelSymbol()
-	}
-
-	defer func() {
-		if created {
-			CloseDefault()
-		}
-	}()
-
-	return fn(s)
-}
-
-// sessionWriterOrStdout returns the writer bound to the active session or
-// a stdout-backed writer if no session is active.
-func sessionWriterOrStdout() core.Writer {
-	if s := currentSession(); s != nil {
-		return s.term.Writer
-	}
-
-	return newStdoutWriter()
-}
-
-// Re-export cancel helpers for convenience.
-
-type CancelSymbol = core.CancelSymbol
-
+// IsCancel reports whether v is the cancel sentinel returned when the user
+// cancels a prompt. Use this to branch on user cancellation.
 func IsCancel(v any) bool { return core.IsCancel(v) }
 
-// TextOptions mirrors prompts.TextOptions but without Input/Output.
+// TextOptions configures the Text prompt. I/O fields are managed by tap.
 type TextOptions struct {
 	Message      string
 	Placeholder  string
@@ -121,23 +26,24 @@ type TextOptions struct {
 	Validate     func(string) error
 }
 
-func (s *Session) Text(opts TextOptions) any {
-	return prompts.Text(prompts.TextOptions{
-		Message:      opts.Message,
-		Placeholder:  opts.Placeholder,
-		DefaultValue: opts.DefaultValue,
-		InitialValue: opts.InitialValue,
-		Validate:     opts.Validate,
-		Input:        s.term.Reader,
-		Output:       s.term.Writer,
+// Text displays an interactive single-line text input prompt and returns the
+// entered value, or a CancelSymbol if the user cancels (check with IsCancel).
+// A default session is created and cleaned up automatically if needed.
+func Text(opts TextOptions) any {
+	return session.RunWithDefault(func(s *session.Session) any {
+		return prompts.Text(prompts.TextOptions{
+			Message:      opts.Message,
+			Placeholder:  opts.Placeholder,
+			DefaultValue: opts.DefaultValue,
+			InitialValue: opts.InitialValue,
+			Validate:     opts.Validate,
+			Input:        s.Reader(),
+			Output:       s.Writer(),
+		})
 	})
 }
 
-func Text(opts TextOptions) any {
-	return withOneOffSession(func(s *Session) any { return s.Text(opts) })
-}
-
-// PasswordOptions mirrors prompts.PasswordOptions but without Input/Output.
+// PasswordOptions configures the Password prompt. I/O fields are managed by tap.
 type PasswordOptions struct {
 	Message      string
 	DefaultValue string
@@ -145,22 +51,23 @@ type PasswordOptions struct {
 	Validate     func(string) error
 }
 
-func (s *Session) Password(opts PasswordOptions) any {
-	return prompts.Password(prompts.PasswordOptions{
-		Message:      opts.Message,
-		DefaultValue: opts.DefaultValue,
-		InitialValue: opts.InitialValue,
-		Validate:     opts.Validate,
-		Input:        s.term.Reader,
-		Output:       s.term.Writer,
+// Password displays a masked text input prompt and returns the entered value,
+// or a CancelSymbol if the user cancels (check with IsCancel).
+// A default session is created and cleaned up automatically if needed.
+func Password(opts PasswordOptions) any {
+	return session.RunWithDefault(func(s *session.Session) any {
+		return prompts.Password(prompts.PasswordOptions{
+			Message:      opts.Message,
+			DefaultValue: opts.DefaultValue,
+			InitialValue: opts.InitialValue,
+			Validate:     opts.Validate,
+			Input:        s.Reader(),
+			Output:       s.Writer(),
+		})
 	})
 }
 
-func Password(opts PasswordOptions) any {
-	return withOneOffSession(func(s *Session) any { return s.Password(opts) })
-}
-
-// ConfirmOptions mirrors prompts.ConfirmOptions but without Input/Output.
+// ConfirmOptions configures the Confirm prompt. I/O fields are managed by tap.
 type ConfirmOptions struct {
 	Message      string
 	Active       string
@@ -168,29 +75,31 @@ type ConfirmOptions struct {
 	InitialValue bool
 }
 
-func (s *Session) Confirm(opts ConfirmOptions) any {
-	return prompts.Confirm(prompts.ConfirmOptions{
-		Message:      opts.Message,
-		Active:       opts.Active,
-		Inactive:     opts.Inactive,
-		InitialValue: opts.InitialValue,
-		Input:        s.term.Reader,
-		Output:       s.term.Writer,
+// Confirm displays a yes/no confirmation prompt and returns a bool indicating
+// the choice, or a CancelSymbol if the user cancels (check with IsCancel).
+// A default session is created and cleaned up automatically if needed.
+func Confirm(opts ConfirmOptions) any {
+	return session.RunWithDefault(func(s *session.Session) any {
+		return prompts.Confirm(prompts.ConfirmOptions{
+			Message:      opts.Message,
+			Active:       opts.Active,
+			Inactive:     opts.Inactive,
+			InitialValue: opts.InitialValue,
+			Input:        s.Reader(),
+			Output:       s.Writer(),
+		})
 	})
 }
 
-func Confirm(opts ConfirmOptions) any {
-	return withOneOffSession(func(s *Session) any { return s.Confirm(opts) })
-}
-
-// SelectOption mirrors prompts.SelectOption.
+// SelectOption represents a selectable item with a typed value, label, and
+// optional hint for display.
 type SelectOption[T any] struct {
 	Value T
 	Label string
 	Hint  string
 }
 
-// SelectOptions mirrors prompts.SelectOptions but without Input/Output.
+// SelectOptions configures the Select prompt. I/O fields are managed by tap.
 type SelectOptions[T any] struct {
 	Message      string
 	Options      []SelectOption[T]
@@ -198,8 +107,11 @@ type SelectOptions[T any] struct {
 	MaxItems     *int
 }
 
+// Select displays a single-selection list and returns the chosen typed value,
+// or a CancelSymbol if the user cancels (check with IsCancel).
+// A default session is created and cleaned up automatically if needed.
 func Select[T any](opts SelectOptions[T]) any {
-	return withOneOffSession(func(s *Session) any {
+	return session.RunWithDefault(func(s *session.Session) any {
 		items := make([]prompts.SelectOption[T], len(opts.Options))
 		for i, o := range opts.Options {
 			items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
@@ -210,13 +122,13 @@ func Select[T any](opts SelectOptions[T]) any {
 			Options:      items,
 			InitialValue: opts.InitialValue,
 			MaxItems:     opts.MaxItems,
-			Input:        s.term.Reader,
-			Output:       s.term.Writer,
+			Input:        s.Reader(),
+			Output:       s.Writer(),
 		})
 	})
 }
 
-// SpinnerOptions mirrors prompts.SpinnerOptions but without Output.
+// SpinnerOptions configures a spinner. Output is managed by tap.
 type SpinnerOptions struct {
 	Indicator     string
 	Frames        []string
@@ -225,85 +137,54 @@ type SpinnerOptions struct {
 	ErrorMessage  string
 }
 
-// NewSpinner creates a spinner bound to the session's output.
-func (s *Session) NewSpinner(opts SpinnerOptions) *prompts.Spinner {
-	po := prompts.SpinnerOptions{
-		Indicator:     opts.Indicator,
-		Frames:        opts.Frames,
-		Output:        s.term.Writer,
-		CancelMessage: opts.CancelMessage,
-		ErrorMessage:  opts.ErrorMessage,
-	}
-	po.Delay = opts.Delay
-
-	return prompts.NewSpinner(po)
-}
-
+// NewSpinner creates a spinner that writes to the current session's writer, or
+// to stdout if no session is active.
 func NewSpinner(opts SpinnerOptions) *prompts.Spinner {
 	return prompts.NewSpinner(prompts.SpinnerOptions{
 		Indicator:     opts.Indicator,
 		Frames:        opts.Frames,
 		Delay:         opts.Delay,
-		Output:        sessionWriterOrStdout(),
+		Output:        session.CurrentWriter(),
 		CancelMessage: opts.CancelMessage,
 		ErrorMessage:  opts.ErrorMessage,
 	})
 }
 
-// ProgressOptions mirrors prompts.ProgressOptions but without Output.
+// ProgressOptions configures a progress bar. Output is managed by tap.
 type ProgressOptions struct {
 	Style string
 	Max   int
 	Size  int
 }
 
-func (s *Session) NewProgress(opts ProgressOptions) *prompts.Progress {
-	return prompts.NewProgress(prompts.ProgressOptions{
-		Style:  opts.Style,
-		Max:    opts.Max,
-		Size:   opts.Size,
-		Output: s.term.Writer,
-	})
-}
-
+// NewProgress creates a progress bar that writes to the current session's
+// writer, or to stdout if no session is active.
 func NewProgress(opts ProgressOptions) *prompts.Progress {
 	return prompts.NewProgress(prompts.ProgressOptions{
 		Style:  opts.Style,
 		Max:    opts.Max,
 		Size:   opts.Size,
-		Output: sessionWriterOrStdout(),
+		Output: session.CurrentWriter(),
 	})
 }
 
-// Message helpers bound to the session writer.
-func (s *Session) Intro(title string) {
-	prompts.Intro(title, prompts.MessageOptions{Output: s.term.Writer})
-}
+// Intro prints an introductory message using the current session writer or
+// stdout if no session is active.
+func Intro(title string) { prompts.Intro(title, prompts.MessageOptions{Output: session.CurrentWriter()}) }
 
-func Intro(title string) {
-	prompts.Intro(title, prompts.MessageOptions{Output: sessionWriterOrStdout()})
-}
+// Outro prints a closing message using the current session writer or stdout if
+// no session is active.
+func Outro(message string) { prompts.Outro(message, prompts.MessageOptions{Output: session.CurrentWriter()}) }
 
-func (s *Session) Outro(message string) {
-	prompts.Outro(message, prompts.MessageOptions{Output: s.term.Writer})
-}
+// Cancel prints a cancellation message using the current session writer or
+// stdout if no session is active.
+func Cancel(message string) { prompts.Cancel(message, prompts.MessageOptions{Output: session.CurrentWriter()}) }
 
-func Outro(message string) {
-	prompts.Outro(message, prompts.MessageOptions{Output: sessionWriterOrStdout()})
-}
-
-func (s *Session) Cancel(message string) {
-	prompts.Cancel(message, prompts.MessageOptions{Output: s.term.Writer})
-}
-
-func Cancel(message string) {
-	prompts.Cancel(message, prompts.MessageOptions{Output: sessionWriterOrStdout()})
-}
-
-// Box wrappers to render framed messages via high-level API
-
+// BoxAlignment is an alias of prompts.BoxAlignment to control box content
+// alignment.
 type BoxAlignment = prompts.BoxAlignment
 
+// BoxOptions configures the Box message renderer.
 type BoxOptions struct {
 	Columns        int
 	WidthFraction  float64
@@ -317,25 +198,11 @@ type BoxOptions struct {
 	FormatBorder   func(string) string
 }
 
-func (s *Session) Box(message string, title string, opts BoxOptions) {
-	prompts.Box(message, title, prompts.BoxOptions{
-		Output:         s.term.Writer,
-		Columns:        opts.Columns,
-		WidthFraction:  opts.WidthFraction,
-		WidthAuto:      opts.WidthAuto,
-		TitlePadding:   opts.TitlePadding,
-		ContentPadding: opts.ContentPadding,
-		TitleAlign:     opts.TitleAlign,
-		ContentAlign:   opts.ContentAlign,
-		Rounded:        opts.Rounded,
-		IncludePrefix:  opts.IncludePrefix,
-		FormatBorder:   opts.FormatBorder,
-	})
-}
-
+// Box renders a framed message with optional title and alignment using the
+// current session writer or stdout if no session is active.
 func Box(message string, title string, opts BoxOptions) {
 	prompts.Box(message, title, prompts.BoxOptions{
-		Output:         sessionWriterOrStdout(),
+		Output:         session.CurrentWriter(),
 		Columns:        opts.Columns,
 		WidthFraction:  opts.WidthFraction,
 		WidthAuto:      opts.WidthAuto,
@@ -349,35 +216,8 @@ func Box(message string, title string, opts BoxOptions) {
 	})
 }
 
-// Re-export common border formatters for convenience
+// GrayBorder formats a string with a gray box-drawing border.
 func GrayBorder(s string) string { return prompts.GrayBorder(s) }
+
+// CyanBorder formats a string with a cyan box-drawing border.
 func CyanBorder(s string) string { return prompts.CyanBorder(s) }
-
-// currentSession returns existing default session without creating one.
-func currentSession() *Session {
-	defaultMu.Lock()
-	defer defaultMu.Unlock()
-	return defaultSession
-}
-
-// stdout writer that satisfies core.Writer without opening keyboard
-type stdoutWriter struct {
-	mu        sync.Mutex
-	listeners map[string][]func()
-}
-
-func newStdoutWriter() *stdoutWriter                { return &stdoutWriter{listeners: make(map[string][]func())} }
-func (w *stdoutWriter) Write(b []byte) (int, error) { return os.Stdout.Write(b) }
-func (w *stdoutWriter) On(event string, handler func()) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.listeners[event] = append(w.listeners[event], handler)
-}
-func (w *stdoutWriter) Emit(event string) {
-	w.mu.Lock()
-	hs := append([]func(){}, w.listeners[event]...)
-	w.mu.Unlock()
-	for _, h := range hs {
-		h()
-	}
-}
