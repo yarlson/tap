@@ -251,12 +251,20 @@ func New() (*Terminal, error) {
 		}
 	}()
 
-	// Signal handler for clean shutdown
-	go func() {
-		<-sigChan
-		cleanupOnce.Do(doCleanup)
-		os.Exit(1)
-	}()
+    // Signal handler for clean shutdown without forcing process exit.
+    // We clean up terminal state, then restore default handling and re-raise
+    // the signal so the hosting application decides the exit policy.
+    go func() {
+        sig := <-sigChan
+        cleanupOnce.Do(doCleanup)
+        // stop notifications and restore default behavior for this signal
+        signal.Stop(sigChan)
+        signal.Reset(sig)
+        // best-effort: re-send the signal to this process to allow default handling
+        if s, ok := sig.(syscall.Signal); ok {
+            _ = syscall.Kill(os.Getpid(), s)
+        }
+    }()
 
 	// Terminal resize notifications
 	resizeChan := make(chan os.Signal, 1)

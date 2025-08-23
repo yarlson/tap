@@ -483,7 +483,11 @@ func (p *Prompt) renderIfNeeded(st *promptState) {
 		return
 	}
 
-	frame := p.opts.Render(p)
+    // Ensure render sees the current state by updating the snapshot first.
+    // Without this, snapshot accessors would lag one event behind.
+    p.snap.Store(*st)
+
+    frame := p.opts.Render(p)
 	if frame == st.PrevFrame {
 		return
 	}
