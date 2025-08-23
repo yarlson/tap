@@ -16,7 +16,19 @@ Type "Alice"
 Enter
 Sleep 1.5s
 
-# Second prompt: Programming language (accept default "Go")
+# Second prompt: Programming languages (multi-select) — choose Go and Python
+Space
+Sleep 200ms
+Down
+Sleep 200ms
+Down
+Sleep 200ms
+Down
+Sleep 200ms
+Down
+Sleep 200ms
+Space
+Sleep 200ms
 Enter
 Sleep 1.5s
 
@@ -29,12 +41,12 @@ Sleep 1.5s
 # Fourth prompt: Years of experience (change from default)
 Type "none"
 Enter
-Sleep 3s
+Sleep 2s
 Backspace
 Backspace
 Backspace
 Backspace
-Type "3"
+Type "2"
 Enter
 Sleep 1.5s
 
