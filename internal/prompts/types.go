@@ -54,3 +54,13 @@ type SelectOptions[T any] struct {
 	Input        core.Reader
 	Output       core.Writer
 }
+
+// MultiSelectOptions defines options for styled multi-select prompt
+type MultiSelectOptions[T any] struct {
+	Message       string
+	Options       []SelectOption[T]
+	InitialValues []T
+	MaxItems      *int
+	Input         core.Reader
+	Output        core.Writer
+}

@@ -27,6 +27,10 @@ const (
 	// Radio symbols
 	RadioActive   = "●"
 	RadioInactive = "○"
+
+	// Checkbox symbols for multiselect
+	CheckboxChecked   = "◼"
+	CheckboxUnchecked = "◻"
 )
 
 // ANSI color codes

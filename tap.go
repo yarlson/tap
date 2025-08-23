@@ -146,6 +146,34 @@ func Select[T any](opts SelectOptions[T]) T {
 	})
 }
 
+// MultiSelectOptions configures the MultiSelect prompt. I/O fields are managed by tap.
+type MultiSelectOptions[T any] struct {
+	Message       string
+	Options       []SelectOption[T]
+	InitialValues []T
+	MaxItems      *int
+}
+
+// MultiSelect displays a multi-selection list and returns the chosen typed values.
+// A terminal is created and cleaned up automatically per call.
+func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
+	items := make([]prompts.SelectOption[T], len(opts.Options))
+	for i, o := range opts.Options {
+		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
+	}
+
+	return runWithTerminal(func(in core.Reader, out core.Writer) []T {
+		return prompts.MultiSelect[T](prompts.MultiSelectOptions[T]{
+			Message:       opts.Message,
+			Options:       items,
+			InitialValues: opts.InitialValues,
+			MaxItems:      opts.MaxItems,
+			Input:         in,
+			Output:        out,
+		})
+	})
+}
+
 // SpinnerOptions configures a spinner. Output is managed by tap.
 type SpinnerOptions struct {
 	Indicator     string
