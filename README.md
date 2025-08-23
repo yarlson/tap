@@ -231,6 +231,40 @@ func TestTextPrompt(t *testing.T) {
 }
 ```
 
+### Using Tap with LLMs
+
+To help language models reliably use this library, provide them a compact API reference and constraints. This repo includes [README.LLM.md](README.LLM.md) for that purpose.
+
+- Prefer pasting the contents of `README.LLM.md` into the LLM context (system or first user message)
+- Explicitly state the module path `github.com/yarlson/tap` and that returns are typed
+- Ask for runnable Go code with proper imports
+
+Prompt template:
+
+```text
+System:
+You are a Go coding agent. Use this library to build interactive terminal prompts.
+
+API cheat sheet:
+<paste README.LLM.md here>
+
+User:
+Write a Go program that:
+- asks for name and email (validate email)
+- asks to confirm, then shows an outro.
+Return a complete main.go.
+```
+
+Testing template (mock I/O):
+
+```text
+System:
+Use mocks for terminal I/O. In tests, call tap.SetTermIO(in, out) with core mocks.
+
+User:
+Write a table-driven test for Text/Confirm using core.NewMockReadable/NewMockWritable and tap.SetTermIO.
+```
+
 ### Testing tap helpers (override terminal I/O)
 
 Tap helpers open a terminal per call by default. In tests, you can override input/output to avoid opening a real terminal:
