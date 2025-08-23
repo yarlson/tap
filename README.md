@@ -231,6 +231,27 @@ func TestTextPrompt(t *testing.T) {
 }
 ```
 
+### Testing tap helpers (override terminal I/O)
+
+Tap helpers open a terminal per call by default. In tests, you can override input/output to avoid opening a real terminal:
+
+```go
+in := core.NewMockReadable()
+out := core.NewMockWritable()
+
+tap.SetTermIO(in, out)
+defer tap.SetTermIO(nil, nil)
+
+go func() {
+  _ = tap.Text(tap.TextOptions{Message: "Your name:"})
+}()
+
+in.EmitKeypress("A", core.Key{Name: "a"})
+in.EmitKeypress("", core.Key{Name: "return"})
+
+// Assert output frames via out.Buffer
+```
+
 ## Examples
 
 Explore working examples in the [`examples/`](examples/) directory:
