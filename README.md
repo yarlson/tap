@@ -308,17 +308,17 @@ Each example demonstrates different features and can serve as starting points fo
 
 Tap is in **active development**. Core functionality is stable and tested, but APIs may evolve. Current status:
 
-- ✅ **Stable**: Text, Confirm, Select prompts with full styling
+- ✅ **Stable**: Text, Password, Confirm, Select, Multi-Select
 - ✅ **Stable**: Progress bars and message primitives
 - ✅ **Stable**: Event loop architecture and terminal management
-- 🔄 **In Progress**: Additional prompt types and enhanced styling
+- 🔄 **In Progress**: Autocomplete, grouped prompts, enhanced styling
 - 📋 **Planned**: Documentation site, themes, and advanced features
 
 ## Contributing
 
 Contributions welcome! Areas where help is needed:
 
-- **New Prompt Types** - Multi-select, autocomplete
+- **New Prompt Types** - Autocomplete
 - **Enhanced Styling** - Themes, custom symbols, color schemes
 - **Documentation** - API docs, tutorials, more examples
 - **Testing** - Cross-platform testing, edge cases, performance
