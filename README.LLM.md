@@ -2,7 +2,7 @@
 
 This document gives language models a compact, precise map of Tap’s public API so you can confidently generate working code that uses this library.
 
-Tap is a Go library for building interactive, clack-style terminal prompts (text/password/confirm/select), spinners, progress bars, and message boxes.
+Tap is a Go library for building interactive, clack-style terminal prompts (text/password/confirm/select/multiselect), spinners, progress bars, and message boxes.
 
 - Module path: `github.com/yarlson/tap`
 - Runtime model: each helper opens a terminal internally, runs, and restores the TTY
@@ -23,6 +23,7 @@ import (
 All helpers create and close a terminal per call, unless I/O is overridden in tests.
 
 - `func tap.Text(opts tap.TextOptions) string`
+
   - Options:
     - `Message string`
     - `Placeholder string`
@@ -31,9 +32,11 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
     - `Validate func(string) error` (return non-nil to block submission and show error)
 
 - `func tap.Password(opts tap.PasswordOptions) string`
+
   - Same options as `TextOptions` (input is masked in the UI)
 
 - `func tap.Confirm(opts tap.ConfirmOptions) bool`
+
   - Options:
     - `Message string`
     - `Active string` (label for true)
@@ -44,7 +47,11 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 - `type tap.SelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValue *T; MaxItems *int }`
 - `func tap.Select[T any](opts tap.SelectOptions[T]) T`
 
+- `type tap.MultiSelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValues []T; MaxItems *int }`
+- `func tap.MultiSelect[T any](opts tap.MultiSelectOptions[T]) []T`
+
 - Spinner
+
   - `type tap.SpinnerOptions struct { Indicator string; Frames []string; Delay time.Duration; CancelMessage, ErrorMessage string }`
   - `type tap.Spinner struct { /* unexported */ }`
   - `func tap.NewSpinner(opts tap.SpinnerOptions) *tap.Spinner`
@@ -54,6 +61,7 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - `func (s *tap.Spinner) IsCanceled() bool` (idiomatic) — `IsCancelled()` is kept for backward compat
 
 - Progress
+
   - `type tap.ProgressOptions struct { Style string; Max, Size int }`
   - `type tap.Progress struct { /* unexported */ }`
   - `func tap.NewProgress(opts tap.ProgressOptions) *tap.Progress`
@@ -73,12 +81,15 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 ## Behavior and conventions
 
 - **Typed returns**
+
   - `Text`/`Password` → `string`
   - `Confirm` → `bool`
   - `Select[T]` → `T`
+  - `MultiSelect[T]` → `[]T`
   - If the user cancels, helpers return a reasonable zero value (`""`, `false`, `var zero T`).
 
 - **Validation errors** (Text/Password)
+
   - Provide `Validate: func(string) error { ... }`
   - If non-nil error is returned on submit, the prompt stays active and shows a yellow error line below the input:
     - Yellow left bar for the input line
@@ -122,6 +133,21 @@ env := tap.Select(tap.SelectOptions[Env]{
     {Value: "prod", Label: "Production", Hint: "Live"},
   },
 })
+```
+
+### Multi-Select with typed values
+
+```go
+langs := tap.MultiSelect(tap.MultiSelectOptions[string]{
+  Message: "Choose languages:",
+  Options: []tap.SelectOption[string]{
+    {Value: "go", Label: "Go"},
+    {Value: "py", Label: "Python"},
+    {Value: "js", Label: "JavaScript"},
+  },
+  InitialValues: []string{"go"},
+})
+fmt.Println(langs) // []string{"go", ...}
 ```
 
 ### Spinner/Progress

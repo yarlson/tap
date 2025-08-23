@@ -28,6 +28,7 @@ Building interactive CLI applications shouldn't be complex. Tap brings the elega
 - **Password Input** - Masked text input for sensitive data
 - **Confirm** - Yes/No prompts with customizable labels and keyboard navigation
 - **Select** - Single selection from typed options with hints and color-coded display
+- **Multi-Select** - Multiple selection with checkboxes, selection count, and limits
 - **Progress Bar** - Animated progress indicators with multiple styles (light, heavy, block)
 - **Spinner** - Loading indicators with dots, timer, or custom frames
 - **Message Primitives** - Intro, outro, cancel messages, and styled boxes
@@ -41,7 +42,6 @@ Building interactive CLI applications shouldn't be complex. Tap brings the elega
 
 ### 🔄 Coming Soon
 
-- **Multi-Select** - Multiple selection from lists with checkboxes
 - **Autocomplete** - Text input with suggestion dropdown
 - **Group** - Grouped prompts for complex workflows
 
@@ -298,6 +298,7 @@ go run examples/confirm/main.go   # Yes/No confirmations
 go run examples/select/main.go    # Single selection menus
 go run examples/progress/main.go  # Progress bars and status
 go run examples/spinner/main.go   # Spinners (dots, timer, custom frames)
+go run examples/multiselect/main.go  # Multiple selection menus
 go run examples/multiple/main.go  # Complete workflow example
 ```
 
