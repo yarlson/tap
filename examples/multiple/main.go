@@ -172,6 +172,10 @@ func main() {
 	profileProgress.Stop("Profile summary ready! 📋", 0)
 
 	// Display the summary after the progress completes using a box
+	border := tap.GrayBorder
+	if detailed {
+		border = tap.CyanBorder
+	}
 	tap.Box(
 		func() string {
 			if detailed {
@@ -199,7 +203,7 @@ func main() {
 			ContentPadding: 1,
 			Rounded:        true,
 			IncludePrefix:  true,
-			FormatBorder:   tap.GrayBorder,
+			FormatBorder:   border,
 		},
 	)
 
