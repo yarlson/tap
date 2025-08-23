@@ -1,6 +1,7 @@
 package prompts
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -8,6 +9,12 @@ import (
 
 	"github.com/yarlson/tap/internal/core"
 )
+
+// helper to strip ANSI codes
+func removeANSI(s string) string {
+	ansi := regexp.MustCompile("\x1b\\[[0-9;?]*[ -/]*[@-~]")
+	return ansi.ReplaceAllString(s, "")
+}
 
 func TestBox_SquareBasic(t *testing.T) {
 	out := core.NewMockWritable()
@@ -58,7 +65,7 @@ func TestBox_IncludePrefix(t *testing.T) {
 	})
 
 	lines := strings.Split(strings.Join(out.GetFrames(), ""), "\n")
-	// First non-empty line should start with prefix "│ "
+	// First non-empty line should start with prefix "│ " (gray or plain)
 	var first string
 	for _, l := range lines {
 		if strings.TrimSpace(l) != "" {
@@ -69,7 +76,9 @@ func TestBox_IncludePrefix(t *testing.T) {
 	if first == "" && len(lines) > 0 {
 		first = lines[0]
 	}
-	assert.True(t, strings.HasPrefix(first, Bar+" "))
+	// Strip potential ANSI to compare raw glyph
+	raw := removeANSI(first)
+	assert.True(t, strings.HasPrefix(raw, Bar+" "))
 }
 
 func TestBox_AutoWidth_WrapsContent(t *testing.T) {

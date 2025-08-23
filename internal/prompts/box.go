@@ -69,7 +69,7 @@ func Box(message string, title string, opts BoxOptions) {
 
 	linePrefix := ""
 	if opts.IncludePrefix {
-		linePrefix = formatBorder(Bar) + " "
+		linePrefix = gray(Bar) + " "
 	}
 
 	var symbols [4]string
