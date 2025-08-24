@@ -29,8 +29,9 @@ func TestStream_StartWriteStop_Success(t *testing.T) {
 	// Lines are prefixed
 	assert.Contains(t, joined, cyan(Bar)+"  step 1: fetch deps")
 	assert.Contains(t, joined, cyan(Bar)+"  step 2: compile")
-	// Finalization repaints header/body and prints colored message without diamond
-	assert.Contains(t, joined, green("Done"))
+	// Finalization repaints header/body and prints status line with symbol
+	assert.Contains(t, joined, green(StepSubmit))
+	assert.Contains(t, joined, "Done")
 }
 
 func TestStream_StopWithErrorAndCancel(t *testing.T) {
@@ -43,7 +44,8 @@ func TestStream_StopWithErrorAndCancel(t *testing.T) {
 
 	frames := out.GetFrames()
 	joined := strings.Join(frames, "\n")
-	// final line should not include a diamond symbol anymore; just the message inside the block
+	// final line uses cancel diamond and white text
+	assert.Contains(t, joined, red(StepCancel))
 	assert.Contains(t, joined, "Cancelled")
 
 	out2 := core.NewMockWritable()
@@ -54,7 +56,8 @@ func TestStream_StopWithErrorAndCancel(t *testing.T) {
 
 	frames2 := out2.GetFrames()
 	joined2 := strings.Join(frames2, "\n")
-	// no diamond symbol on error either
+	// error uses error diamond and white text
+	assert.Contains(t, joined2, yellow(StepError))
 	assert.Contains(t, joined2, "Failed")
 }
 

@@ -95,7 +95,7 @@ func (s *Stream) Stop(finalMessage string, code int) {
 		return
 	}
 
-	// Colorize final message subtly to distinguish from stream content
+	// Prepare final message and timing
 
 	msg := finalMessage
 	if msg == "" {
@@ -112,12 +112,7 @@ func (s *Stream) Stop(finalMessage string, code int) {
 			msg = fmt.Sprintf("%s [%ds]", msg, sec)
 		}
 	}
-	// Apply color by status: green for success, red for cancel/error
-	if code == 0 {
-		msg = green(msg)
-	} else {
-		msg = red(msg)
-	}
+	// Message itself remains white to align with design language
 
 	// Visually deactivate: repaint previously printed content lines with gray bars.
 	// Move cursor up by the number of content lines we printed, then rewrite each line.
@@ -131,20 +126,25 @@ func (s *Stream) Stop(finalMessage string, code int) {
 	for i := 0; i < lineCount+1; i++ {
 		_, _ = out.Write([]byte(core.CursorUp))
 	}
-	// Rewrite header: green dimmed title to indicate completion (no diamond)
+	// Rewrite header: inactive diamond, title stays white
 	_, _ = out.Write([]byte("\r"))
 	_, _ = out.Write([]byte(core.EraseLine))
-	_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", gray(Bar), dim(title))))
+	_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", green(StepSubmit), title)))
 
-	// Repaint content lines with gray bars
+	// Repaint content lines with gray bars and dimmed text
 	for i := range lineCount {
 		_, _ = out.Write([]byte("\r"))
 		_, _ = out.Write([]byte(core.EraseLine))
-		_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", gray(Bar), lines[i])))
+		_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", gray(Bar), dim(lines[i]))))
 	}
 
-	// Integrate status inside the block without any diamond symbol.
-	// Do not render a bottom corner on submit/cancel/error to match other primitives' submit state.
-	status := fmt.Sprintf("%s  %s\n", gray(Bar), msg)
+	// Final status line with a diamond (aligned like header), white message; no bottom corner
+	statusSymbol := green(StepSubmit)
+	if code == 1 {
+		statusSymbol = red(StepCancel)
+	} else if code > 1 {
+		statusSymbol = yellow(StepError)
+	}
+	status := fmt.Sprintf("%s  %s\n", statusSymbol, msg)
 	_, _ = out.Write([]byte(status))
 }
