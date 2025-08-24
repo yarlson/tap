@@ -2,7 +2,7 @@
 
 This document gives language models a compact, precise map of Tap’s public API so you can confidently generate working code that uses this library.
 
-Tap is a Go library for building interactive, clack-style terminal prompts (text/password/confirm/select/multiselect), spinners, progress bars, and message boxes.
+Tap is a Go library for building interactive, clack-style terminal prompts (text/password/confirm/select/multiselect), spinners, progress bars, streams, and message boxes.
 
 - Module path: `github.com/yarlson/tap`
 - Runtime model: each helper opens a terminal internally, runs, and restores the TTY
@@ -61,6 +61,15 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - `func (s *tap.Spinner) IsCanceled() bool` (idiomatic) — `IsCancelled()` is kept for backward compat
 
 - Progress
+- Stream (live output)
+
+  - `type tap.StreamOptions struct { ShowTimer bool }`
+  - `type tap.Stream struct { /* unexported */ }`
+  - `func tap.NewStream(opts tap.StreamOptions) *tap.Stream`
+  - `func (s *tap.Stream) Start(msg string)`
+  - `func (s *tap.Stream) WriteLine(line string)`
+  - `func (s *tap.Stream) Pipe(r io.Reader)`
+  - `func (s *tap.Stream) Stop(msg string, code int)` // 0=success, 1=cancel, >1=error
 
   - `type tap.ProgressOptions struct { Style string; Max, Size int }`
   - `type tap.Progress struct { /* unexported */ }`
@@ -150,7 +159,7 @@ langs := tap.MultiSelect(tap.MultiSelectOptions[string]{
 fmt.Println(langs) // []string{"go", ...}
 ```
 
-### Spinner/Progress
+### Spinner/Progress/Stream
 
 ```go
 sp := tap.NewSpinner(tap.SpinnerOptions{Indicator: "dots"})
@@ -162,6 +171,12 @@ pr := tap.NewProgress(tap.ProgressOptions{Style: "heavy", Max: 100, Size: 40})
 pr.Start("Processing…")
 for i := 0; i < 10; i++ { pr.Advance(10, fmt.Sprintf("%d/10", i+1)) }
 pr.Stop("Complete", 0)
+
+st := tap.NewStream(tap.StreamOptions{ShowTimer: true})
+st.Start("Building project")
+st.WriteLine("step 1: deps")
+st.WriteLine("step 2: compile")
+st.Stop("Done", 0)
 ```
 
 ## Testing (override terminal I/O)

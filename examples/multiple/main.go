@@ -32,19 +32,19 @@ func main() {
 		Placeholder: "Enter your name...",
 	})
 
-    // Second prompt: Choose programming languages (multi-select)
-    langOptions := []tap.SelectOption[string]{
-        {Value: "Go", Label: "Go"},
-        {Value: "Python", Label: "Python"},
-        {Value: "JavaScript", Label: "JavaScript"},
-        {Value: "TypeScript", Label: "TypeScript"},
-        {Value: "Rust", Label: "Rust"},
-        {Value: "Java", Label: "Java"},
-    }
-    languages := tap.MultiSelect[string](tap.MultiSelectOptions[string]{
-        Message: fmt.Sprintf("Hi %s! Which programming languages do you use?", name),
-        Options: langOptions,
-    })
+	// Second prompt: Choose programming languages (multi-select)
+	langOptions := []tap.SelectOption[string]{
+		{Value: "Go", Label: "Go"},
+		{Value: "Python", Label: "Python"},
+		{Value: "JavaScript", Label: "JavaScript"},
+		{Value: "TypeScript", Label: "TypeScript"},
+		{Value: "Rust", Label: "Rust"},
+		{Value: "Java", Label: "Java"},
+	}
+	languages := tap.MultiSelect[string](tap.MultiSelectOptions[string]{
+		Message: fmt.Sprintf("Hi %s! Which programming languages do you use?", name),
+		Options: langOptions,
+	})
 
 	// Third prompt: Select project type
 	projectTypes := []tap.SelectOption[string]{
@@ -56,14 +56,14 @@ func main() {
 		{Value: "data", Label: "Data Science/ML", Hint: "Analytics, machine learning, AI"},
 	}
 
-    projectType := tap.Select[string](tap.SelectOptions[string]{
-        Message: fmt.Sprintf("What type of projects do you work on with %s?", strings.Join(languages, ", ")),
+	projectType := tap.Select[string](tap.SelectOptions[string]{
+		Message: fmt.Sprintf("What type of projects do you work on with %s?", strings.Join(languages, ", ")),
 		Options: projectTypes,
 	})
 
 	// Fourth prompt: Get years of experience
-    experience := tap.Text(tap.TextOptions{
-        Message:      "How many years of experience do you have with your selected languages?",
+	experience := tap.Text(tap.TextOptions{
+		Message:      "How many years of experience do you have with your selected languages?",
 		Placeholder:  "Enter number of years...",
 		DefaultValue: "1",
 		Validate: func(s string) error {
@@ -131,19 +131,19 @@ func main() {
 			if detailed {
 				var b strings.Builder
 				_, _ = fmt.Fprintf(&b, "👤 Name: %s\n", name)
-                _, _ = fmt.Fprintf(&b, "💻 Languages: %s\n", strings.Join(languages, ", "))
+				_, _ = fmt.Fprintf(&b, "💻 Languages: %s\n", strings.Join(languages, ", "))
 				_, _ = fmt.Fprintf(&b, "🚀 Project Type: %s\n", getProjectLabel(projectType))
 				_, _ = fmt.Fprintf(&b, "📈 Experience Level: %s years\n", experience)
 				_, _ = fmt.Fprintf(&b, "\n🎯 Profile Analysis:\n")
 				if experience == "0" || experience == "1" {
-                    _, _ = fmt.Fprintf(&b, "   You're just getting started - keep learning!\n")
+					_, _ = fmt.Fprintf(&b, "   You're just getting started - keep learning!\n")
 				} else {
-                    _, _ = fmt.Fprintf(&b, "   Great! You have solid experience.\n")
+					_, _ = fmt.Fprintf(&b, "   Great! You have solid experience.\n")
 				}
 				_, _ = fmt.Fprintf(&b, "   %s development is a great choice!", getProjectLabel(projectType))
 				return b.String()
 			}
-            return fmt.Sprintf("%s • %s • %s • %s years experience", name, strings.Join(languages, ", "), getProjectLabel(projectType), experience)
+			return fmt.Sprintf("%s • %s • %s • %s years experience", name, strings.Join(languages, ", "), getProjectLabel(projectType), experience)
 		}(),
 		"📋 PROFILE SUMMARY",
 		tap.BoxOptions{

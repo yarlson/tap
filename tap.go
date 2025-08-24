@@ -4,6 +4,7 @@
 package tap
 
 import (
+	"io"
 	"time"
 
 	"github.com/yarlson/tap/internal/core"
@@ -286,6 +287,46 @@ func resolveWriter() (core.Writer, *terminal.Terminal) {
 	}
 
 	return t.Writer, t
+}
+
+// StreamOptions configures a live output stream. Output is managed by tap.
+type StreamOptions struct {
+	ShowTimer bool
+}
+
+// Stream wraps a styled live stream renderer and ensures terminal cleanup on Stop.
+type Stream struct {
+	inner *prompts.Stream
+	term  *terminal.Terminal
+}
+
+// NewStream creates a live stream bound to a terminal writer (or override),
+// and ensures the underlying terminal is closed on Stop.
+func NewStream(opts StreamOptions) *Stream {
+	out, term := resolveWriter()
+	st := prompts.NewStream(prompts.StreamOptions{
+		Output:    out,
+		ShowTimer: opts.ShowTimer,
+	})
+	return &Stream{inner: st, term: term}
+}
+
+// Start prints the stream header and prepares to receive lines.
+func (s *Stream) Start(msg string) { s.inner.Start(msg) }
+
+// WriteLine appends a single line to the stream area.
+func (s *Stream) WriteLine(line string) { s.inner.WriteLine(line) }
+
+// Pipe reads from r line-by-line and writes to the stream.
+func (s *Stream) Pipe(r io.Reader) { s.inner.Pipe(r) }
+
+// Stop finalizes the stream with a status symbol and code (0=success, 1=cancel, >1=error).
+func (s *Stream) Stop(msg string, code int) {
+	s.inner.Stop(msg, code)
+	if s.term != nil {
+		s.term.Close()
+		s.term = nil
+	}
 }
 
 // Intro prints an introductory message using the current session writer or

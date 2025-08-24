@@ -31,6 +31,7 @@ Building interactive CLI applications shouldn't be complex. Tap brings the elega
 - **Multi-Select** - Multiple selection with checkboxes, selection count, and limits
 - **Progress Bar** - Animated progress indicators with multiple styles (light, heavy, block)
 - **Spinner** - Loading indicators with dots, timer, or custom frames
+- **Stream** - Real-time output areas with Start/Pipe/Stop API
 - **Message Primitives** - Intro, outro, cancel messages, and styled boxes
 - **Event System** - Race-condition-free event loop architecture
 
@@ -192,6 +193,17 @@ for event := range prompt.events {
 }
 ```
 
+### Stream (live output)
+
+```go
+st := tap.NewStream(tap.StreamOptions{ShowTimer: true})
+st.Start("Building project")
+st.WriteLine("step 1: fetch deps")
+st.WriteLine("step 2: compile")
+// or pipe an io.Reader: st.Pipe(reader)
+st.Stop("Done", 0) // 0=success, 1=cancel, >1=error
+```
+
 This approach eliminates the need for mutexes while providing excellent performance and thread safety through atomic snapshots.
 
 ## Testing
@@ -298,6 +310,7 @@ go run examples/confirm/main.go   # Yes/No confirmations
 go run examples/select/main.go    # Single selection menus
 go run examples/progress/main.go  # Progress bars and status
 go run examples/spinner/main.go   # Spinners (dots, timer, custom frames)
+go run examples/stream/main.go    # Stream live output
 go run examples/multiselect/main.go  # Multiple selection menus
 go run examples/multiple/main.go  # Complete workflow example
 ```
