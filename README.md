@@ -1,50 +1,34 @@
-# 🚀 Tap
+# Tap
 
-**Beautiful, interactive command-line prompts for Go** - A Go port of the popular TypeScript [Clack](https://clack.cc/) library.
+**Beautiful, interactive command-line prompts for Go** — A Go port inspired by the TypeScript [Clack](https://clack.cc/) library.
 
 <div>
   <img src="assets/demo.gif" alt="Tap Demo" width="1400">
 </div>
 
-> ⚠️ **Heavy Development**: This project is currently in heavy development. APIs may change, and some features are still being implemented. Use with caution in production environments.
-
 ## Why Tap?
 
-Building interactive CLI applications shouldn't be complex. Tap brings the elegant, minimal design philosophy of Clack to the Go ecosystem, offering:
-
-- **Event-driven architecture** for responsive, race-condition-free prompts
-- **Beautiful styling** with consistent visual design and Unicode symbols
-- **Type-safe APIs** with generic support for strongly-typed selections
-- **Comprehensive testing** with built-in mock utilities
-- **Minimal dependencies** - Only essential terminal and keyboard libraries
+Building CLI applications shouldn't require wrestling with terminal complexities. Tap provides elegant, type-safe prompts with beautiful Unicode styling, letting you focus on your application logic instead of terminal management.
 
 ## Features
 
-### ✅ Available Now
+- 🎯 **Type-safe prompts** with Go generics for strongly-typed selections
+- 🎨 **Beautiful styling** with consistent Unicode symbols and colors
+- ⚡ **Zero-config** terminal management with automatic cleanup
+- 🧪 **Testing utilities** with built-in mocks for reliable testing
+- 📦 **Minimal dependencies** — only essential terminal libraries
 
-**Core Components:**
+### Available Components
 
-- **Text Input** - Single-line input with cursor navigation, validation, placeholders, and default values
-- **Password Input** - Masked text input for sensitive data
-- **Confirm** - Yes/No prompts with customizable labels and keyboard navigation
-- **Select** - Single selection from typed options with hints and color-coded display
-- **Multi-Select** - Multiple selection with checkboxes, selection count, and limits
-- **Progress Bar** - Animated progress indicators with multiple styles (light, heavy, block)
-- **Spinner** - Loading indicators with dots, timer, or custom frames
-- **Stream** - Real-time output areas with Start/Pipe/Stop API
-- **Message Primitives** - Intro, outro, cancel messages, and styled boxes
-- **Event System** - Race-condition-free event loop architecture
-
-**Developer Experience:**
-
-- **Mock Testing** - Built-in utilities for reliable prompt testing
-- **Type Safety** - Generic APIs for strongly-typed selections
-- **Terminal Management** - Raw mode handling, keyboard input, and cursor control
-
-### 🔄 Coming Soon
-
-- **Autocomplete** - Text input with suggestion dropdown
-- **Group** - Grouped prompts for complex workflows
+- **Text Input** — Single-line input with validation, placeholders, and defaults
+- **Password Input** — Masked input for sensitive data
+- **Confirm** — Yes/No prompts with customizable labels
+- **Select** — Single selection from typed options with hints
+- **MultiSelect** — Multiple selection with checkboxes
+- **Progress Bar** — Animated progress indicators (light, heavy, block styles)
+- **Spinner** — Loading indicators with dots, timer, or custom frames
+- **Stream** — Real-time output with start/write/stop lifecycle
+- **Messages** — Intro, outro, and styled message boxes
 
 ## Installation
 
@@ -54,22 +38,26 @@ go get github.com/yarlson/tap@latest
 
 ## Quick Start
 
-### Usage
-
-Use the `tap` package:
-
 ```go
 package main
 
 import (
     "fmt"
-
     "github.com/yarlson/tap"
 )
 
 func main() {
-    name := tap.Text(tap.TextOptions{Message: "What's your name?"})
-    confirmed := tap.Confirm(tap.ConfirmOptions{Message: fmt.Sprintf("Hello %v! Continue?", name)})
+    tap.Intro("Welcome! 👋")
+
+    name := tap.Text(tap.TextOptions{
+        Message: "What's your name?",
+        Placeholder: "Enter your name...",
+    })
+
+    confirmed := tap.Confirm(tap.ConfirmOptions{
+        Message: fmt.Sprintf("Hello %s! Continue?", name),
+    })
+
     if confirmed {
         tap.Outro("Let's go! 🎉")
     }
@@ -78,11 +66,9 @@ func main() {
 
 ## API Examples
 
-### Text Input with Validation (tap API)
+### Text Input with Validation
 
 ```go
-import "errors"
-
 email := tap.Text(tap.TextOptions{
     Message:      "Enter your email:",
     Placeholder:  "user@example.com",
@@ -96,206 +82,108 @@ email := tap.Text(tap.TextOptions{
 })
 ```
 
-### Password Input (masked)
-
-```go
-pwd := tap.Password(tap.PasswordOptions{Message: "Enter your password:"})
-fmt.Printf("Password length: %d\n", len(pwd))
-```
-
-### Confirmation with Custom Labels
-
-```go
-proceed := tap.Confirm(tap.ConfirmOptions{
-    Message:      "Deploy to production?",
-    Active:       "Deploy",
-    Inactive:     "Cancel",
-    InitialValue: false,
-})
-```
-
 ### Type-Safe Selection
 
 ```go
 type Environment string
 
-envs := []tap.SelectOption[Environment]{
+environments := []tap.SelectOption[Environment]{
     {Value: "dev", Label: "Development", Hint: "Local development"},
     {Value: "staging", Label: "Staging", Hint: "Pre-production testing"},
-    {Value: "prod", Label: "Production", Hint: "Live environment"},
+    {Value: "production", Label: "Production", Hint: "Live environment"},
 }
 
 env := tap.Select(tap.SelectOptions[Environment]{
     Message: "Choose deployment target:",
-    Options: envs,
+    Options: environments,
 })
+
+// env is strongly typed as Environment
 ```
 
-### Progress Bar
+### Progress Indicators
 
 ```go
-prog := tap.NewProgress(tap.ProgressOptions{
-    Style:  "heavy",     // "light", "heavy", or "block"
-    Max:    100,         // total units of work
-    Size:   40,          // bar width in characters
+// Progress Bar
+progress := tap.NewProgress(tap.ProgressOptions{
+    Style: "heavy",  // "light", "heavy", or "block"
+    Max:   100,
+    Size:  40,
 })
 
-prog.Start("Processing...")
+progress.Start("Processing...")
 for i := 0; i <= 100; i += 10 {
     time.Sleep(200 * time.Millisecond)
-    prog.Advance(10, fmt.Sprintf("Step %d/10", i/10+1))
+    progress.Advance(10, fmt.Sprintf("Step %d/10", i/10+1))
 }
-prog.Stop("Complete!", 0) // 0=success, 1=cancel, 2=error
+progress.Stop("Complete!", 0)
+
+// Spinner
+spinner := tap.NewSpinner(tap.SpinnerOptions{})
+spinner.Start("Loading...")
+// ... do work ...
+spinner.Stop("Done!", 0)
 ```
 
-### Spinner
+### Multiple Selection
 
 ```go
-// Default spinner (dots)
-spin := tap.NewSpinner(tap.SpinnerOptions{})
-spin.Start("Connecting")
-// ... do work ...
-spin.Stop("Connected", 0)
-
-// Timer indicator
-timerSpin := tap.NewSpinner(tap.SpinnerOptions{Indicator: "timer"})
-timerSpin.Start("Fetching data")
-// ... do work ...
-timerSpin.Stop("Done", 0)
-
-// Custom frames and delay
-customSpin := tap.NewSpinner(tap.SpinnerOptions{Frames: []string{"-", "\\", "|", "/"}, Delay: 100 * time.Millisecond})
-customSpin.Start("Working")
-// ... do work ...
-customSpin.Stop("Complete", 0)
-```
-
-## Architecture
-
-Tap uses a clean, layered architecture designed for performance and reliability:
-
-### Package Structure
-
-- **`core`** - Core prompt engine with unstyled, functional prompts
-- **`prompts`** - Beautifully styled prompts built on top of core
-- **`terminal`** - Terminal management, keyboard input, and cursor control
-
-### Event-Driven Design
-
-All prompts use a pure event loop architecture for race-condition-free operation:
-
-```go
-// Single event loop processes all state changes
-for event := range prompt.events {
-    event(&state)                    // Update state
-    prompt.render(&state)            // Render changes
-    prompt.updateSnapshot(&state)    // Update atomic snapshot
+languages := []tap.SelectOption[string]{
+    {Value: "go", Label: "Go"},
+    {Value: "python", Label: "Python"},
+    {Value: "javascript", Label: "JavaScript"},
 }
+
+selected := tap.MultiSelect(tap.MultiSelectOptions[string]{
+    Message: "Which languages do you use?",
+    Options: languages,
+})
+
+fmt.Printf("You selected: %v\n", selected)
 ```
 
-### Stream (live output)
+### Styled Messages
 
 ```go
-st := tap.NewStream(tap.StreamOptions{ShowTimer: true})
-st.Start("Building project")
-st.WriteLine("step 1: fetch deps")
-st.WriteLine("step 2: compile")
-// or pipe an io.Reader: st.Pipe(reader)
-st.Stop("Done", 0) // 0=success, 1=cancel, >1=error
+// Message box with custom styling
+tap.Box("This is important information!", "⚠️ Warning", tap.BoxOptions{
+    Rounded:       true,
+    FormatBorder:  tap.CyanBorder,
+    TitleAlign:    tap.BoxAlignCenter,
+    ContentAlign:  tap.BoxAlignCenter,
+})
 ```
-
-This approach eliminates the need for mutexes while providing excellent performance and thread safety through atomic snapshots.
 
 ## Testing
 
-Tap includes comprehensive test coverage with built-in mock utilities:
-
-```bash
-# Run all tests
-go test ./...
-
-# Test with race detection
-go test -race ./...
-
-# Test specific packages
-go test ./prompts -v
-go test ./core -v
-```
-
-### Mock Testing Example
+Tap includes comprehensive testing utilities. Override terminal I/O in tests:
 
 ```go
-func TestTextPrompt(t *testing.T) {
-    mockInput := core.NewMockReader()
-    mockOutput := core.NewMockWriter()
+func TestYourPrompt(t *testing.T) {
+    // Create mock I/O
+    mockInput := tap.NewMockReadable()
+    mockOutput := tap.NewMockWritable()
 
-    // Simulate user typing "hello" and pressing enter
-    mockInput.SendString("hello")
-    mockInput.SendKey("return")
+    // Override terminal I/O for testing
+    tap.SetTermIO(mockInput, mockOutput)
+    defer tap.SetTermIO(nil, nil)
 
-    result := prompts.Text(prompts.TextOptions{
-        Message: "Enter text:",
-        Input:   mockInput,
-        Output:  mockOutput,
-    })
+    // Simulate user input
+    go func() {
+        mockInput.EmitKeypress("test", tap.Key{Name: "t"})
+        mockInput.EmitKeypress("", tap.Key{Name: "return"})
+    }()
 
-    assert.Equal(t, "hello", result)
+    result := tap.Text(tap.TextOptions{Message: "Enter text:"})
+    assert.Equal(t, "test", result)
 }
 ```
 
-### Using Tap with LLMs
+Run tests:
 
-To help language models reliably use this library, provide them a compact API reference and constraints. This repo includes [README.LLM.md](README.LLM.md) for that purpose.
-
-- Prefer pasting the contents of `README.LLM.md` into the LLM context (system or first user message)
-- Explicitly state the module path `github.com/yarlson/tap` and that returns are typed
-- Ask for runnable Go code with proper imports
-
-Prompt template:
-
-```text
-System:
-You are a Go coding agent. Use this library to build interactive terminal prompts.
-
-API cheat sheet:
-<paste README.LLM.md here>
-
-User:
-Write a Go program that:
-- asks for name and email (validate email)
-- asks to confirm, then shows an outro.
-Return a complete main.go.
-```
-
-Testing template (mock I/O):
-
-```text
-System:
-Use mocks for terminal I/O. In tests, call tap.SetTermIO(in, out) with core mocks.
-
-User:
-Write a table-driven test for Text/Confirm using core.NewMockReadable/NewMockWritable and tap.SetTermIO.
-```
-
-### Testing tap helpers (override terminal I/O)
-
-Tap helpers open a terminal per call by default. In tests, you can override input/output to avoid opening a real terminal:
-
-```go
-in := core.NewMockReadable()
-out := core.NewMockWritable()
-
-tap.SetTermIO(in, out)
-defer tap.SetTermIO(nil, nil)
-
-go func() {
-  _ = tap.Text(tap.TextOptions{Message: "Your name:"})
-}()
-
-in.EmitKeypress("A", core.Key{Name: "a"})
-in.EmitKeypress("", core.Key{Name: "return"})
-
-// Assert output frames via out.Buffer
+```bash
+go test ./...
+go test -race ./...  # with race detection
 ```
 
 ## Examples
@@ -303,50 +191,34 @@ in.EmitKeypress("", core.Key{Name: "return"})
 Explore working examples in the [`examples/`](examples/) directory:
 
 ```bash
-# Try different prompt types
-go run examples/text/main.go      # Text input with validation
-go run examples/password/main.go  # Password input (masked)
-go run examples/confirm/main.go   # Yes/No confirmations
-go run examples/select/main.go    # Single selection menus
-go run examples/progress/main.go  # Progress bars and status
-go run examples/spinner/main.go   # Spinners (dots, timer, custom frames)
-go run examples/stream/main.go    # Stream live output
-go run examples/multiselect/main.go  # Multiple selection menus
-go run examples/multiple/main.go  # Complete workflow example
+go run examples/text/main.go      # Text input
+go run examples/select/main.go    # Selection menus
+go run examples/progress/main.go  # Progress bars
+go run examples/multiple/main.go  # Complete workflow
 ```
 
-Each example demonstrates different features and can serve as starting points for your applications.
+## Architecture
 
-## Development Status
+Tap uses an event-driven architecture with atomic state management for race-condition-free operation. The library automatically handles:
 
-Tap is in **active development**. Core functionality is stable and tested, but APIs may evolve. Current status:
+- Terminal raw mode setup/cleanup
+- Keyboard input processing
+- Cursor positioning and output formatting
+- Cross-platform compatibility
 
-- ✅ **Stable**: Text, Password, Confirm, Select, Multi-Select
-- ✅ **Stable**: Progress bars and message primitives
-- ✅ **Stable**: Event loop architecture and terminal management
-- 🔄 **In Progress**: Autocomplete, grouped prompts, enhanced styling
-- 📋 **Planned**: Documentation site, themes, and advanced features
+The main package provides a clean API while internal packages handle terminal complexity.
+
+## Status
+
+Tap API is **stable** and production-ready. The library follows semantic versioning and maintains backward compatibility.
 
 ## Contributing
 
-Contributions welcome! Areas where help is needed:
+Contributions welcome! Please:
 
-- **New Prompt Types** - Autocomplete
-- **Enhanced Styling** - Themes, custom symbols, color schemes
-- **Documentation** - API docs, tutorials, more examples
-- **Testing** - Cross-platform testing, edge cases, performance
-- **Bug Reports** - Issues with keyboard handling or rendering
-
-### Development Setup
-
-```bash
-git clone https://github.com/yarlson/tap.git
-cd tap
-go test ./...                    # Run tests
-go run examples/text/main.go     # Try examples
-```
-
-Please follow Go best practices, maintain test coverage above 80%, and use the event-driven architecture patterns established in the codebase.
+- Follow Go best practices and maintain test coverage
+- Include examples for new features
+- Update documentation as needed
 
 ## License
 
@@ -354,16 +226,9 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- **[Clack](https://clack.cc/)** - The original TypeScript library that inspired this project
-- **[@eiannone/keyboard](https://github.com/eiannone/keyboard)** - Cross-platform keyboard input for Go
-- The Go community for excellent tooling and libraries
-
-## Links
-
-- **Documentation**: [Package docs on pkg.go.dev](https://pkg.go.dev/github.com/yarlson/tap)
-- **Original Clack**: [clack.cc](https://clack.cc/)
-- **Issues & Feature Requests**: [GitHub Issues](https://github.com/yarlson/tap/issues)
-- **Examples**: [`examples/` directory](examples/)
+- **[Clack](https://clack.cc/)** — The original TypeScript library that inspired this project
+- **[@eiannone/keyboard](https://github.com/eiannone/keyboard)** — Cross-platform keyboard input
+- The Go community for excellent tooling and feedback
 
 ---
 
