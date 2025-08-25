@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 // helper to strip ANSI codes
@@ -17,7 +15,7 @@ func removeANSI(s string) string {
 }
 
 func TestBox_SquareBasic(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	Box("Hello world", "TITLE", BoxOptions{
 		Output:        out,
@@ -38,7 +36,7 @@ func TestBox_SquareBasic(t *testing.T) {
 }
 
 func TestBox_Rounded(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	Box("Rounded", "TITLE", BoxOptions{
 		Output:        out,
@@ -55,7 +53,7 @@ func TestBox_Rounded(t *testing.T) {
 }
 
 func TestBox_IncludePrefix(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	Box("Prefixed", "T", BoxOptions{
 		Output:        out,
@@ -82,7 +80,7 @@ func TestBox_IncludePrefix(t *testing.T) {
 }
 
 func TestBox_AutoWidth_WrapsContent(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	long := "This is a very long line that should wrap around the inner width"
 	Box(long, "T", BoxOptions{
@@ -105,7 +103,7 @@ func TestBox_AutoWidth_WrapsContent(t *testing.T) {
 }
 
 func TestBox_FormatBorder_Applied(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	Box("X", "T", BoxOptions{
 		Output:        out,

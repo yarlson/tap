@@ -4,20 +4,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/yarlson/tap/internal/prompts"
 
-	"github.com/yarlson/tap/internal/core"
+	"github.com/stretchr/testify/assert"
 )
 
-func withIO(in *core.MockReadable, out *core.MockWritable) func() {
+func withIO(in *prompts.MockReadable, out *prompts.MockWritable) func() {
 	oldIn, oldOut := ioReader, ioWriter
 	SetTermIO(in, out)
 	return func() { SetTermIO(oldIn, oldOut) }
 }
 
 func TestTap_Text(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := prompts.NewMockReadable()
+	out := prompts.NewMockWritable()
 	cleanup := withIO(in, out)
 	defer cleanup()
 
@@ -27,12 +27,12 @@ func TestTap_Text(t *testing.T) {
 		close(done)
 	}()
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("A", core.Key{Name: "a"})
-	in.EmitKeypress("l", core.Key{Name: "l"})
-	in.EmitKeypress("i", core.Key{Name: "i"})
-	in.EmitKeypress("c", core.Key{Name: "c"})
-	in.EmitKeypress("e", core.Key{Name: "e"})
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("A", prompts.Key{Name: "a"})
+	in.EmitKeypress("l", prompts.Key{Name: "l"})
+	in.EmitKeypress("i", prompts.Key{Name: "i"})
+	in.EmitKeypress("c", prompts.Key{Name: "c"})
+	in.EmitKeypress("e", prompts.Key{Name: "e"})
+	in.EmitKeypress("", prompts.Key{Name: "return"})
 	<-done
 
 	joined := ""
@@ -43,22 +43,22 @@ func TestTap_Text(t *testing.T) {
 }
 
 func TestTap_Confirm(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := prompts.NewMockReadable()
+	out := prompts.NewMockWritable()
 	cleanup := withIO(in, out)
 	defer cleanup()
 
 	resultCh := make(chan bool, 1)
 	go func() { resultCh <- Confirm(ConfirmOptions{Message: "Proceed?"}) }()
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("y", core.Key{Name: "y"})
+	in.EmitKeypress("y", prompts.Key{Name: "y"})
 	res := <-resultCh
 	assert.True(t, res)
 }
 
 func TestTap_Select(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := prompts.NewMockReadable()
+	out := prompts.NewMockWritable()
 	cleanup := withIO(in, out)
 	defer cleanup()
 
@@ -70,29 +70,29 @@ func TestTap_Select(t *testing.T) {
 	resCh := make(chan string, 1)
 	go func() { resCh <- Select[string](SelectOptions[string]{Message: "Color?", Options: opts}) }()
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("", core.Key{Name: "down"})
+	in.EmitKeypress("", prompts.Key{Name: "down"})
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("", prompts.Key{Name: "return"})
 	res := <-resCh
 	assert.Equal(t, "blue", res)
 }
 
 func TestTap_Password(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := prompts.NewMockReadable()
+	out := prompts.NewMockWritable()
 	cleanup := withIO(in, out)
 	defer cleanup()
 
 	resCh := make(chan string, 1)
 	go func() { resCh <- Password(PasswordOptions{Message: "Password:"}) }()
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("s", core.Key{Name: "s"})
-	in.EmitKeypress("e", core.Key{Name: "e"})
-	in.EmitKeypress("c", core.Key{Name: "c"})
-	in.EmitKeypress("r", core.Key{Name: "r"})
-	in.EmitKeypress("e", core.Key{Name: "e"})
-	in.EmitKeypress("t", core.Key{Name: "t"})
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("s", prompts.Key{Name: "s"})
+	in.EmitKeypress("e", prompts.Key{Name: "e"})
+	in.EmitKeypress("c", prompts.Key{Name: "c"})
+	in.EmitKeypress("r", prompts.Key{Name: "r"})
+	in.EmitKeypress("e", prompts.Key{Name: "e"})
+	in.EmitKeypress("t", prompts.Key{Name: "t"})
+	in.EmitKeypress("", prompts.Key{Name: "return"})
 	res := <-resCh
 	assert.Equal(t, "secret", res)
 }

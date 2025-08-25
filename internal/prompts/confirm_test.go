@@ -4,13 +4,11 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan bool, 1)
 	go func() {
@@ -23,7 +21,7 @@ func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("y", core.Key{Name: "y"})
+	mock.EmitKeypress("y", Key{Name: "y"})
 	result := <-done
 
 	if result != true {
@@ -50,8 +48,8 @@ func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
 }
 
 func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan bool, 1)
 	go func() {
@@ -66,7 +64,7 @@ func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("n", core.Key{Name: "n"})
+	mock.EmitKeypress("n", Key{Name: "n"})
 	<-done
 
 	frames := out.GetFrames()
@@ -92,8 +90,8 @@ func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
 }
 
 func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan bool, 1)
 	go func() {
@@ -106,7 +104,7 @@ func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("y", core.Key{Name: "y"})
+	mock.EmitKeypress("y", Key{Name: "y"})
 	<-done
 
 	frames := out.GetFrames()
@@ -132,8 +130,8 @@ func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
 }
 
 func TestStyledConfirm_ShowsInitialValue(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan bool, 1)
 	go func() {
@@ -147,9 +145,9 @@ func TestStyledConfirm_ShowsInitialValue(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("", core.Key{Name: "left"})
+	mock.EmitKeypress("", Key{Name: "left"})
 	time.Sleep(time.Millisecond) // Give time for the value to update
-	mock.EmitKeypress("", core.Key{Name: "return"})
+	mock.EmitKeypress("", Key{Name: "return"})
 	result := <-done
 
 	// After pressing left arrow, should be false
@@ -159,8 +157,8 @@ func TestStyledConfirm_ShowsInitialValue(t *testing.T) {
 }
 
 func TestStyledConfirm_ShowsCancelState(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan any, 1)
 	go func() {
@@ -173,7 +171,7 @@ func TestStyledConfirm_ShowsCancelState(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("\x03", core.Key{Ctrl: true, Name: "c"}) // Ctrl+C
+	mock.EmitKeypress("\x03", Key{Ctrl: true, Name: "c"}) // Ctrl+C
 	result := <-done
 	// typed API: cancel returns false
 	if result != false {

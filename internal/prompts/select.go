@@ -3,21 +3,19 @@ package prompts
 import (
 	"fmt"
 	"strings"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 // styledSelectState holds the state for a styled select prompt
 type styledSelectState[T any] struct {
 	cursor  int
-	options []core.SelectOption[T]
+	options []SelectOption[T]
 }
 
 // Select creates a styled select prompt
 func Select[T any](opts SelectOptions[T]) T {
-	coreOptions := make([]core.SelectOption[T], len(opts.Options))
+	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
-		coreOptions[i] = core.SelectOption[T]{
+		coreOptions[i] = SelectOption[T]{
 			Value: opt.Value,
 			Label: opt.Label,
 			Hint:  opt.Hint,
@@ -38,10 +36,10 @@ func Select[T any](opts SelectOptions[T]) T {
 		options: coreOptions,
 	}
 
-	styledPrompt := core.NewPromptWithTracking(core.PromptOptions{
+	styledPrompt := NewPromptWithTracking(PromptOptions{
 		Input:  opts.Input,
 		Output: opts.Output,
-		Render: func(p *core.Prompt) string {
+		Render: func(p *Prompt) string {
 			return renderStyledSelect(p, opts, state.options, state.cursor)
 		},
 		InitialValue: initialValue,
@@ -77,7 +75,7 @@ func Select[T any](opts SelectOptions[T]) T {
 	return zero
 }
 
-func getInitialValue[T any](opts SelectOptions[T], coreOptions []core.SelectOption[T]) T {
+func getInitialValue[T any](opts SelectOptions[T], coreOptions []SelectOption[T]) T {
 	if opts.InitialValue != nil {
 		return *opts.InitialValue
 	}
@@ -92,14 +90,14 @@ func isEqual[T any](a, b T) bool {
 	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
 }
 
-func renderStyledSelect[T any](p *core.Prompt, opts SelectOptions[T], coreOptions []core.SelectOption[T], cursor int) string {
+func renderStyledSelect[T any](p *Prompt, opts SelectOptions[T], coreOptions []SelectOption[T], cursor int) string {
 	state := p.StateSnapshot()
 
 	// Build title
 	title := fmt.Sprintf("%s\n%s  %s\n", gray(Bar), Symbol(state), opts.Message)
 
 	switch state {
-	case core.StateSubmit:
+	case StateSubmit:
 		selected := coreOptions[cursor]
 		label := selected.Label
 		if label == "" {

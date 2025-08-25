@@ -2,8 +2,6 @@ package prompts
 
 import (
 	"strings"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 // Password creates a styled password input prompt that masks user input
@@ -16,13 +14,13 @@ func Password(opts PasswordOptions) string {
 		}
 	}
 
-	p := core.NewPrompt(core.PromptOptions{
+	p := NewPrompt(PromptOptions{
 		Input:            opts.Input,
 		Output:           opts.Output,
 		Validate:         validate,
 		InitialUserInput: opts.InitialValue,
 		InitialValue:     opts.DefaultValue,
-		Render: func(p *core.Prompt) string {
+		Render: func(p *Prompt) string {
 			s := p.StateSnapshot()
 			userInput := p.UserInputSnapshot()
 			cursor := p.CursorSnapshot()
@@ -34,11 +32,11 @@ func Password(opts PasswordOptions) string {
 			masked := renderMaskedWithCursor(userInput, cursor, s)
 
 			switch s {
-			case core.StateError:
+			case StateError:
 				errMsg := p.ErrorSnapshot()
 				return title + yellow(Bar) + "  " + masked + "\n" + yellow(BarEnd) + "  " + yellow(errMsg)
 
-			case core.StateSubmit:
+			case StateSubmit:
 				// Do not show raw value; show bullets only
 				value := ""
 				if val, ok := p.ValueSnapshot().(string); ok {
@@ -50,7 +48,7 @@ func Password(opts PasswordOptions) string {
 				}
 				return title + gray(Bar) + valueText
 
-			case core.StateCancel:
+			case StateCancel:
 				value := ""
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
@@ -84,8 +82,8 @@ func Password(opts PasswordOptions) string {
 
 // renderMaskedWithCursor renders bullets for each rune in input, and shows an inverted cursor block
 // similar to the styled text behavior.
-func renderMaskedWithCursor(text string, cursor int, state core.ClackState) string {
-	if state != core.StateActive && state != core.StateInitial {
+func renderMaskedWithCursor(text string, cursor int, state ClackState) string {
+	if state != StateActive && state != StateInitial {
 		return strings.Repeat("●", len([]rune(text)))
 	}
 

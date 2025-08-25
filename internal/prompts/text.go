@@ -2,8 +2,6 @@ package prompts
 
 import (
 	"strings"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 // Text creates a styled text input prompt
@@ -16,13 +14,13 @@ func Text(opts TextOptions) string {
 		}
 	}
 
-	p := core.NewPrompt(core.PromptOptions{
+	p := NewPrompt(PromptOptions{
 		Input:            opts.Input,
 		Output:           opts.Output,
 		Validate:         validate,
 		InitialUserInput: opts.InitialValue,
 		InitialValue:     opts.DefaultValue,
-		Render: func(p *core.Prompt) string {
+		Render: func(p *Prompt) string {
 			s := p.StateSnapshot()
 			userInput := p.UserInputSnapshot()
 			cursor := p.CursorSnapshot()
@@ -45,11 +43,11 @@ func Text(opts TextOptions) string {
 			}
 
 			switch s {
-			case core.StateError:
+			case StateError:
 				errMsg := p.ErrorSnapshot()
 				return title + yellow(Bar) + "  " + displayInput + "\n" + yellow(BarEnd) + "  " + yellow(errMsg)
 
-			case core.StateSubmit:
+			case StateSubmit:
 				value := ""
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
@@ -60,7 +58,7 @@ func Text(opts TextOptions) string {
 				}
 				return title + gray(Bar) + valueText
 
-			case core.StateCancel:
+			case StateCancel:
 				value := ""
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
@@ -93,8 +91,8 @@ func Text(opts TextOptions) string {
 }
 
 // renderTextWithCursor renders text with a cursor indicator
-func renderTextWithCursor(text string, cursor int, state core.ClackState) string {
-	if state != core.StateActive && state != core.StateInitial {
+func renderTextWithCursor(text string, cursor int, state ClackState) string {
+	if state != StateActive && state != StateInitial {
 		return text
 	}
 

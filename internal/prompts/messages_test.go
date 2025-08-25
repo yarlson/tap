@@ -4,12 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestIntro_WritesBarStartAndTitle(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	Intro("Welcome", MessageOptions{Output: out})
 
@@ -22,7 +20,7 @@ func TestIntro_WritesBarStartAndTitle(t *testing.T) {
 }
 
 func TestCancel_WritesBarEndAndRedMessage(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	Cancel("Operation cancelled", MessageOptions{Output: out})
 
@@ -35,7 +33,7 @@ func TestCancel_WritesBarEndAndRedMessage(t *testing.T) {
 }
 
 func TestOutro_WritesBarAndBarEndWithMessage(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	Outro("All done", MessageOptions{Output: out})
 

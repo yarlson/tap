@@ -1,7 +1,5 @@
 package prompts
 
-import "github.com/yarlson/tap/internal/core"
-
 // Confirm creates a styled confirm prompt
 func Confirm(opts ConfirmOptions) bool {
 	active := opts.Active
@@ -16,17 +14,17 @@ func Confirm(opts ConfirmOptions) bool {
 	initial := opts.InitialValue
 	currentValue := initial
 
-	p := core.NewPrompt(core.PromptOptions{
+	p := NewPrompt(PromptOptions{
 		Input:  opts.Input,
 		Output: opts.Output,
-		Render: func(p *core.Prompt) string {
+		Render: func(p *Prompt) string {
 			s := p.StateSnapshot()
 
 			// Create title with symbol and message
 			title := gray(Bar) + "\n" + Symbol(s) + "  " + opts.Message + "\n"
 
 			// If we're submitting, show simplified version
-			if s == core.StateSubmit {
+			if s == StateSubmit {
 				value := ""
 				if val, ok := p.ValueSnapshot().(bool); ok {
 					if val {

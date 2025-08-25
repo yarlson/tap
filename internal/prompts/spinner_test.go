@@ -5,12 +5,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestSpinner_API(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	s := NewSpinner(SpinnerOptions{Output: out})
 
 	// Ensure methods exist and basic start/stop do not panic
@@ -21,7 +19,7 @@ func TestSpinner_API(t *testing.T) {
 }
 
 func TestSpinner_RendersFrames(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	s := NewSpinner(SpinnerOptions{Output: out})
 
 	s.Start("")
@@ -33,7 +31,7 @@ func TestSpinner_RendersFrames(t *testing.T) {
 }
 
 func TestSpinner_RendersMessage(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	s := NewSpinner(SpinnerOptions{Output: out})
 
 	s.Start("foo")
@@ -46,7 +44,7 @@ func TestSpinner_RendersMessage(t *testing.T) {
 }
 
 func TestSpinner_TimerIndicator(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	s := NewSpinner(SpinnerOptions{Output: out, Indicator: "timer"})
 
 	s.Start("")
@@ -59,7 +57,7 @@ func TestSpinner_TimerIndicator(t *testing.T) {
 }
 
 func TestSpinner_CustomFramesAndDelay(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	s := NewSpinner(SpinnerOptions{Output: out, Frames: []string{"🐴", "🦋", "🐙", "🐶"}, Delay: 200 * time.Millisecond})
 
 	s.Start("")
@@ -71,7 +69,7 @@ func TestSpinner_CustomFramesAndDelay(t *testing.T) {
 }
 
 func TestSpinner_MessageUpdate(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	s := NewSpinner(SpinnerOptions{Output: out})
 
 	s.Start("")
@@ -86,7 +84,7 @@ func TestSpinner_MessageUpdate(t *testing.T) {
 }
 
 func TestSpinner_StopCodes(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	s := NewSpinner(SpinnerOptions{Output: out})
 
 	s.Start("")

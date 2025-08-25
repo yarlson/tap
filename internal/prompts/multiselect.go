@@ -3,22 +3,20 @@ package prompts
 import (
 	"fmt"
 	"strings"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 type styledMultiSelectState[T any] struct {
 	cursor   int
-	options  []core.SelectOption[T]
+	options  []SelectOption[T]
 	selected map[int]bool
 	order    []int
 }
 
 // MultiSelect renders a styled multi-select and returns selected values.
 func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
-	coreOptions := make([]core.SelectOption[T], len(opts.Options))
+	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
-		coreOptions[i] = core.SelectOption[T]{Value: opt.Value, Label: opt.Label, Hint: opt.Hint}
+		coreOptions[i] = SelectOption[T]{Value: opt.Value, Label: opt.Label, Hint: opt.Hint}
 	}
 
 	sel := make(map[int]bool)
@@ -42,10 +40,10 @@ func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
 		order:    order,
 	}
 
-	prompt := core.NewPromptWithTracking(core.PromptOptions{
+	prompt := NewPromptWithTracking(PromptOptions{
 		Input:  opts.Input,
 		Output: opts.Output,
-		Render: func(p *core.Prompt) string {
+		Render: func(p *Prompt) string {
 			return renderStyledMultiSelect(p, opts, state)
 		},
 	}, false)
@@ -82,7 +80,7 @@ func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
 	})
 
 	// Space toggles selection
-	prompt.On("key", func(_ string, key core.Key) {
+	prompt.On("key", func(_ string, key Key) {
 		if key.Name == "space" {
 			idx := state.cursor
 			if state.selected[idx] {
@@ -127,7 +125,7 @@ func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
 	return nil
 }
 
-func renderStyledMultiSelect[T any](p *core.Prompt, opts MultiSelectOptions[T], st *styledMultiSelectState[T]) string {
+func renderStyledMultiSelect[T any](p *Prompt, opts MultiSelectOptions[T], st *styledMultiSelectState[T]) string {
 	state := p.StateSnapshot()
 	// Build title with selection count indicator
 	count := 0
@@ -145,7 +143,7 @@ func renderStyledMultiSelect[T any](p *core.Prompt, opts MultiSelectOptions[T], 
 	title := fmt.Sprintf("%s\n%s  %s%s\n", gray(Bar), Symbol(state), opts.Message, countText)
 
 	switch state {
-	case core.StateSubmit:
+	case StateSubmit:
 		labels := []string{}
 		for i, option := range st.options {
 			if st.selected[i] {

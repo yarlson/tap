@@ -6,11 +6,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestProgress_RendersProgressBar(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	prog := NewProgress(ProgressOptions{
 		Output: out,
@@ -33,7 +32,7 @@ func TestProgress_RendersProgressBar(t *testing.T) {
 }
 
 func TestProgress_AdvancesProgress(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	prog := NewProgress(ProgressOptions{
 		Output: out,
@@ -73,7 +72,7 @@ func TestProgress_DifferentStyles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.style, func(t *testing.T) {
-			out := core.NewMockWritable()
+			out := NewMockWritable()
 
 			prog := NewProgress(ProgressOptions{
 				Output: out,
@@ -95,7 +94,7 @@ func TestProgress_DifferentStyles(t *testing.T) {
 }
 
 func TestProgress_CompletesToFullBar(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	prog := NewProgress(ProgressOptions{
 		Output: out,
@@ -123,7 +122,7 @@ func TestProgress_CompletesToFullBar(t *testing.T) {
 }
 
 func TestProgress_ClampsToMaxValue(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	prog := NewProgress(ProgressOptions{
 		Output: out,
@@ -151,7 +150,7 @@ func TestProgress_ClampsToMaxValue(t *testing.T) {
 }
 
 func TestProgress_MessageOnly(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	prog := NewProgress(ProgressOptions{
 		Output: out,
@@ -180,7 +179,7 @@ func TestProgress_MessageOnly(t *testing.T) {
 }
 
 func TestProgress_StopWithMessage(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 
 	prog := NewProgress(ProgressOptions{
 		Output: out,

@@ -1,7 +1,5 @@
 package prompts
 
-import "github.com/yarlson/tap/internal/core"
-
 // Unicode symbols for drawing styled prompts
 const (
 	// Step symbols
@@ -61,15 +59,15 @@ func inverse(s string) string       { return Inverse + s + Reset }
 func strikethrough(s string) string { return Strikethrough + s + Reset }
 
 // Symbol returns the appropriate symbol for a given state with color
-func Symbol(state core.ClackState) string {
+func Symbol(state ClackState) string {
 	switch state {
-	case core.StateInitial, core.StateActive:
+	case StateInitial, StateActive:
 		return cyan(StepActive)
-	case core.StateCancel:
+	case StateCancel:
 		return red(StepCancel)
-	case core.StateError:
+	case StateError:
 		return yellow(StepError)
-	case core.StateSubmit:
+	case StateSubmit:
 		return green(StepSubmit)
 	}
 	return StepActive

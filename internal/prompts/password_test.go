@@ -4,13 +4,11 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan any, 1)
 	go func() {
@@ -23,9 +21,9 @@ func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("h", core.Key{Name: "h"})
-	in.EmitKeypress("i", core.Key{Name: "i"})
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("h", Key{Name: "h"})
+	in.EmitKeypress("i", Key{Name: "i"})
+	in.EmitKeypress("", Key{Name: "return"})
 	result := <-done
 
 	// Should return the typed value
@@ -61,8 +59,8 @@ func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {
 }
 
 func TestStyledPassword_ShowsBulletsDuringTyping(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan any, 1)
 	go func() {
@@ -74,9 +72,9 @@ func TestStyledPassword_ShowsBulletsDuringTyping(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("a", core.Key{Name: "a"})
+	in.EmitKeypress("a", Key{Name: "a"})
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("", Key{Name: "return"})
 	<-done
 
 	frames := out.GetFrames()
@@ -93,12 +91,12 @@ func TestStyledPassword_ShowsBulletsDuringTyping(t *testing.T) {
 }
 
 func TestStyledPassword_ShowsErrorState(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 
 	validator := func(s string) error {
 		if len(s) < 3 {
-			return &core.ValidationError{Message: "Too short"}
+			return &ValidationError{Message: "Too short"}
 		}
 		return nil
 	}
@@ -114,14 +112,14 @@ func TestStyledPassword_ShowsErrorState(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("a", core.Key{Name: "a"})
+	in.EmitKeypress("a", Key{Name: "a"})
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("", core.Key{Name: "return"}) // should trigger error
+	in.EmitKeypress("", Key{Name: "return"}) // should trigger error
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("b", core.Key{Name: "b"})
-	in.EmitKeypress("c", core.Key{Name: "c"})
+	in.EmitKeypress("b", Key{Name: "b"})
+	in.EmitKeypress("c", Key{Name: "c"})
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("", core.Key{Name: "return"}) // should submit now
+	in.EmitKeypress("", Key{Name: "return"}) // should submit now
 	<-done
 
 	frames := out.GetFrames()

@@ -6,8 +6,6 @@ import (
 	"io"
 	"sync"
 	"time"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 // StreamOptions configure the styled stream renderer
@@ -45,7 +43,7 @@ func (s *Stream) Start(message string) {
 	s.start = time.Now()
 	s.title = message
 	if s.out != nil {
-		header := fmt.Sprintf("%s\n%s  %s\n", gray(Bar), Symbol(core.StateActive), message)
+		header := fmt.Sprintf("%s\n%s  %s\n", gray(Bar), Symbol(StateActive), message)
 		_, _ = s.out.Write([]byte(header))
 	}
 }
@@ -124,17 +122,17 @@ func (s *Stream) Stop(finalMessage string, code int) {
 
 	// Move up to the header (one line above first content line)
 	for i := 0; i < lineCount+1; i++ {
-		_, _ = out.Write([]byte(core.CursorUp))
+		_, _ = out.Write([]byte(CursorUp))
 	}
 	// Rewrite header: inactive diamond, title stays white
 	_, _ = out.Write([]byte("\r"))
-	_, _ = out.Write([]byte(core.EraseLine))
+	_, _ = out.Write([]byte(EraseLine))
 	_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", green(StepSubmit), title)))
 
 	// Repaint content lines with gray bars and dimmed text
 	for i := range lineCount {
 		_, _ = out.Write([]byte("\r"))
-		_, _ = out.Write([]byte(core.EraseLine))
+		_, _ = out.Write([]byte(EraseLine))
 		_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", gray(Bar), dim(lines[i]))))
 	}
 

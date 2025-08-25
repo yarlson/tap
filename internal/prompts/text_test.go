@@ -4,13 +4,11 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan any, 1)
 	go func() {
@@ -23,9 +21,9 @@ func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("h", core.Key{Name: "h"})
-	mock.EmitKeypress("i", core.Key{Name: "i"})
-	mock.EmitKeypress("", core.Key{Name: "return"})
+	mock.EmitKeypress("h", Key{Name: "h"})
+	mock.EmitKeypress("i", Key{Name: "i"})
+	mock.EmitKeypress("", Key{Name: "return"})
 
 	result := <-done
 
@@ -65,8 +63,8 @@ func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {
 }
 
 func TestStyledText_ShowsPlaceholderWhenEmpty(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan any, 1)
 	go func() {
@@ -80,7 +78,7 @@ func TestStyledText_ShowsPlaceholderWhenEmpty(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("", core.Key{Name: "return"})
+	mock.EmitKeypress("", Key{Name: "return"})
 	<-done
 
 	frames := out.GetFrames()
@@ -100,8 +98,8 @@ func TestStyledText_ShowsPlaceholderWhenEmpty(t *testing.T) {
 }
 
 func TestStyledText_ShowsCursorDuringTyping(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan any, 1)
 	go func() {
@@ -114,8 +112,8 @@ func TestStyledText_ShowsCursorDuringTyping(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("a", core.Key{Name: "a"})
-	mock.EmitKeypress("", core.Key{Name: "return"})
+	mock.EmitKeypress("a", Key{Name: "a"})
+	mock.EmitKeypress("", Key{Name: "return"})
 	<-done
 
 	frames := out.GetFrames()
@@ -135,12 +133,12 @@ func TestStyledText_ShowsCursorDuringTyping(t *testing.T) {
 }
 
 func TestStyledText_ShowsErrorState(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	validator := func(val string) error {
 		if len(val) < 3 {
-			return &core.ValidationError{Message: "Too short"}
+			return &ValidationError{Message: "Too short"}
 		}
 		return nil
 	}
@@ -157,15 +155,15 @@ func TestStyledText_ShowsErrorState(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("a", core.Key{Name: "a"})
+	mock.EmitKeypress("a", Key{Name: "a"})
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("", core.Key{Name: "return"}) // This should trigger validation error
+	mock.EmitKeypress("", Key{Name: "return"}) // This should trigger validation error
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("b", core.Key{Name: "b"})
+	mock.EmitKeypress("b", Key{Name: "b"})
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("c", core.Key{Name: "c"})
+	mock.EmitKeypress("c", Key{Name: "c"})
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("", core.Key{Name: "return"}) // This should succeed
+	mock.EmitKeypress("", Key{Name: "return"}) // This should succeed
 	<-done
 
 	frames := out.GetFrames()
@@ -185,8 +183,8 @@ func TestStyledText_ShowsErrorState(t *testing.T) {
 }
 
 func TestStyledText_ShowsDefaultValue(t *testing.T) {
-	mock := core.NewMockReadable()
-	out := core.NewMockWritable()
+	mock := NewMockReadable()
+	out := NewMockWritable()
 
 	done := make(chan any, 1)
 	go func() {
@@ -200,7 +198,7 @@ func TestStyledText_ShowsDefaultValue(t *testing.T) {
 	}()
 
 	time.Sleep(time.Millisecond)
-	mock.EmitKeypress("", core.Key{Name: "return"})
+	mock.EmitKeypress("", Key{Name: "return"})
 	result := <-done
 
 	if result != "John" {

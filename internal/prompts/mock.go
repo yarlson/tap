@@ -1,4 +1,4 @@
-package core
+package prompts
 
 import (
 	"io"

@@ -3,7 +3,6 @@ package prompts
 import (
 	"fmt"
 	"math"
-	"regexp"
 	"strings"
 
 	"github.com/mattn/go-runewidth"
@@ -221,14 +220,6 @@ func getPaddingForLine(lineLength int, innerWidth int, padding int, align BoxAli
 		left = 0
 	}
 	return left, right
-}
-
-// visibleWidth returns the display cell width, accounting for wide runes and ignoring ANSI.
-func visibleWidth(s string) int {
-	// strip ANSI
-	ansi := regexp.MustCompile("\x1b\\[[0-9;?]*[ -/]*[@-~]")
-	clean := ansi.ReplaceAllString(s, "")
-	return runewidth.StringWidth(clean)
 }
 
 // truncateToWidth trims s to fit width columns and appends "..." if trimmed.

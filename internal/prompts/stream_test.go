@@ -7,12 +7,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestStream_StartWriteStop_Success(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	st := NewStream(StreamOptions{Output: out})
 
 	st.Start("Building project")
@@ -24,7 +22,7 @@ func TestStream_StartWriteStop_Success(t *testing.T) {
 	joined := strings.Join(frames, "\n")
 
 	// Header initially shows active symbol and message
-	assert.Contains(t, joined, Symbol(core.StateActive))
+	assert.Contains(t, joined, Symbol(StateActive))
 	assert.Contains(t, joined, "Building project")
 	// Lines are prefixed
 	assert.Contains(t, joined, cyan(Bar)+"  step 1: fetch deps")
@@ -35,7 +33,7 @@ func TestStream_StartWriteStop_Success(t *testing.T) {
 }
 
 func TestStream_StopWithErrorAndCancel(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	st := NewStream(StreamOptions{Output: out})
 
 	st.Start("Running tasks")
@@ -48,7 +46,7 @@ func TestStream_StopWithErrorAndCancel(t *testing.T) {
 	assert.Contains(t, joined, red(StepCancel))
 	assert.Contains(t, joined, "Cancelled")
 
-	out2 := core.NewMockWritable()
+	out2 := NewMockWritable()
 	st2 := NewStream(StreamOptions{Output: out2})
 	st2.Start("Running tasks")
 	st2.WriteLine("doing things")
@@ -62,7 +60,7 @@ func TestStream_StopWithErrorAndCancel(t *testing.T) {
 }
 
 func TestStream_PipeReader(t *testing.T) {
-	out := core.NewMockWritable()
+	out := NewMockWritable()
 	st := NewStream(StreamOptions{Output: out})
 
 	st.Start("Streaming logs")

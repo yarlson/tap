@@ -6,16 +6,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 // MultiSelect should behave similarly to Select but allow toggling multiple
 // items with space and submit a slice of values.
 
 func TestStyledMultiSelect_RendersTitleAndOptions(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 
 	options := []SelectOption[string]{
 		{Value: "red", Label: "Red"},
@@ -54,8 +52,8 @@ func TestStyledMultiSelect_RendersTitleAndOptions(t *testing.T) {
 }
 
 func TestStyledMultiSelect_ToggleAndSubmit(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 
 	options := []SelectOption[string]{
 		{Value: "a", Label: "Option A"},
@@ -75,23 +73,23 @@ func TestStyledMultiSelect_ToggleAndSubmit(t *testing.T) {
 	time.Sleep(time.Millisecond)
 
 	// Cursor at 0 -> toggle A
-	in.EmitKeypress("", core.Key{Name: "space"})
+	in.EmitKeypress("", Key{Name: "space"})
 	time.Sleep(time.Millisecond)
 	// Move down -> 1, toggle B
-	in.EmitKeypress("", core.Key{Name: "down"})
+	in.EmitKeypress("", Key{Name: "down"})
 	time.Sleep(time.Millisecond)
-	in.EmitKeypress("", core.Key{Name: "space"})
+	in.EmitKeypress("", Key{Name: "space"})
 	time.Sleep(time.Millisecond)
 	// Submit
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("", Key{Name: "return"})
 
 	res := <-resCh
 	assert.ElementsMatch(t, []string{"a", "b"}, res)
 }
 
 func TestStyledMultiSelect_InitialValuesPreselected(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 
 	options := []SelectOption[string]{
 		{Value: "one", Label: "One"},
@@ -114,15 +112,15 @@ func TestStyledMultiSelect_InitialValuesPreselected(t *testing.T) {
 	time.Sleep(time.Millisecond)
 
 	// Submit immediately; should keep initial selections
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("", Key{Name: "return"})
 
 	res := <-resCh
 	assert.ElementsMatch(t, []string{"two", "three"}, res)
 }
 
 func TestStyledMultiSelect_CancelWithCtrlC(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 
 	options := []SelectOption[string]{
 		{Value: "x", Label: "X"},
@@ -139,7 +137,7 @@ func TestStyledMultiSelect_CancelWithCtrlC(t *testing.T) {
 	}()
 	time.Sleep(time.Millisecond)
 
-	in.EmitKeypress("\x03", core.Key{Name: "c", Ctrl: true})
+	in.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 	res := <-resCh
 	// On cancel, typed API should return the zero value for []string which is nil
 	assert.Nil(t, res)

@@ -6,13 +6,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/yarlson/tap/internal/core"
 )
 
 func TestStyledSelect_RendersWithSymbolAndBars(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 	options := []SelectOption[string]{
 		{Value: "red", Label: "Red"},
 		{Value: "blue", Label: "Blue"},
@@ -43,8 +41,8 @@ func TestStyledSelect_RendersWithSymbolAndBars(t *testing.T) {
 }
 
 func TestStyledSelect_ShowsActiveInactiveOptions(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 	options := []SelectOption[string]{
 		{Value: "first", Label: "First Option"},
 		{Value: "second", Label: "Second Option"},
@@ -74,8 +72,8 @@ func TestStyledSelect_ShowsActiveInactiveOptions(t *testing.T) {
 }
 
 func TestStyledSelect_ShowsHints(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 	options := []SelectOption[string]{
 		{Value: "option1", Label: "Option 1", Hint: "This is a hint"},
 		{Value: "option2", Label: "Option 2"},
@@ -105,8 +103,8 @@ func TestStyledSelect_ShowsHints(t *testing.T) {
 }
 
 func TestStyledSelect_ShowsSubmitState(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 	options := []SelectOption[string]{
 		{Value: "selected", Label: "Selected Item"},
 	}
@@ -123,7 +121,7 @@ func TestStyledSelect_ShowsSubmitState(t *testing.T) {
 	time.Sleep(time.Millisecond)
 
 	// Submit the selection
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("", Key{Name: "return"})
 	<-resCh
 
 	frames := out.GetFrames()
@@ -140,8 +138,8 @@ func TestStyledSelect_ShowsSubmitState(t *testing.T) {
 }
 
 func TestStyledSelect_ShowsCancelState(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 	options := []SelectOption[string]{
 		{Value: "option", Label: "Test Option"},
 	}
@@ -158,7 +156,7 @@ func TestStyledSelect_ShowsCancelState(t *testing.T) {
 	time.Sleep(time.Millisecond)
 
 	// Cancel the selection
-	in.EmitKeypress("\x03", core.Key{Name: "c", Ctrl: true})
+	in.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
 	res := <-resCh
 	// typed API returns zero value on cancel for string
 	assert.Equal(t, "", res, "Should return zero value on cancel")
@@ -177,8 +175,8 @@ func TestStyledSelect_ShowsCancelState(t *testing.T) {
 }
 
 func TestStyledSelect_InitialValuePositioning(t *testing.T) {
-	in := core.NewMockReadable()
-	out := core.NewMockWritable()
+	in := NewMockReadable()
+	out := NewMockWritable()
 	options := []SelectOption[string]{
 		{Value: "first", Label: "First"},
 		{Value: "second", Label: "Second"},
@@ -199,7 +197,7 @@ func TestStyledSelect_InitialValuePositioning(t *testing.T) {
 	time.Sleep(time.Millisecond)
 
 	// Submit immediately to test initial positioning
-	in.EmitKeypress("", core.Key{Name: "return"})
+	in.EmitKeypress("", Key{Name: "return"})
 	res := <-resCh
 
 	assert.Equal(t, "second", res, "Should select initial value")
