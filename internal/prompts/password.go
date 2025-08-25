@@ -6,6 +6,24 @@ import (
 
 // Password creates a styled password input prompt that masks user input
 func Password(opts PasswordOptions) string {
+	if opts.Input != nil && opts.Output != nil {
+		return password(opts)
+	}
+
+	return RunWithTerminal(func(in Reader, out Writer) string {
+		if opts.Input == nil {
+			opts.Input = in
+		}
+		if opts.Output == nil {
+			opts.Output = out
+		}
+
+		return password(opts)
+	})
+}
+
+// password implements the core password prompt logic
+func password(opts PasswordOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {

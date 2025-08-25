@@ -10,9 +10,8 @@ import (
 )
 
 func withIO(in *prompts.MockReadable, out *prompts.MockWritable) func() {
-	oldIn, oldOut := ioReader, ioWriter
 	SetTermIO(in, out)
-	return func() { SetTermIO(oldIn, oldOut) }
+	return func() { SetTermIO(nil, nil) }
 }
 
 func TestTap_Text(t *testing.T) {

@@ -2,6 +2,24 @@ package prompts
 
 // Confirm creates a styled confirm prompt
 func Confirm(opts ConfirmOptions) bool {
+	if opts.Input != nil && opts.Output != nil {
+		return confirm(opts)
+	}
+
+	return RunWithTerminal(func(in Reader, out Writer) bool {
+		if opts.Input == nil {
+			opts.Input = in
+		}
+		if opts.Output == nil {
+			opts.Output = out
+		}
+
+		return confirm(opts)
+	})
+}
+
+// confirm implements the core confirm prompt logic
+func confirm(opts ConfirmOptions) bool {
 	active := opts.Active
 	if active == "" {
 		active = "Yes"

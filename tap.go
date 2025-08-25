@@ -11,33 +11,9 @@ import (
 	"github.com/yarlson/tap/internal/terminal"
 )
 
-// Optional test I/O override. When set, helpers use these instead of opening
-// a real terminal.
-var (
-	ioReader prompts.Reader
-	ioWriter prompts.Writer
-)
-
 // SetTermIO sets a custom reader and writer used by helpers. Pass nil values to
 // restore default terminal behavior.
-func SetTermIO(in prompts.Reader, out prompts.Writer) { ioReader, ioWriter = in, out }
-
-// runWithTerminal creates a temporary terminal for interactive prompts and
-// ensures cleanup after the prompt completes.
-func runWithTerminal[T any](fn func(prompts.Reader, prompts.Writer) T) T {
-	if ioReader != nil || ioWriter != nil {
-		return fn(ioReader, ioWriter)
-	}
-
-	t, err := terminal.New()
-	if err != nil {
-		var zero T
-		return zero
-	}
-	defer t.Close()
-
-	return fn(t.Reader, t.Writer)
-}
+func SetTermIO(in prompts.Reader, out prompts.Writer) { prompts.SetTermIO(in, out) }
 
 // TextOptions configures the Text prompt. I/O fields are managed by tap.
 type TextOptions struct {
@@ -51,16 +27,12 @@ type TextOptions struct {
 // Text displays an interactive single-line text input prompt and returns the
 // entered value. A terminal is created and cleaned up automatically per call.
 func Text(opts TextOptions) string {
-	return runWithTerminal(func(in prompts.Reader, out prompts.Writer) string {
-		return prompts.Text(prompts.TextOptions{
-			Message:      opts.Message,
-			Placeholder:  opts.Placeholder,
-			DefaultValue: opts.DefaultValue,
-			InitialValue: opts.InitialValue,
-			Validate:     opts.Validate,
-			Input:        in,
-			Output:       out,
-		})
+	return prompts.Text(prompts.TextOptions{
+		Message:      opts.Message,
+		Placeholder:  opts.Placeholder,
+		DefaultValue: opts.DefaultValue,
+		InitialValue: opts.InitialValue,
+		Validate:     opts.Validate,
 	})
 }
 
@@ -75,15 +47,11 @@ type PasswordOptions struct {
 // Password displays a masked text input prompt and returns the entered value.
 // A terminal is created and cleaned up automatically per call.
 func Password(opts PasswordOptions) string {
-	return runWithTerminal(func(in prompts.Reader, out prompts.Writer) string {
-		return prompts.Password(prompts.PasswordOptions{
-			Message:      opts.Message,
-			DefaultValue: opts.DefaultValue,
-			InitialValue: opts.InitialValue,
-			Validate:     opts.Validate,
-			Input:        in,
-			Output:       out,
-		})
+	return prompts.Password(prompts.PasswordOptions{
+		Message:      opts.Message,
+		DefaultValue: opts.DefaultValue,
+		InitialValue: opts.InitialValue,
+		Validate:     opts.Validate,
 	})
 }
 
@@ -98,15 +66,11 @@ type ConfirmOptions struct {
 // Confirm displays a yes/no confirmation prompt and returns the selection.
 // A terminal is created and cleaned up automatically per call.
 func Confirm(opts ConfirmOptions) bool {
-	return runWithTerminal(func(in prompts.Reader, out prompts.Writer) bool {
-		return prompts.Confirm(prompts.ConfirmOptions{
-			Message:      opts.Message,
-			Active:       opts.Active,
-			Inactive:     opts.Inactive,
-			InitialValue: opts.InitialValue,
-			Input:        in,
-			Output:       out,
-		})
+	return prompts.Confirm(prompts.ConfirmOptions{
+		Message:      opts.Message,
+		Active:       opts.Active,
+		Inactive:     opts.Inactive,
+		InitialValue: opts.InitialValue,
 	})
 }
 
@@ -134,15 +98,11 @@ func Select[T any](opts SelectOptions[T]) T {
 		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
 	}
 
-	return runWithTerminal(func(in prompts.Reader, out prompts.Writer) T {
-		return prompts.Select[T](prompts.SelectOptions[T]{
-			Message:      opts.Message,
-			Options:      items,
-			InitialValue: opts.InitialValue,
-			MaxItems:     opts.MaxItems,
-			Input:        in,
-			Output:       out,
-		})
+	return prompts.Select[T](prompts.SelectOptions[T]{
+		Message:      opts.Message,
+		Options:      items,
+		InitialValue: opts.InitialValue,
+		MaxItems:     opts.MaxItems,
 	})
 }
 
@@ -162,15 +122,11 @@ func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
 		items[i] = prompts.SelectOption[T]{Value: o.Value, Label: o.Label, Hint: o.Hint}
 	}
 
-	return runWithTerminal(func(in prompts.Reader, out prompts.Writer) []T {
-		return prompts.MultiSelect[T](prompts.MultiSelectOptions[T]{
-			Message:       opts.Message,
-			Options:       items,
-			InitialValues: opts.InitialValues,
-			MaxItems:      opts.MaxItems,
-			Input:         in,
-			Output:        out,
-		})
+	return prompts.MultiSelect[T](prompts.MultiSelectOptions[T]{
+		Message:       opts.Message,
+		Options:       items,
+		InitialValues: opts.InitialValues,
+		MaxItems:      opts.MaxItems,
 	})
 }
 
@@ -276,16 +232,25 @@ func NewProgress(opts ProgressOptions) *Progress {
 
 // resolveWriter returns the output writer and an optional terminal to close.
 func resolveWriter() (prompts.Writer, *terminal.Terminal) {
-	if ioWriter != nil {
-		return ioWriter, nil
+	// Check if we have override I/O set
+	if out := getOverrideWriter(); out != nil {
+		return out, nil
 	}
 
+	// Need to create a new terminal
 	t, err := terminal.New()
 	if err != nil {
 		return nil, nil
 	}
 
 	return t.Writer, t
+}
+
+// getOverrideWriter returns the override writer if set
+func getOverrideWriter() prompts.Writer {
+	return prompts.RunWithTerminal(func(in prompts.Reader, out prompts.Writer) prompts.Writer {
+		return out
+	})
 }
 
 // StreamOptions configures a live output stream. Output is managed by tap.
@@ -331,7 +296,7 @@ func (s *Stream) Stop(msg string, code int) {
 // Intro prints an introductory message using the current session writer or
 // stdout if no session is active.
 func Intro(title string) {
-	_ = runWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
+	prompts.RunWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
 		prompts.Intro(title, prompts.MessageOptions{Output: out})
 		return nil
 	})
@@ -340,7 +305,7 @@ func Intro(title string) {
 // Outro prints a closing message using the current session writer or stdout if
 // no session is active.
 func Outro(message string) {
-	_ = runWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
+	prompts.RunWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
 		prompts.Outro(message, prompts.MessageOptions{Output: out})
 		return nil
 	})
@@ -367,7 +332,7 @@ type BoxOptions struct {
 // Box renders a framed message with optional title and alignment using the
 // current session writer or stdout if no session is active.
 func Box(message string, title string, opts BoxOptions) {
-	_ = runWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
+	prompts.RunWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
 		prompts.Box(message, title, prompts.BoxOptions{
 			Output:         out,
 			Columns:        opts.Columns,

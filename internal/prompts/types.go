@@ -1,6 +1,10 @@
 package prompts
 
-import "io"
+import (
+	"io"
+
+	"github.com/yarlson/tap/internal/terminal"
+)
 
 // Type aliases for convenience
 
@@ -72,13 +76,7 @@ const (
 	StateError   ClackState = "error"
 )
 
-type Key struct {
-	Name     string
-	Sequence string
-	Ctrl     bool
-	Meta     bool
-	Shift    bool
-}
+type Key = terminal.Key
 
 type ValidationError struct {
 	Message string
@@ -110,3 +108,31 @@ const (
 	CursorUp   = "\x1b[A"
 	EraseDown  = "\x1b[J"
 )
+
+// Optional test I/O override. When set, helpers use these instead of opening
+// a real terminal.
+var (
+	ioReader Reader
+	ioWriter Writer
+)
+
+// SetTermIO sets a custom reader and writer used by helpers. Pass nil values to
+// restore default terminal behavior.
+func SetTermIO(in Reader, out Writer) { ioReader, ioWriter = in, out }
+
+// RunWithTerminal creates a temporary terminal for interactive prompts and
+// ensures cleanup after the prompt completes.
+func RunWithTerminal[T any](fn func(Reader, Writer) T) T {
+	if ioReader != nil || ioWriter != nil {
+		return fn(ioReader, ioWriter)
+	}
+
+	t, err := terminal.New()
+	if err != nil {
+		var zero T
+		return zero
+	}
+	defer t.Close()
+
+	return fn(t.Reader, t.Writer)
+}

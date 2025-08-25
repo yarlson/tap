@@ -14,6 +14,24 @@ type styledMultiSelectState[T any] struct {
 
 // MultiSelect renders a styled multi-select and returns selected values.
 func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
+	if opts.Input != nil && opts.Output != nil {
+		return multiSelect(opts)
+	}
+
+	return RunWithTerminal(func(in Reader, out Writer) []T {
+		if opts.Input == nil {
+			opts.Input = in
+		}
+		if opts.Output == nil {
+			opts.Output = out
+		}
+
+		return multiSelect(opts)
+	})
+}
+
+// multiSelect implements the core multiselect prompt logic
+func multiSelect[T any](opts MultiSelectOptions[T]) []T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
 		coreOptions[i] = SelectOption[T]{Value: opt.Value, Label: opt.Label, Hint: opt.Hint}

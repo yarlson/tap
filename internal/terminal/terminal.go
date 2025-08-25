@@ -8,16 +8,22 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yarlson/tap/internal/prompts"
-
 	"github.com/eiannone/keyboard"
 	"golang.org/x/term"
 )
 
+type Key struct {
+	Name     string
+	Sequence string
+	Ctrl     bool
+	Meta     bool
+	Shift    bool
+}
+
 // Reader provides terminal input functionality.
 type Reader struct {
 	mu        sync.Mutex
-	listeners map[string][]func(string, prompts.Key)
+	listeners map[string][]func(string, Key)
 }
 
 // Writer provides terminal output functionality.
@@ -49,7 +55,7 @@ func New() (*Terminal, error) {
 		return nil, err
 	}
 
-	reader := &Reader{listeners: make(map[string][]func(string, prompts.Key))}
+	reader := &Reader{listeners: make(map[string][]func(string, Key))}
 	writer := &Writer{listeners: make(map[string][]func())}
 
 	stop := make(chan struct{})
@@ -120,7 +126,7 @@ func New() (*Terminal, error) {
 					escPending = false
 					escPrefix = 0
 					escBuf = nil
-					k := prompts.Key{Name: name, Ctrl: false}
+					k := Key{Name: name, Ctrl: false}
 					reader.emit("", k)
 					continue
 				}
@@ -148,7 +154,7 @@ func New() (*Terminal, error) {
 					escBuf = nil
 					char = ""
 					stopEscTimer()
-					k := prompts.Key{Name: name, Ctrl: false}
+					k := Key{Name: name, Ctrl: false}
 					reader.emit(char, k)
 					continue
 				}
@@ -157,7 +163,7 @@ func New() (*Terminal, error) {
 					if escPrefix == 0 && len(escBuf) == 0 {
 						// Plain ESC
 						escPending = false
-						kEsc := prompts.Key{Name: "escape", Ctrl: false}
+						kEsc := Key{Name: "escape", Ctrl: false}
 						stopEscTimer()
 						reader.emit("", kEsc)
 						// Fall through to process current event below
@@ -165,7 +171,7 @@ func New() (*Terminal, error) {
 						// Incomplete CSI/SS3 sequence: treat as a horizontal move to avoid cancel
 						escPending = false
 						escDir := "right"
-						kMv := prompts.Key{Name: escDir, Ctrl: false}
+						kMv := Key{Name: escDir, Ctrl: false}
 						stopEscTimer()
 						reader.emit("", kMv)
 					}
@@ -217,11 +223,11 @@ func New() (*Terminal, error) {
 					}
 					if escPrefix == 0 && len(escBuf) == 0 {
 						// Plain Escape
-						kEsc := prompts.Key{Name: "escape", Ctrl: false}
+						kEsc := Key{Name: "escape", Ctrl: false}
 						reader.emit("", kEsc)
 					} else {
 						// Incomplete sequence -> treat as right
-						kMv := prompts.Key{Name: "right", Ctrl: false}
+						kMv := Key{Name: "right", Ctrl: false}
 						reader.emit("", kMv)
 					}
 					escPending = false
@@ -246,7 +252,7 @@ func New() (*Terminal, error) {
 				}
 			}
 
-			k := prompts.Key{Name: name, Ctrl: ctrl}
+			k := Key{Name: name, Ctrl: ctrl}
 			reader.emit(char, k)
 		}
 	}()
@@ -297,15 +303,15 @@ func (t *Terminal) Close() {
 
 func (r *Reader) Read(_ []byte) (int, error) { return 0, nil }
 
-func (r *Reader) On(event string, handler func(string, prompts.Key)) {
+func (r *Reader) On(event string, handler func(string, Key)) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.listeners[event] = append(r.listeners[event], handler)
 }
 
-func (r *Reader) emit(char string, key prompts.Key) {
+func (r *Reader) emit(char string, key Key) {
 	r.mu.Lock()
-	hs := append([]func(string, prompts.Key){}, r.listeners["keypress"]...)
+	hs := append([]func(string, Key){}, r.listeners["keypress"]...)
 	r.mu.Unlock()
 	for _, h := range hs {
 		h(char, key)

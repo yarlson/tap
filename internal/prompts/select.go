@@ -13,6 +13,24 @@ type styledSelectState[T any] struct {
 
 // Select creates a styled select prompt
 func Select[T any](opts SelectOptions[T]) T {
+	if opts.Input != nil && opts.Output != nil {
+		return selectInternal(opts)
+	}
+
+	return RunWithTerminal(func(in Reader, out Writer) T {
+		if opts.Input == nil {
+			opts.Input = in
+		}
+		if opts.Output == nil {
+			opts.Output = out
+		}
+
+		return selectInternal(opts)
+	})
+}
+
+// selectInternal implements the core select prompt logic
+func selectInternal[T any](opts SelectOptions[T]) T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
 		coreOptions[i] = SelectOption[T]{

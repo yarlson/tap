@@ -6,6 +6,24 @@ import (
 
 // Text creates a styled text input prompt
 func Text(opts TextOptions) string {
+	if opts.Input != nil && opts.Output != nil {
+		return text(opts)
+	}
+
+	return RunWithTerminal(func(in Reader, out Writer) string {
+		if opts.Input == nil {
+			opts.Input = in
+		}
+		if opts.Output == nil {
+			opts.Output = out
+		}
+
+		return text(opts)
+	})
+}
+
+// text implements the core text prompt logic
+func text(opts TextOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
