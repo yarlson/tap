@@ -193,19 +193,13 @@ func NewStream(opts StreamOptions) *Stream {
 // Intro prints an introductory message using the current session writer or
 // stdout if no session is active.
 func Intro(title string) {
-	prompts.RunWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
-		prompts.Intro(title, prompts.MessageOptions{Output: out})
-		return nil
-	})
+	prompts.Intro(title)
 }
 
 // Outro prints a closing message using the current session writer or stdout if
 // no session is active.
 func Outro(message string) {
-	prompts.RunWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
-		prompts.Outro(message, prompts.MessageOptions{Output: out})
-		return nil
-	})
+	prompts.Outro(message)
 }
 
 // BoxAlignment is an alias of prompts.BoxAlignment to control box content
@@ -229,21 +223,17 @@ type BoxOptions struct {
 // Box renders a framed message with optional title and alignment using the
 // current session writer or stdout if no session is active.
 func Box(message string, title string, opts BoxOptions) {
-	prompts.RunWithTerminal(func(_ prompts.Reader, out prompts.Writer) any {
-		prompts.Box(message, title, prompts.BoxOptions{
-			Output:         out,
-			Columns:        opts.Columns,
-			WidthFraction:  opts.WidthFraction,
-			WidthAuto:      opts.WidthAuto,
-			TitlePadding:   opts.TitlePadding,
-			ContentPadding: opts.ContentPadding,
-			TitleAlign:     opts.TitleAlign,
-			ContentAlign:   opts.ContentAlign,
-			Rounded:        opts.Rounded,
-			IncludePrefix:  opts.IncludePrefix,
-			FormatBorder:   opts.FormatBorder,
-		})
-		return nil
+	prompts.Box(message, title, prompts.BoxOptions{
+		Columns:        opts.Columns,
+		WidthFraction:  opts.WidthFraction,
+		WidthAuto:      opts.WidthAuto,
+		TitlePadding:   opts.TitlePadding,
+		ContentPadding: opts.ContentPadding,
+		TitleAlign:     opts.TitleAlign,
+		ContentAlign:   opts.ContentAlign,
+		Rounded:        opts.Rounded,
+		IncludePrefix:  opts.IncludePrefix,
+		FormatBorder:   opts.FormatBorder,
 	})
 }
 

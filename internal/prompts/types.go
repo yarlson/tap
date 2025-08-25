@@ -120,9 +120,9 @@ var (
 // restore default terminal behavior.
 func SetTermIO(in Reader, out Writer) { ioReader, ioWriter = in, out }
 
-// RunWithTerminal creates a temporary terminal for interactive prompts and
+// runWithTerminal creates a temporary terminal for interactive prompts and
 // ensures cleanup after the prompt completes.
-func RunWithTerminal[T any](fn func(Reader, Writer) T) T {
+func runWithTerminal[T any](fn func(Reader, Writer) T) T {
 	if ioReader != nil || ioWriter != nil {
 		return fn(ioReader, ioWriter)
 	}
@@ -155,7 +155,7 @@ func resolveWriter() (Writer, *terminal.Terminal) {
 
 // getOverrideWriter returns the override writer if set
 func getOverrideWriter() Writer {
-	return RunWithTerminal(func(in Reader, out Writer) Writer {
+	return runWithTerminal(func(in Reader, out Writer) Writer {
 		return out
 	})
 }

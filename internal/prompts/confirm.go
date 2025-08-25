@@ -6,7 +6,7 @@ func Confirm(opts ConfirmOptions) bool {
 		return confirm(opts)
 	}
 
-	return RunWithTerminal(func(in Reader, out Writer) bool {
+	return runWithTerminal(func(in Reader, out Writer) bool {
 		if opts.Input == nil {
 			opts.Input = in
 		}

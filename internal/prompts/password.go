@@ -10,7 +10,7 @@ func Password(opts PasswordOptions) string {
 		return password(opts)
 	}
 
-	return RunWithTerminal(func(in Reader, out Writer) string {
+	return runWithTerminal(func(in Reader, out Writer) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}

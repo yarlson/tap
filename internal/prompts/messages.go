@@ -16,9 +16,15 @@ func Cancel(message string, opts ...MessageOptions) {
 	if len(opts) > 0 {
 		out = opts[0].Output
 	}
+
+	if out == nil {
+		out, _ = resolveWriter()
+	}
+
 	if out == nil {
 		return
 	}
+
 	_, _ = fmt.Fprintf(out, "%s  %s\n\n", gray(BarEnd), red(message))
 }
 
@@ -28,9 +34,15 @@ func Intro(title string, opts ...MessageOptions) {
 	if len(opts) > 0 {
 		out = opts[0].Output
 	}
+
+	if out == nil {
+		out, _ = resolveWriter()
+	}
+
 	if out == nil {
 		return
 	}
+
 	_, _ = fmt.Fprintf(out, "%s  %s\n", gray(BarStart), title)
 }
 
@@ -40,8 +52,14 @@ func Outro(message string, opts ...MessageOptions) {
 	if len(opts) > 0 {
 		out = opts[0].Output
 	}
+
+	if out == nil {
+		out, _ = resolveWriter()
+	}
+
 	if out == nil {
 		return
 	}
+
 	_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), message)
 }

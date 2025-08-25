@@ -10,7 +10,7 @@ func Text(opts TextOptions) string {
 		return text(opts)
 	}
 
-	return RunWithTerminal(func(in Reader, out Writer) string {
+	return runWithTerminal(func(in Reader, out Writer) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}

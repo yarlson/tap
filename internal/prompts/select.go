@@ -17,7 +17,7 @@ func Select[T any](opts SelectOptions[T]) T {
 		return selectInternal(opts)
 	}
 
-	return RunWithTerminal(func(in Reader, out Writer) T {
+	return runWithTerminal(func(in Reader, out Writer) T {
 		if opts.Input == nil {
 			opts.Input = in
 		}

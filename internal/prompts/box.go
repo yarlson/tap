@@ -40,6 +40,10 @@ func CyanBorder(s string) string { return cyan(s) }
 func Box(message string, title string, opts BoxOptions) {
 	out := opts.Output
 	if out == nil {
+		out, _ = resolveWriter()
+	}
+
+	if out == nil {
 		return
 	}
 

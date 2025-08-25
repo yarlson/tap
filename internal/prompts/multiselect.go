@@ -18,7 +18,7 @@ func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
 		return multiSelect(opts)
 	}
 
-	return RunWithTerminal(func(in Reader, out Writer) []T {
+	return runWithTerminal(func(in Reader, out Writer) []T {
 		if opts.Input == nil {
 			opts.Input = in
 		}
