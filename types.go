@@ -1,4 +1,4 @@
-package prompts
+package tap
 
 import (
 	"io"
@@ -115,47 +115,3 @@ var (
 	ioReader Reader
 	ioWriter Writer
 )
-
-// SetTermIO sets a custom reader and writer used by helpers. Pass nil values to
-// restore default terminal behavior.
-func SetTermIO(in Reader, out Writer) { ioReader, ioWriter = in, out }
-
-// runWithTerminal creates a temporary terminal for interactive prompts and
-// ensures cleanup after the prompt completes.
-func runWithTerminal[T any](fn func(Reader, Writer) T) T {
-	if ioReader != nil || ioWriter != nil {
-		return fn(ioReader, ioWriter)
-	}
-
-	t, err := terminal.New()
-	if err != nil {
-		var zero T
-		return zero
-	}
-	defer t.Close()
-
-	return fn(t.Reader, t.Writer)
-}
-
-// resolveWriter returns the output writer and an optional terminal to close.
-func resolveWriter() (Writer, *terminal.Terminal) {
-	// Check if we have override I/O set
-	if out := getOverrideWriter(); out != nil {
-		return out, nil
-	}
-
-	// Need to create a new terminal
-	t, err := terminal.New()
-	if err != nil {
-		return nil, nil
-	}
-
-	return t.Writer, t
-}
-
-// getOverrideWriter returns the override writer if set
-func getOverrideWriter() Writer {
-	return runWithTerminal(func(in Reader, out Writer) Writer {
-		return out
-	})
-}

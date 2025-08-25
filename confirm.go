@@ -1,4 +1,4 @@
-package prompts
+package tap
 
 // Confirm creates a styled confirm prompt
 func Confirm(opts ConfirmOptions) bool {

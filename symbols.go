@@ -1,4 +1,4 @@
-package prompts
+package tap
 
 // Unicode symbols for drawing styled prompts
 const (

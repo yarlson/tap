@@ -1,13 +1,13 @@
-package prompts
+package tap
 
 import (
 	"strings"
 )
 
-// Password creates a styled password input prompt that masks user input
-func Password(opts PasswordOptions) string {
+// Text creates a styled text input prompt
+func Text(opts TextOptions) string {
 	if opts.Input != nil && opts.Output != nil {
-		return password(opts)
+		return text(opts)
 	}
 
 	return runWithTerminal(func(in Reader, out Writer) string {
@@ -18,12 +18,12 @@ func Password(opts PasswordOptions) string {
 			opts.Output = out
 		}
 
-		return password(opts)
+		return text(opts)
 	})
 }
 
-// password implements the core password prompt logic
-func password(opts PasswordOptions) string {
+// text implements the core text prompt logic
+func text(opts TextOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
@@ -43,26 +43,36 @@ func password(opts PasswordOptions) string {
 			userInput := p.UserInputSnapshot()
 			cursor := p.CursorSnapshot()
 
-			// Title with symbol and message
+			// Create title with symbol and message
 			title := gray(Bar) + "\n" + Symbol(s) + "  " + opts.Message + "\n"
 
-			// Build masked display of input with cursor
-			masked := renderMaskedWithCursor(userInput, cursor, s)
+			// Handle placeholder and cursor
+			var displayInput string
+			if userInput == "" && opts.Placeholder != "" {
+				// Show placeholder with inverted first character
+				if len(opts.Placeholder) > 0 {
+					displayInput = inverse(string(opts.Placeholder[0])) + dim(opts.Placeholder[1:])
+				} else {
+					displayInput = inverse(" ")
+				}
+			} else {
+				// Show user input with cursor
+				displayInput = renderTextWithCursor(userInput, cursor, s)
+			}
 
 			switch s {
 			case StateError:
 				errMsg := p.ErrorSnapshot()
-				return title + yellow(Bar) + "  " + masked + "\n" + yellow(BarEnd) + "  " + yellow(errMsg)
+				return title + yellow(Bar) + "  " + displayInput + "\n" + yellow(BarEnd) + "  " + yellow(errMsg)
 
 			case StateSubmit:
-				// Do not show raw value; show bullets only
 				value := ""
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
 				}
 				valueText := ""
 				if value != "" {
-					valueText = "  " + dim(strings.Repeat("●", len([]rune(value))))
+					valueText = "  " + dim(value)
 				}
 				return title + gray(Bar) + valueText
 
@@ -72,8 +82,8 @@ func password(opts PasswordOptions) string {
 					value = val
 				}
 				valueText := ""
-				if strings.TrimSpace(value) != "" {
-					valueText = "  " + strikethrough(dim(strings.Repeat("●", len([]rune(value)))))
+				if value != "" {
+					valueText = "  " + strikethrough(dim(value))
 				}
 				result := title + gray(Bar) + valueText
 				if strings.TrimSpace(value) != "" {
@@ -82,7 +92,7 @@ func password(opts PasswordOptions) string {
 				return result
 
 			default:
-				return title + cyan(Bar) + "  " + masked + "\n" + cyan(BarEnd)
+				return title + cyan(Bar) + "  " + displayInput + "\n" + cyan(BarEnd)
 			}
 		},
 	})
@@ -98,21 +108,19 @@ func password(opts PasswordOptions) string {
 	return ""
 }
 
-// renderMaskedWithCursor renders bullets for each rune in input, and shows an inverted cursor block
-// similar to the styled text behavior.
-func renderMaskedWithCursor(text string, cursor int, state ClackState) string {
+// renderTextWithCursor renders text with a cursor indicator
+func renderTextWithCursor(text string, cursor int, state ClackState) string {
 	if state != StateActive && state != StateInitial {
-		return strings.Repeat("●", len([]rune(text)))
+		return text
 	}
 
 	runes := []rune(text)
-	maskedRunes := []rune(strings.Repeat("●", len(runes)))
 	if cursor >= len(runes) {
-		return string(maskedRunes) + inverse(" ")
+		return text + inverse(" ")
 	}
 
-	before := string(maskedRunes[:cursor])
-	char := string(maskedRunes[cursor])
-	after := string(maskedRunes[cursor+1:])
+	before := string(runes[:cursor])
+	char := string(runes[cursor])
+	after := string(runes[cursor+1:])
 	return before + inverse(char) + after
 }
