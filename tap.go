@@ -4,11 +4,9 @@
 package tap
 
 import (
-	"io"
 	"time"
 
 	"github.com/yarlson/tap/internal/prompts"
-	"github.com/yarlson/tap/internal/terminal"
 )
 
 // SetTermIO sets a custom reader and writer used by helpers. Pass nil values to
@@ -140,48 +138,19 @@ type SpinnerOptions struct {
 }
 
 // Spinner wraps a spinner and ensures terminal cleanup on Stop.
-type Spinner struct {
-	inner *prompts.Spinner
-	term  *terminal.Terminal
-}
-
-// Start begins the spinner with an initial message.
-func (s *Spinner) Start(msg string) { s.inner.Start(msg) }
-
-// Message updates the spinner message.
-func (s *Spinner) Message(msg string) { s.inner.Message(msg) }
-
-// IsCancelled reports whether the spinner was cancelled by the user.
-// Deprecated: Use IsCanceled for Go-idiomatic spelling.
-func (s *Spinner) IsCancelled() bool { return s.inner.IsCancelled() }
-
-// IsCanceled reports whether the spinner was canceled by the user.
-func (s *Spinner) IsCanceled() bool { return s.inner.IsCancelled() }
-
-// Stop stops the spinner with a final message and exit code (0=success, 1=cancel, >1=error).
-func (s *Spinner) Stop(msg string, code int) {
-	s.inner.Stop(msg, code)
-	if s.term != nil {
-		s.term.Close()
-		s.term = nil
-	}
-}
+type Spinner = prompts.Spinner
 
 // NewSpinner creates a spinner bound to a terminal writer (or the override
 // writer set via SetTermIO in tests). The underlying terminal, when created,
 // is cleaned up on Stop.
 func NewSpinner(opts SpinnerOptions) *Spinner {
-	out, term := resolveWriter()
-	sp := prompts.NewSpinner(prompts.SpinnerOptions{
+	return prompts.NewSpinner(prompts.SpinnerOptions{
 		Indicator:     opts.Indicator,
 		Frames:        opts.Frames,
 		Delay:         opts.Delay,
-		Output:        out,
 		CancelMessage: opts.CancelMessage,
 		ErrorMessage:  opts.ErrorMessage,
 	})
-
-	return &Spinner{inner: sp, term: term}
 }
 
 // ProgressOptions configures a progress bar. Output is managed by tap.
@@ -192,64 +161,16 @@ type ProgressOptions struct {
 }
 
 // Progress wraps a progress bar and ensures terminal cleanup on Stop.
-type Progress struct {
-	inner *prompts.Progress
-	term  *terminal.Terminal
-}
-
-// Start begins the progress bar with an initial message.
-func (p *Progress) Start(msg string) { p.inner.Start(msg) }
-
-// Advance moves the progress bar forward by step and updates the message.
-func (p *Progress) Advance(step int, msg string) { p.inner.Advance(step, msg) }
-
-// Message updates the progress bar message.
-func (p *Progress) Message(msg string) { p.inner.Message(msg) }
-
-// Stop stops the progress bar with a final message and exit code (0=success, 1=cancel, >1=error).
-func (p *Progress) Stop(msg string, code int) {
-	p.inner.Stop(msg, code)
-	if p.term != nil {
-		p.term.Close()
-		p.term = nil
-	}
-}
+type Progress = prompts.Progress
 
 // NewProgress creates a progress bar bound to a terminal writer (or the
 // override writer set via SetTermIO in tests). The underlying terminal, when
 // created, is cleaned up on Stop.
 func NewProgress(opts ProgressOptions) *Progress {
-	out, term := resolveWriter()
-	pr := prompts.NewProgress(prompts.ProgressOptions{
-		Style:  opts.Style,
-		Max:    opts.Max,
-		Size:   opts.Size,
-		Output: out,
-	})
-
-	return &Progress{inner: pr, term: term}
-}
-
-// resolveWriter returns the output writer and an optional terminal to close.
-func resolveWriter() (prompts.Writer, *terminal.Terminal) {
-	// Check if we have override I/O set
-	if out := getOverrideWriter(); out != nil {
-		return out, nil
-	}
-
-	// Need to create a new terminal
-	t, err := terminal.New()
-	if err != nil {
-		return nil, nil
-	}
-
-	return t.Writer, t
-}
-
-// getOverrideWriter returns the override writer if set
-func getOverrideWriter() prompts.Writer {
-	return prompts.RunWithTerminal(func(in prompts.Reader, out prompts.Writer) prompts.Writer {
-		return out
+	return prompts.NewProgress(prompts.ProgressOptions{
+		Style: opts.Style,
+		Max:   opts.Max,
+		Size:  opts.Size,
 	})
 }
 
@@ -259,38 +180,14 @@ type StreamOptions struct {
 }
 
 // Stream wraps a styled live stream renderer and ensures terminal cleanup on Stop.
-type Stream struct {
-	inner *prompts.Stream
-	term  *terminal.Terminal
-}
+type Stream = prompts.Stream
 
 // NewStream creates a live stream bound to a terminal writer (or override),
 // and ensures the underlying terminal is closed on Stop.
 func NewStream(opts StreamOptions) *Stream {
-	out, term := resolveWriter()
-	st := prompts.NewStream(prompts.StreamOptions{
-		Output:    out,
+	return prompts.NewStream(prompts.StreamOptions{
 		ShowTimer: opts.ShowTimer,
 	})
-	return &Stream{inner: st, term: term}
-}
-
-// Start prints the stream header and prepares to receive lines.
-func (s *Stream) Start(msg string) { s.inner.Start(msg) }
-
-// WriteLine appends a single line to the stream area.
-func (s *Stream) WriteLine(line string) { s.inner.WriteLine(line) }
-
-// Pipe reads from r line-by-line and writes to the stream.
-func (s *Stream) Pipe(r io.Reader) { s.inner.Pipe(r) }
-
-// Stop finalizes the stream with a status symbol and code (0=success, 1=cancel, >1=error).
-func (s *Stream) Stop(msg string, code int) {
-	s.inner.Stop(msg, code)
-	if s.term != nil {
-		s.term.Close()
-		s.term = nil
-	}
 }
 
 // Intro prints an introductory message using the current session writer or

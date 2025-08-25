@@ -45,6 +45,18 @@ var progressChars = map[string]string{
 
 // NewProgress creates a new progress bar
 func NewProgress(opts ProgressOptions) *Progress {
+	if opts.Output != nil {
+		return newProgress(opts)
+	}
+
+	out, _ := resolveWriter()
+	opts.Output = out
+
+	return newProgress(opts)
+}
+
+// newProgress creates a new progress bar with given options
+func newProgress(opts ProgressOptions) *Progress {
 	style := opts.Style
 	if style == "" {
 		style = "heavy"

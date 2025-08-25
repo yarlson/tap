@@ -40,6 +40,18 @@ type Spinner struct {
 
 // NewSpinner creates a new Spinner with defaults
 func NewSpinner(opts SpinnerOptions) *Spinner {
+	if opts.Output != nil {
+		return newSpinner(opts)
+	}
+
+	out, _ := resolveWriter()
+	opts.Output = out
+
+	return newSpinner(opts)
+}
+
+// newSpinner creates a new Spinner with given options
+func newSpinner(opts SpinnerOptions) *Spinner {
 	indicator := opts.Indicator
 	if indicator == "" {
 		indicator = "dots"

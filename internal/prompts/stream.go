@@ -29,6 +29,13 @@ type Stream struct {
 
 // NewStream creates a Stream
 func NewStream(opts StreamOptions) *Stream {
+	if opts.Output != nil {
+		return &Stream{out: opts.Output, opts: opts}
+	}
+
+	out, _ := resolveWriter()
+	opts.Output = out
+
 	return &Stream{out: opts.Output, opts: opts}
 }
 

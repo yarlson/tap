@@ -136,3 +136,26 @@ func RunWithTerminal[T any](fn func(Reader, Writer) T) T {
 
 	return fn(t.Reader, t.Writer)
 }
+
+// resolveWriter returns the output writer and an optional terminal to close.
+func resolveWriter() (Writer, *terminal.Terminal) {
+	// Check if we have override I/O set
+	if out := getOverrideWriter(); out != nil {
+		return out, nil
+	}
+
+	// Need to create a new terminal
+	t, err := terminal.New()
+	if err != nil {
+		return nil, nil
+	}
+
+	return t.Writer, t
+}
+
+// getOverrideWriter returns the override writer if set
+func getOverrideWriter() Writer {
+	return RunWithTerminal(func(in Reader, out Writer) Writer {
+		return out
+	})
+}
