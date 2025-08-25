@@ -21,10 +21,11 @@ Building CLI applications shouldn't require wrestling with terminal complexities
 ### Available Components
 
 - **Text Input** — Single-line input with validation, placeholders, and defaults
-- **Password Input** — Masked input for sensitive data
+- **Password Input** — Masked input for sensitive data  
 - **Confirm** — Yes/No prompts with customizable labels
 - **Select** — Single selection from typed options with hints
 - **MultiSelect** — Multiple selection with checkboxes
+- **Context Support** — All interactive prompts support context cancellation and timeouts
 - **Progress Bar** — Animated progress indicators (light, heavy, block styles)
 - **Spinner** — Loading indicators with dots, timer, or custom frames
 - **Stream** — Real-time output with start/write/stop lifecycle
@@ -42,19 +43,22 @@ go get github.com/yarlson/tap@latest
 package main
 
 import (
+    "context"
     "fmt"
     "github.com/yarlson/tap"
 )
 
 func main() {
+    ctx := context.Background()
+    
     tap.Intro("Welcome! 👋")
 
-    name := tap.Text(tap.TextOptions{
+    name := tap.Text(ctx, tap.TextOptions{
         Message: "What's your name?",
         Placeholder: "Enter your name...",
     })
 
-    confirmed := tap.Confirm(tap.ConfirmOptions{
+    confirmed := tap.Confirm(ctx, tap.ConfirmOptions{
         Message: fmt.Sprintf("Hello %s! Continue?", name),
     })
 
@@ -69,7 +73,7 @@ func main() {
 ### Text Input with Validation
 
 ```go
-email := tap.Text(tap.TextOptions{
+email := tap.Text(ctx, tap.TextOptions{
     Message:      "Enter your email:",
     Placeholder:  "user@example.com",
     DefaultValue: "anonymous@example.com",
@@ -93,7 +97,7 @@ environments := []tap.SelectOption[Environment]{
     {Value: "production", Label: "Production", Hint: "Live environment"},
 }
 
-env := tap.Select(tap.SelectOptions[Environment]{
+env := tap.Select(ctx, tap.SelectOptions[Environment]{
     Message: "Choose deployment target:",
     Options: environments,
 })
@@ -134,12 +138,37 @@ languages := []tap.SelectOption[string]{
     {Value: "javascript", Label: "JavaScript"},
 }
 
-selected := tap.MultiSelect(tap.MultiSelectOptions[string]{
+selected := tap.MultiSelect(ctx, tap.MultiSelectOptions[string]{
     Message: "Which languages do you use?",
     Options: languages,
 })
 
 fmt.Printf("You selected: %v\n", selected)
+```
+
+### Context Support and Cancellation
+
+All interactive prompts support Go's context package for cancellation and timeouts:
+
+```go
+// With timeout
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+name := tap.Text(ctx, tap.TextOptions{
+    Message: "Enter your name (30s timeout):",
+})
+
+// With cancellation
+ctx, cancel := context.WithCancel(context.Background())
+go func() {
+    time.Sleep(5*time.Second)
+    cancel() // Cancel after 5 seconds
+}()
+
+result := tap.Confirm(ctx, tap.ConfirmOptions{
+    Message: "Quick decision needed:",
+})
 ```
 
 ### Styled Messages
@@ -174,7 +203,7 @@ func TestYourPrompt(t *testing.T) {
         mockInput.EmitKeypress("", tap.Key{Name: "return"})
     }()
 
-    result := tap.Text(tap.TextOptions{Message: "Enter text:"})
+    result := tap.Text(ctx, tap.TextOptions{Message: "Enter text:"})
     assert.Equal(t, "test", result)
 }
 ```

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/yarlson/tap/internal/terminal"
 
 	xterm "golang.org/x/term"
@@ -21,7 +22,6 @@ type PromptOptions struct {
 	Input            Reader
 	Output           Writer
 	Debug            bool
-	Signal           context.Context
 }
 
 type EventHandler any
@@ -173,10 +173,10 @@ func (p *Prompt) Emit(event string, args ...any) {
 }
 
 // Prompt starts the prompt and returns the result
-func (p *Prompt) Prompt() any {
-	if p.opts.Signal != nil {
+func (p *Prompt) Prompt(ctx context.Context) any {
+	if ctx != nil {
 		select {
-		case <-p.opts.Signal.Done():
+		case <-ctx.Done():
 			return nil
 		default:
 		}
@@ -200,9 +200,9 @@ func (p *Prompt) Prompt() any {
 			}
 		})
 	}
-	if p.opts.Signal != nil {
+	if ctx != nil {
 		go func() {
-			<-p.opts.Signal.Done()
+			<-ctx.Done()
 			select {
 			case p.evCh <- func(s *promptState) { p.handleAbort(s) }:
 			case <-p.stopped:
@@ -448,7 +448,7 @@ func getColumns() int {
 // Printable width ignoring ANSI; rune-count approximation
 func visibleWidth(s string) int {
 	clean := ansiRegexp.ReplaceAllString(s, "")
-	return len([]rune(clean))
+	return runewidth.StringWidth(clean)
 }
 
 // Rows occupied by frame, accounting for soft-wrapping

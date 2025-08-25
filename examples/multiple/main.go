@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -27,7 +28,7 @@ func main() {
 	tap.Intro("🚀 Multiple Prompts Example")
 
 	// First prompt: Get user's name
-	name := tap.Text(tap.TextOptions{
+	name := tap.Text(context.Background(), tap.TextOptions{
 		Message:     "What's your name?",
 		Placeholder: "Enter your name...",
 	})
@@ -41,7 +42,7 @@ func main() {
 		{Value: "Rust", Label: "Rust"},
 		{Value: "Java", Label: "Java"},
 	}
-	languages := tap.MultiSelect[string](tap.MultiSelectOptions[string]{
+	languages := tap.MultiSelect[string](context.Background(), tap.MultiSelectOptions[string]{
 		Message: fmt.Sprintf("Hi %s! Which programming languages do you use?", name),
 		Options: langOptions,
 	})
@@ -56,13 +57,13 @@ func main() {
 		{Value: "data", Label: "Data Science/ML", Hint: "Analytics, machine learning, AI"},
 	}
 
-	projectType := tap.Select[string](tap.SelectOptions[string]{
+	projectType := tap.Select[string](context.Background(), tap.SelectOptions[string]{
 		Message: fmt.Sprintf("What type of projects do you work on with %s?", strings.Join(languages, ", ")),
 		Options: projectTypes,
 	})
 
 	// Fourth prompt: Get years of experience
-	experience := tap.Text(tap.TextOptions{
+	experience := tap.Text(context.Background(), tap.TextOptions{
 		Message:      "How many years of experience do you have with your selected languages?",
 		Placeholder:  "Enter number of years...",
 		DefaultValue: "1",
@@ -78,7 +79,7 @@ func main() {
 	})
 
 	// Fifth prompt: Confirm if they want to see a summary
-	confirmed := tap.Confirm(tap.ConfirmOptions{
+	confirmed := tap.Confirm(context.Background(), tap.ConfirmOptions{
 		Message:      "Would you like to see a summary of your information?",
 		InitialValue: true,
 	})
@@ -90,7 +91,7 @@ func main() {
 	}
 
 	// Sixth prompt: If confirmed, ask for final message preference
-	detailed = tap.Confirm(tap.ConfirmOptions{
+	detailed = tap.Confirm(context.Background(), tap.ConfirmOptions{
 		Message:      "Display summary in detailed format?",
 		Active:       "Detailed",
 		Inactive:     "Brief",

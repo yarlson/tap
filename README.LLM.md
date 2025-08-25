@@ -13,6 +13,7 @@ Tap is a Go library for building interactive, clack-style terminal prompts (text
 
 ```go
 import (
+  "context"
   "fmt"
   "github.com/yarlson/tap"
 )
@@ -22,7 +23,7 @@ import (
 
 All helpers create and close a terminal per call, unless I/O is overridden in tests.
 
-- `func tap.Text(opts tap.TextOptions) string`
+- `func tap.Text(ctx context.Context, opts tap.TextOptions) string`
 
   - Options:
     - `Message string`
@@ -31,11 +32,11 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
     - `InitialValue string`
     - `Validate func(string) error` (return non-nil to block submission and show error)
 
-- `func tap.Password(opts tap.PasswordOptions) string`
+- `func tap.Password(ctx context.Context, opts tap.PasswordOptions) string`
 
   - Same options as `TextOptions` (input is masked in the UI)
 
-- `func tap.Confirm(opts tap.ConfirmOptions) bool`
+- `func tap.Confirm(ctx context.Context, opts tap.ConfirmOptions) bool`
 
   - Options:
     - `Message string`
@@ -45,10 +46,10 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 
 - `type tap.SelectOption[T any] struct { Value T; Label, Hint string }`
 - `type tap.SelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValue *T; MaxItems *int }`
-- `func tap.Select[T any](opts tap.SelectOptions[T]) T`
+- `func tap.Select[T any](ctx context.Context, opts tap.SelectOptions[T]) T`
 
 - `type tap.MultiSelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValues []T; MaxItems *int }`
-- `func tap.MultiSelect[T any](opts tap.MultiSelectOptions[T]) []T`
+- `func tap.MultiSelect[T any](ctx context.Context, opts tap.MultiSelectOptions[T]) []T`
 
 - Spinner
 
@@ -89,6 +90,11 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 
 ## Behavior and conventions
 
+- **Context Support**
+  - All interactive prompt functions (Text, Password, Confirm, Select, MultiSelect) require a `context.Context` as the first parameter
+  - Use `context.Background()` for basic usage, or pass custom contexts for cancellation/timeouts
+  - If context is cancelled, prompts return zero values (empty string, false, etc.)
+
 - **Typed returns**
 
   - `Text`/`Password` → `string`
@@ -111,9 +117,10 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 ## Basic usage
 
 ```go
-name := tap.Text(tap.TextOptions{Message: "What is your name?"})
-lang := tap.Text(tap.TextOptions{Message: fmt.Sprintf("Hi %s! Favorite language?", name)})
-proceed := tap.Confirm(tap.ConfirmOptions{Message: "Proceed?", InitialValue: true})
+ctx := context.Background()
+name := tap.Text(ctx, tap.TextOptions{Message: "What is your name?"})
+lang := tap.Text(ctx, tap.TextOptions{Message: fmt.Sprintf("Hi %s! Favorite language?", name)})
+proceed := tap.Confirm(ctx, tap.ConfirmOptions{Message: "Proceed?", InitialValue: true})
 if proceed {
   tap.Outro("Let's go! 🎉")
 }
@@ -122,7 +129,7 @@ if proceed {
 ### Validation
 
 ```go
-email := tap.Text(tap.TextOptions{
+email := tap.Text(ctx, tap.TextOptions{
   Message: "Enter email:",
   Validate: func(s string) error {
     if !strings.Contains(s, "@") { return errors.New("please enter a valid email") }
@@ -135,7 +142,7 @@ email := tap.Text(tap.TextOptions{
 
 ```go
 type Env string
-env := tap.Select(tap.SelectOptions[Env]{
+env := tap.Select(ctx, tap.SelectOptions[Env]{
   Message: "Choose environment:",
   Options: []tap.SelectOption[Env]{
     {Value: "dev", Label: "Development", Hint: "Local"},
@@ -147,7 +154,7 @@ env := tap.Select(tap.SelectOptions[Env]{
 ### Multi-Select with typed values
 
 ```go
-langs := tap.MultiSelect(tap.MultiSelectOptions[string]{
+langs := tap.MultiSelect(ctx, tap.MultiSelectOptions[string]{
   Message: "Choose languages:",
   Options: []tap.SelectOption[string]{
     {Value: "go", Label: "Go"},
@@ -190,7 +197,7 @@ out := core.NewMockWritable()
 tap.SetTermIO(in, out)
 defer tap.SetTermIO(nil, nil)
 
-_ = tap.Text(tap.TextOptions{Message: "Your name:"})
+_ = tap.Text(ctx, tap.TextOptions{Message: "Your name:"})
 // feed input
 in.EmitKeypress("A", core.Key{Name: "a"})
 in.EmitKeypress("", core.Key{Name: "return"})
@@ -203,6 +210,7 @@ in.EmitKeypress("", core.Key{Name: "return"})
 - Always call `Stop` on `Spinner`/`Progress` to restore the terminal when used.
 - For validation, return `error` (not `bool`) from the provided function; non-nil blocks submit and shows an error line.
 - The library uses ANSI; ensure output is sent to a TTY when running examples.
+- Use `context.Background()` for basic usage, or create custom contexts for cancellation/timeout behavior.
 
 ## Minimal end-to-end example
 
@@ -210,6 +218,7 @@ in.EmitKeypress("", core.Key{Name: "return"})
 package main
 
 import (
+  "context"
   "fmt"
   "strings"
   "errors"
@@ -217,15 +226,16 @@ import (
 )
 
 func main() {
-  name := tap.Text(tap.TextOptions{Message: "Name:"})
-  email := tap.Text(tap.TextOptions{
+  ctx := context.Background()
+  name := tap.Text(ctx, tap.TextOptions{Message: "Name:"})
+  email := tap.Text(ctx, tap.TextOptions{
     Message: "Email:",
     Validate: func(s string) error {
       if !strings.Contains(s, "@") { return errors.New("please enter a valid email") }
       return nil
     },
   })
-  ok := tap.Confirm(tap.ConfirmOptions{Message: fmt.Sprintf("Submit for %s?", name)})
+  ok := tap.Confirm(ctx, tap.ConfirmOptions{Message: fmt.Sprintf("Submit for %s?", name)})
   if ok { tap.Outro(fmt.Sprintf("Saved %s", email)) }
 }
 ```

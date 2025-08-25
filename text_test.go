@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		result := Text(TextOptions{
+		result := Text(context.Background(), TextOptions{
 			Message: "Enter your name:",
 			Input:   mock,
 			Output:  out,
@@ -68,7 +69,7 @@ func TestStyledText_ShowsPlaceholderWhenEmpty(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		result := Text(TextOptions{
+		result := Text(context.Background(), TextOptions{
 			Message:     "Enter text:",
 			Placeholder: "Type something...",
 			Input:       mock,
@@ -103,7 +104,7 @@ func TestStyledText_ShowsCursorDuringTyping(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		result := Text(TextOptions{
+		result := Text(context.Background(), TextOptions{
 			Message: "Type:",
 			Input:   mock,
 			Output:  out,
@@ -145,7 +146,7 @@ func TestStyledText_ShowsErrorState(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		result := Text(TextOptions{
+		result := Text(context.Background(), TextOptions{
 			Message:  "Enter at least 3 chars:",
 			Validate: validator,
 			Input:    mock,
@@ -188,7 +189,7 @@ func TestStyledText_ShowsDefaultValue(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		result := Text(TextOptions{
+		result := Text(context.Background(), TextOptions{
 			Message:      "Enter name:",
 			DefaultValue: "John",
 			Input:        mock,

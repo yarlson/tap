@@ -91,7 +91,7 @@ func Box(message string, title string, opts BoxOptions) {
 	hSymbol := formatBorder(BarH)
 	vSymbol := formatBorder(Bar)
 
-	maxBoxWidth := columns - len(linePrefix)
+	maxBoxWidth := columns - visibleWidth(linePrefix)
 
 	// Determine box width
 	var boxWidth int
@@ -101,7 +101,7 @@ func Box(message string, title string, opts BoxOptions) {
 		if frac <= 0 {
 			frac = 1.0
 		}
-		boxWidth = int(math.Floor(float64(columns)*frac)) - len(linePrefix)
+		boxWidth = int(math.Floor(float64(columns)*frac)) - visibleWidth(linePrefix)
 		if boxWidth <= 0 {
 			boxWidth = maxBoxWidth
 		}
@@ -111,7 +111,7 @@ func Box(message string, title string, opts BoxOptions) {
 		if frac <= 0 {
 			frac = 1.0
 		}
-		boxWidth = int(math.Floor(float64(columns)*frac)) - len(linePrefix)
+		boxWidth = int(math.Floor(float64(columns)*frac)) - visibleWidth(linePrefix)
 		if boxWidth <= 0 {
 			boxWidth = maxBoxWidth
 		}
@@ -133,9 +133,9 @@ func Box(message string, title string, opts BoxOptions) {
 
 	// Auto width: shrink to content size if possible
 	if opts.WidthAuto {
-		longest := len(title) + titlePadding*2
+		longest := visibleWidth(title) + titlePadding*2
 		for _, line := range strings.Split(message, "\n") {
-			if l := len(line) + contentPadding*2; l > longest {
+			if l := visibleWidth(line) + contentPadding*2; l > longest {
 				longest = l
 			}
 		}

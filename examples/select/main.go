@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -21,7 +22,7 @@ func main() {
 		{Value: "purple", Label: "Purple", Hint: "The color of creativity and mystery"},
 	}
 
-	result := tap.Select[string](tap.SelectOptions[string]{
+	result := tap.Select[string](context.Background(), tap.SelectOptions[string]{
 		Message: "What's your favorite color?",
 		Options: colors,
 	})
@@ -40,7 +41,7 @@ func main() {
 	}
 
 	initialValue := "react"
-	result2 := tap.Select[string](tap.SelectOptions[string]{
+	result2 := tap.Select[string](context.Background(), tap.SelectOptions[string]{
 		Message:      "Which frontend framework do you prefer?",
 		Options:      frameworks,
 		InitialValue: &initialValue,
@@ -58,7 +59,7 @@ func main() {
 		{Value: 4, Label: "Critical", Hint: "Drop everything and do this now"},
 	}
 
-	result3 := tap.Select[int](tap.SelectOptions[int]{
+	result3 := tap.Select[int](context.Background(), tap.SelectOptions[int]{
 		Message: "What's the priority level for this task?",
 		Options: priorities,
 	})
@@ -74,7 +75,7 @@ func main() {
 		{Value: "production"},
 	}
 
-	result4 := tap.Select[string](tap.SelectOptions[string]{
+	result4 := tap.Select[string](context.Background(), tap.SelectOptions[string]{
 		Message: "Which environment to deploy to?",
 		Options: environments,
 	})

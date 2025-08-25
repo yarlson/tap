@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
 
 	done := make(chan bool, 1)
 	go func() {
-		result := Confirm(ConfirmOptions{
+		result := Confirm(context.Background(), ConfirmOptions{
 			Message: "Continue?",
 			Input:   mock,
 			Output:  out,
@@ -53,7 +54,7 @@ func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
 
 	done := make(chan bool, 1)
 	go func() {
-		result := Confirm(ConfirmOptions{
+		result := Confirm(context.Background(), ConfirmOptions{
 			Message:  "Delete file?",
 			Active:   "Delete",
 			Inactive: "Keep",
@@ -95,7 +96,7 @@ func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
 
 	done := make(chan bool, 1)
 	go func() {
-		result := Confirm(ConfirmOptions{
+		result := Confirm(context.Background(), ConfirmOptions{
 			Message: "Proceed?",
 			Input:   mock,
 			Output:  out,
@@ -135,7 +136,7 @@ func TestStyledConfirm_ShowsInitialValue(t *testing.T) {
 
 	done := make(chan bool, 1)
 	go func() {
-		result := Confirm(ConfirmOptions{
+		result := Confirm(context.Background(), ConfirmOptions{
 			Message:      "Continue?",
 			InitialValue: true, // Start with Yes selected
 			Input:        mock,
@@ -162,7 +163,7 @@ func TestStyledConfirm_ShowsCancelState(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		result := Confirm(ConfirmOptions{
+		result := Confirm(context.Background(), ConfirmOptions{
 			Message: "Continue?",
 			Input:   mock,
 			Output:  out,

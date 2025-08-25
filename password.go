@@ -1,13 +1,14 @@
 package tap
 
 import (
+	"context"
 	"strings"
 )
 
 // Password creates a styled password input prompt that masks user input
-func Password(opts PasswordOptions) string {
+func Password(ctx context.Context, opts PasswordOptions) string {
 	if opts.Input != nil && opts.Output != nil {
-		return password(opts)
+		return password(ctx, opts)
 	}
 
 	return runWithTerminal(func(in Reader, out Writer) string {
@@ -18,12 +19,12 @@ func Password(opts PasswordOptions) string {
 			opts.Output = out
 		}
 
-		return password(opts)
+		return password(ctx, opts)
 	})
 }
 
 // password implements the core password prompt logic
-func password(opts PasswordOptions) string {
+func password(ctx context.Context, opts PasswordOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
@@ -91,7 +92,7 @@ func password(opts PasswordOptions) string {
 		p.SetImmediateValue(input)
 	})
 
-	v := p.Prompt()
+	v := p.Prompt(ctx)
 	if s, ok := v.(string); ok {
 		return s
 	}

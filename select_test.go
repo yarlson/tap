@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +18,7 @@ func TestStyledSelect_RendersWithSymbolAndBars(t *testing.T) {
 	}
 
 	go func() {
-		Select(SelectOptions[string]{
+		Select(context.Background(), SelectOptions[string]{
 			Message: "Pick color:",
 			Options: options,
 			Input:   in,
@@ -49,7 +50,7 @@ func TestStyledSelect_ShowsActiveInactiveOptions(t *testing.T) {
 	}
 
 	go func() {
-		Select(SelectOptions[string]{
+		Select(context.Background(), SelectOptions[string]{
 			Message: "Choose:",
 			Options: options,
 			Input:   in,
@@ -80,7 +81,7 @@ func TestStyledSelect_ShowsHints(t *testing.T) {
 	}
 
 	go func() {
-		Select(SelectOptions[string]{
+		Select(context.Background(), SelectOptions[string]{
 			Message: "Pick:",
 			Options: options,
 			Input:   in,
@@ -111,7 +112,7 @@ func TestStyledSelect_ShowsSubmitState(t *testing.T) {
 
 	resCh := make(chan string, 1)
 	go func() {
-		resCh <- Select(SelectOptions[string]{
+		resCh <- Select(context.Background(), SelectOptions[string]{
 			Message: "Choose:",
 			Options: options,
 			Input:   in,
@@ -146,7 +147,7 @@ func TestStyledSelect_ShowsCancelState(t *testing.T) {
 
 	resCh := make(chan any, 1)
 	go func() {
-		resCh <- Select(SelectOptions[string]{
+		resCh <- Select(context.Background(), SelectOptions[string]{
 			Message: "Choose:",
 			Options: options,
 			Input:   in,
@@ -186,7 +187,7 @@ func TestStyledSelect_InitialValuePositioning(t *testing.T) {
 
 	resCh := make(chan string, 1)
 	go func() {
-		resCh <- Select(SelectOptions[string]{
+		resCh <- Select(context.Background(), SelectOptions[string]{
 			Message:      "Choose:",
 			Options:      options,
 			InitialValue: &initialValue,

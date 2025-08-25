@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -13,9 +14,9 @@ type styledMultiSelectState[T any] struct {
 }
 
 // MultiSelect renders a styled multi-select and returns selected values.
-func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
+func MultiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 	if opts.Input != nil && opts.Output != nil {
-		return multiSelect(opts)
+		return multiSelect(ctx, opts)
 	}
 
 	return runWithTerminal(func(in Reader, out Writer) []T {
@@ -26,12 +27,12 @@ func MultiSelect[T any](opts MultiSelectOptions[T]) []T {
 			opts.Output = out
 		}
 
-		return multiSelect(opts)
+		return multiSelect(ctx, opts)
 	})
 }
 
 // multiSelect implements the core multiselect prompt logic
-func multiSelect[T any](opts MultiSelectOptions[T]) []T {
+func multiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
 		coreOptions[i] = SelectOption[T]{Value: opt.Value, Label: opt.Label, Hint: opt.Hint}
@@ -136,7 +137,7 @@ func multiSelect[T any](opts MultiSelectOptions[T]) []T {
 		}
 	})
 
-	v := prompt.Prompt()
+	v := prompt.Prompt(ctx)
 	if t, ok := v.([]T); ok {
 		return t
 	}

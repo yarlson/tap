@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -12,9 +13,9 @@ type styledSelectState[T any] struct {
 }
 
 // Select creates a styled select prompt
-func Select[T any](opts SelectOptions[T]) T {
+func Select[T any](ctx context.Context, opts SelectOptions[T]) T {
 	if opts.Input != nil && opts.Output != nil {
-		return selectInternal(opts)
+		return selectInternal(ctx, opts)
 	}
 
 	return runWithTerminal(func(in Reader, out Writer) T {
@@ -25,12 +26,12 @@ func Select[T any](opts SelectOptions[T]) T {
 			opts.Output = out
 		}
 
-		return selectInternal(opts)
+		return selectInternal(ctx, opts)
 	})
 }
 
 // selectInternal implements the core select prompt logic
-func selectInternal[T any](opts SelectOptions[T]) T {
+func selectInternal[T any](ctx context.Context, opts SelectOptions[T]) T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
 		coreOptions[i] = SelectOption[T]{
@@ -85,7 +86,7 @@ func selectInternal[T any](opts SelectOptions[T]) T {
 		styledPrompt.SetImmediateValue(newValue)
 	})
 
-	v := styledPrompt.Prompt()
+	v := styledPrompt.Prompt(ctx)
 	if t, ok := v.(T); ok {
 		return t
 	}

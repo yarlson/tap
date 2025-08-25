@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/yarlson/tap"
 )
 
 func main() {
-	res := tap.Password(tap.PasswordOptions{
+	res := tap.Password(context.Background(), tap.PasswordOptions{
 		Message:      "Enter password:",
 		DefaultValue: "",
 		Validate: func(s string) error {

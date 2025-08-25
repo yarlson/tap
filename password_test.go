@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		result := Password(PasswordOptions{
+		result := Password(context.Background(), PasswordOptions{
 			Message: "Enter password:",
 			Input:   in,
 			Output:  out,
@@ -64,7 +65,7 @@ func TestStyledPassword_ShowsBulletsDuringTyping(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		done <- Password(PasswordOptions{
+		done <- Password(context.Background(), PasswordOptions{
 			Message: "Password:",
 			Input:   in,
 			Output:  out,
@@ -103,7 +104,7 @@ func TestStyledPassword_ShowsErrorState(t *testing.T) {
 
 	done := make(chan any, 1)
 	go func() {
-		done <- Password(PasswordOptions{
+		done <- Password(context.Background(), PasswordOptions{
 			Message:  "Enter:",
 			Validate: validator,
 			Input:    in,

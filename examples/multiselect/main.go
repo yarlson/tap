@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -20,7 +21,7 @@ func main() {
 		{Value: "js", Label: "JavaScript", Hint: "Ubiquitous on the web"},
 	}
 
-	selected := tap.MultiSelect[string](tap.MultiSelectOptions[string]{
+	selected := tap.MultiSelect[string](context.Background(), tap.MultiSelectOptions[string]{
 		Message: "Which languages are you using this year?",
 		Options: langs,
 	})
@@ -38,7 +39,7 @@ func main() {
 	}
 	initial := []string{"react", "svelte"}
 
-	selected2 := tap.MultiSelect[string](tap.MultiSelectOptions[string]{
+	selected2 := tap.MultiSelect[string](context.Background(), tap.MultiSelectOptions[string]{
 		Message:       "Select the frontend frameworks you know:",
 		Options:       frameworks,
 		InitialValues: initial,

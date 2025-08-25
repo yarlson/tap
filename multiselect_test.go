@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +22,7 @@ func TestStyledMultiSelect_RendersTitleAndOptions(t *testing.T) {
 	}
 
 	go func() {
-		_ = MultiSelect[string](MultiSelectOptions[string]{
+		_ = MultiSelect[string](context.Background(), MultiSelectOptions[string]{
 			Message: "Pick colors:",
 			Options: options,
 			Input:   in,
@@ -63,7 +64,7 @@ func TestStyledMultiSelect_ToggleAndSubmit(t *testing.T) {
 
 	resCh := make(chan []string, 1)
 	go func() {
-		resCh <- MultiSelect[string](MultiSelectOptions[string]{
+		resCh <- MultiSelect[string](context.Background(), MultiSelectOptions[string]{
 			Message: "Choose many:",
 			Options: options,
 			Input:   in,
@@ -101,7 +102,7 @@ func TestStyledMultiSelect_InitialValuesPreselected(t *testing.T) {
 
 	resCh := make(chan []string, 1)
 	go func() {
-		resCh <- MultiSelect[string](MultiSelectOptions[string]{
+		resCh <- MultiSelect[string](context.Background(), MultiSelectOptions[string]{
 			Message:       "Pick:",
 			Options:       options,
 			InitialValues: initial,
@@ -128,7 +129,7 @@ func TestStyledMultiSelect_CancelWithCtrlC(t *testing.T) {
 
 	resCh := make(chan []string, 1)
 	go func() {
-		resCh <- MultiSelect[string](MultiSelectOptions[string]{
+		resCh <- MultiSelect[string](context.Background(), MultiSelectOptions[string]{
 			Message: "Pick:",
 			Options: options,
 			Input:   in,

@@ -1,9 +1,11 @@
 package tap
 
+import "context"
+
 // Confirm creates a styled confirm prompt
-func Confirm(opts ConfirmOptions) bool {
+func Confirm(ctx context.Context, opts ConfirmOptions) bool {
 	if opts.Input != nil && opts.Output != nil {
-		return confirm(opts)
+		return confirm(ctx, opts)
 	}
 
 	return runWithTerminal(func(in Reader, out Writer) bool {
@@ -14,12 +16,12 @@ func Confirm(opts ConfirmOptions) bool {
 			opts.Output = out
 		}
 
-		return confirm(opts)
+		return confirm(ctx, opts)
 	})
 }
 
 // confirm implements the core confirm prompt logic
-func confirm(opts ConfirmOptions) bool {
+func confirm(ctx context.Context, opts ConfirmOptions) bool {
 	active := opts.Active
 	if active == "" {
 		active = "Yes"
@@ -77,7 +79,7 @@ func confirm(opts ConfirmOptions) bool {
 	p.On("confirm", func(val bool) {})
 
 	p.SetValue(currentValue)
-	v := p.Prompt()
+	v := p.Prompt(ctx)
 	if b, ok := v.(bool); ok {
 		return b
 	}

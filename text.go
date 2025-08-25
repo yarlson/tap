@@ -1,13 +1,14 @@
 package tap
 
 import (
+	"context"
 	"strings"
 )
 
 // Text creates a styled text input prompt
-func Text(opts TextOptions) string {
+func Text(ctx context.Context, opts TextOptions) string {
 	if opts.Input != nil && opts.Output != nil {
-		return text(opts)
+		return text(ctx, opts)
 	}
 
 	return runWithTerminal(func(in Reader, out Writer) string {
@@ -18,12 +19,12 @@ func Text(opts TextOptions) string {
 			opts.Output = out
 		}
 
-		return text(opts)
+		return text(ctx, opts)
 	})
 }
 
 // text implements the core text prompt logic
-func text(opts TextOptions) string {
+func text(ctx context.Context, opts TextOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
@@ -101,7 +102,7 @@ func text(opts TextOptions) string {
 		p.SetImmediateValue(input)
 	})
 
-	v := p.Prompt()
+	v := p.Prompt(ctx)
 	if s, ok := v.(string); ok {
 		return s
 	}
