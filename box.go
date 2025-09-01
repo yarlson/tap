@@ -33,6 +33,7 @@ type BoxOptions struct {
 func defaultBorderFormat(s string) string { return s }
 
 // Common border formatters for examples
+
 func GrayBorder(s string) string { return gray(s) }
 func CyanBorder(s string) string { return cyan(s) }
 
@@ -60,15 +61,8 @@ func Box(message string, title string, opts BoxOptions) {
 	borderWidth := 1
 	borderTotal := borderWidth * 2
 
-	titlePadding := opts.TitlePadding
-	if titlePadding < 0 {
-		titlePadding = 0
-	}
-
-	contentPadding := opts.ContentPadding
-	if contentPadding < 0 {
-		contentPadding = 0
-	}
+	titlePadding := max(opts.TitlePadding, 0)
+	contentPadding := max(opts.ContentPadding, 0)
 
 	linePrefix := ""
 	if opts.IncludePrefix {
@@ -105,7 +99,6 @@ func Box(message string, title string, opts BoxOptions) {
 		if boxWidth <= 0 {
 			boxWidth = maxBoxWidth
 		}
-		// ensure big enough for content once inner width computed; we will shrink if needed
 	} else {
 		frac := opts.WidthFraction
 		if frac <= 0 {
@@ -155,6 +148,7 @@ func Box(message string, title string, opts BoxOptions) {
 	if maxTitle < 0 {
 		maxTitle = 0
 	}
+
 	if visibleWidth(truncatedTitle) > maxTitle && maxTitle >= 3 {
 		// naive truncate by runes while tracking width
 		truncatedTitle = truncateToWidth(title, maxTitle)
