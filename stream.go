@@ -134,13 +134,13 @@ func (s *Stream) Stop(finalMessage string, code int) {
 	// Rewrite header: inactive diamond, title stays white
 	_, _ = out.Write([]byte("\r"))
 	_, _ = out.Write([]byte(EraseLine))
-	_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", green(StepSubmit), title)))
+	_, _ = fmt.Fprintf(out, "%s  %s\n", green(StepSubmit), title)
 
 	// Repaint content lines with gray bars and dimmed text
 	for i := range lineCount {
 		_, _ = out.Write([]byte("\r"))
 		_, _ = out.Write([]byte(EraseLine))
-		_, _ = out.Write([]byte(fmt.Sprintf("%s  %s\n", gray(Bar), dim(lines[i]))))
+		_, _ = fmt.Fprintf(out, "%s  %s\n", gray(Bar), dim(lines[i]))
 	}
 
 	// Final status line with a diamond (aligned like header), white message; no bottom corner

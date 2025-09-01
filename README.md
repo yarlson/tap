@@ -129,6 +129,29 @@ spinner.Start("Loading...")
 spinner.Stop("Done!", 0)
 ```
 
+## OSC 9;4 Integration (Terminal Progress)
+
+Tap emits OSC 9;4 control sequences to signal progress/spinner state to compatible terminals. Unsupported terminals ignore these sequences (no-op), so visuals remain unchanged.
+
+What’s emitted automatically:
+
+- Spinner:
+  - Start → indeterminate: `ESC ] 9 ; 4 ; 3 ST`
+  - Stop → final state:
+    - success → `ESC ] 9 ; 4 ; 0 ST` (clear)
+    - cancel  → `ESC ] 9 ; 4 ; 4 ST` (paused)
+    - error   → `ESC ] 9 ; 4 ; 2 ST` (error)
+- Progress:
+  - On render when percent changes → `ESC ] 9 ; 4 ; 1 ; <PCT> ST`
+  - Stop → final state same as spinner (clear/cancel/error)
+
+Notes:
+
+- Terminator: Tap uses ST (`ESC \\`) for robustness. Some terminals also accept BEL (`\a`).
+- Throttling: Progress only emits a new percentage when it changes to avoid spam.
+- Multiplexers: tmux/screen may swallow OSC sequences unless configured to passthrough.
+
+
 ### Multiple Selection
 
 ```go

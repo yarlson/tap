@@ -94,6 +94,9 @@ func (s *Spinner) Start(msg string) {
 	s.ticker = time.NewTicker(s.delay)
 	go s.animate()
 
+	// OSC 9;4 indeterminate spinner
+	oscSpin(s.output)
+
 	if lastLen > 0 {
 		if s.output != nil {
 			_, _ = s.output.Write([]byte("\033[1A\r\033[J"))
@@ -129,6 +132,16 @@ func (s *Spinner) Stop(msg string, code int) {
 		s.ticker.Stop()
 	}
 	close(s.stopCh)
+
+	// OSC 9;4 final state
+	switch code {
+	case 0:
+		oscClear(s.output)
+	case 1:
+		oscPause(s.output)
+	default:
+		oscError(s.output)
+	}
 
 	if s.output != nil {
 		if s.lastFrameLength > 0 {

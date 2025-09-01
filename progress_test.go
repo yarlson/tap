@@ -205,3 +205,42 @@ func TestProgress_StopWithMessage(t *testing.T) {
 	// Should contain submit symbol
 	assert.Contains(t, lastFrame, green(StepSubmit))
 }
+
+func TestProgress_OSC94Signals(t *testing.T) {
+	out := NewMockWritable()
+	prog := NewProgress(ProgressOptions{
+		Output: out,
+		Style:  "heavy",
+		Max:    10,
+		Size:   20,
+	})
+
+	prog.Start("start")
+	time.Sleep(2 * time.Millisecond)
+
+	// Advance to 50%
+	prog.Advance(5, "half")
+	time.Sleep(2 * time.Millisecond)
+
+	// Stop success
+	prog.Stop("done", 0)
+
+	frames := strings.Join(out.GetFrames(), "")
+	// On start we should at least emit set 0% or spinner; we choose set 0%
+	assert.Contains(t, frames, "\x1b]9;4;1;0\x1b\\")
+	// After advance to 50%
+	assert.Contains(t, frames, "\x1b]9;4;1;50\x1b\\")
+	// On success, clear
+	assert.Contains(t, frames, "\x1b]9;4;0\x1b\\")
+
+	// Error case
+	out2 := NewMockWritable()
+	prog2 := NewProgress(ProgressOptions{Output: out2, Style: "heavy", Max: 10, Size: 20})
+	prog2.Start("start")
+	time.Sleep(2 * time.Millisecond)
+	prog2.Advance(3, "some")
+	time.Sleep(2 * time.Millisecond)
+	prog2.Stop("err", 2)
+	frames2 := strings.Join(out2.GetFrames(), "")
+	assert.Contains(t, frames2, "\x1b]9;4;2\x1b\\")
+}

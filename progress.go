@@ -34,6 +34,7 @@ type Progress struct {
 	previousMsg     string
 	frameIndex      int
 	lastFrameLength int
+	lastPct         int
 }
 
 // Progress bar character styles
@@ -81,6 +82,7 @@ func newProgress(opts ProgressOptions) *Progress {
 		stopChan:   make(chan struct{}),
 		frames:     []string{"◒", "◐", "◓", "◑"},
 		frameIndex: 0,
+		lastPct:    -1,
 	}
 }
 
@@ -149,6 +151,16 @@ func (p *Progress) Stop(msg string, code int) {
 		p.ticker.Stop()
 	}
 	close(p.stopChan)
+
+	// OSC 9;4 final state
+	switch code {
+	case 0:
+		oscClear(p.output)
+	case 1:
+		oscPause(p.output)
+	default:
+		oscError(p.output)
+	}
 
 	// Final render with state symbol
 	var symbol string
@@ -232,6 +244,18 @@ func (p *Progress) render(msg string) {
 
 	// Build frame following the clack visual pattern
 	output := fmt.Sprintf("%s\n%s  %s\n%s  %s", gray(Bar), cyan(frame), msg, cyan(Bar), coloredBar)
+
+	// Emit OSC 9;4 set if percent changed, before writing frame
+	p.mu.Lock()
+	pct := int(progress * 100.0)
+	emitSet := pct != p.lastPct
+	if emitSet {
+		p.lastPct = pct
+	}
+	p.mu.Unlock()
+	if emitSet {
+		oscSet(p.output, pct)
+	}
 
 	// Clear previous frame if this is not the first render
 	if lastLength > 0 {

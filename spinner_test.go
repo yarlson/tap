@@ -1,6 +1,7 @@
 package tap
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -94,4 +95,38 @@ func TestSpinner_StopCodes(t *testing.T) {
 	frames := out.GetFrames()
 	last := frames[len(frames)-1]
 	assert.Contains(t, last, red(StepCancel))
+}
+
+func TestSpinner_OSC94Signals(t *testing.T) {
+	out := NewMockWritable()
+	s := NewSpinner(SpinnerOptions{Output: out})
+
+	s.Start("working")
+	time.Sleep(2 * time.Millisecond)
+	// success
+	s.Stop("ok", 0)
+
+	frames := strings.Join(out.GetFrames(), "")
+	// Start should emit indeterminate spinner: ESC ] 9 ; 4 ; 3 ST
+	assert.Contains(t, frames, "\x1b]9;4;3\x1b\\")
+	// Stop with success should clear: ESC ] 9 ; 4 ; 0 ST
+	assert.Contains(t, frames, "\x1b]9;4;0\x1b\\")
+
+	// Error
+	out2 := NewMockWritable()
+	s2 := NewSpinner(SpinnerOptions{Output: out2})
+	s2.Start("working")
+	time.Sleep(2 * time.Millisecond)
+	s2.Stop("boom", 2)
+	frames2 := strings.Join(out2.GetFrames(), "")
+	assert.Contains(t, frames2, "\x1b]9;4;2\x1b\\")
+
+	// Cancel -> paused
+	out3 := NewMockWritable()
+	s3 := NewSpinner(SpinnerOptions{Output: out3})
+	s3.Start("working")
+	time.Sleep(2 * time.Millisecond)
+	s3.Stop("cancel", 1)
+	frames3 := strings.Join(out3.GetFrames(), "")
+	assert.Contains(t, frames3, "\x1b]9;4;4\x1b\\")
 }
