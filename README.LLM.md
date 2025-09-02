@@ -91,6 +91,7 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 ## Behavior and conventions
 
 - **Context Support**
+
   - All interactive prompt functions (Text, Password, Confirm, Select, MultiSelect) require a `context.Context` as the first parameter
   - Use `context.Background()` for basic usage, or pass custom contexts for cancellation/timeouts
   - If context is cancelled, prompts return zero values (empty string, false, etc.)

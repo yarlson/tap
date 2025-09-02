@@ -19,20 +19,6 @@ func oscClear(w Writer) {
 	_, _ = w.Write([]byte("\x1b]9;4;0" + oscTerm))
 }
 
-func oscError(w Writer) {
-	if w == nil {
-		return
-	}
-	_, _ = w.Write([]byte("\x1b]9;4;2" + oscTerm))
-}
-
-func oscPause(w Writer) {
-	if w == nil {
-		return
-	}
-	_, _ = w.Write([]byte("\x1b]9;4;4" + oscTerm))
-}
-
 func oscSet(w Writer, pct int) {
 	if w == nil {
 		return

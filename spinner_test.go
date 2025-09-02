@@ -112,21 +112,21 @@ func TestSpinner_OSC94Signals(t *testing.T) {
 	// Stop with success should clear: ESC ] 9 ; 4 ; 0 ST
 	assert.Contains(t, frames, "\x1b]9;4;0\x1b\\")
 
-	// Error
+	// Error (still clears)
 	out2 := NewMockWritable()
 	s2 := NewSpinner(SpinnerOptions{Output: out2})
 	s2.Start("working")
 	time.Sleep(2 * time.Millisecond)
 	s2.Stop("boom", 2)
 	frames2 := strings.Join(out2.GetFrames(), "")
-	assert.Contains(t, frames2, "\x1b]9;4;2\x1b\\")
+	assert.Contains(t, frames2, "\x1b]9;4;0\x1b\\")
 
-	// Cancel -> paused
+	// Cancel (still clears)
 	out3 := NewMockWritable()
 	s3 := NewSpinner(SpinnerOptions{Output: out3})
 	s3.Start("working")
 	time.Sleep(2 * time.Millisecond)
 	s3.Stop("cancel", 1)
 	frames3 := strings.Join(out3.GetFrames(), "")
-	assert.Contains(t, frames3, "\x1b]9;4;4\x1b\\")
+	assert.Contains(t, frames3, "\x1b]9;4;0\x1b\\")
 }

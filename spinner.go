@@ -133,15 +133,7 @@ func (s *Spinner) Stop(msg string, code int) {
 	}
 	close(s.stopCh)
 
-	// OSC 9;4 final state
-	switch code {
-	case 0:
-		oscClear(s.output)
-	case 1:
-		oscPause(s.output)
-	default:
-		oscError(s.output)
-	}
+	oscClear(s.output)
 
 	if s.output != nil {
 		if s.lastFrameLength > 0 {

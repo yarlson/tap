@@ -21,7 +21,7 @@ Building CLI applications shouldn't require wrestling with terminal complexities
 ### Available Components
 
 - **Text Input** — Single-line input with validation, placeholders, and defaults
-- **Password Input** — Masked input for sensitive data  
+- **Password Input** — Masked input for sensitive data
 - **Confirm** — Yes/No prompts with customizable labels
 - **Select** — Single selection from typed options with hints
 - **MultiSelect** — Multiple selection with checkboxes
@@ -50,7 +50,7 @@ import (
 
 func main() {
     ctx := context.Background()
-    
+
     tap.Intro("Welcome! 👋")
 
     name := tap.Text(ctx, tap.TextOptions{
@@ -137,20 +137,16 @@ What’s emitted automatically:
 
 - Spinner:
   - Start → indeterminate: `ESC ] 9 ; 4 ; 3 ST`
-  - Stop → final state:
-    - success → `ESC ] 9 ; 4 ; 0 ST` (clear)
-    - cancel  → `ESC ] 9 ; 4 ; 4 ST` (paused)
-    - error   → `ESC ] 9 ; 4 ; 2 ST` (error)
+  - Stop → always clear: `ESC ] 9 ; 4 ; 0 ST`
 - Progress:
   - On render when percent changes → `ESC ] 9 ; 4 ; 1 ; <PCT> ST`
-  - Stop → final state same as spinner (clear/cancel/error)
+  - Stop → always clear: `ESC ] 9 ; 4 ; 0 ST`
 
 Notes:
 
 - Terminator: Tap uses ST (`ESC \\`) for robustness. Some terminals also accept BEL (`\a`).
 - Throttling: Progress only emits a new percentage when it changes to avoid spam.
 - Multiplexers: tmux/screen may swallow OSC sequences unless configured to passthrough.
-
 
 ### Multiple Selection
 

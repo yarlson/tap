@@ -233,7 +233,7 @@ func TestProgress_OSC94Signals(t *testing.T) {
 	// On success, clear
 	assert.Contains(t, frames, "\x1b]9;4;0\x1b\\")
 
-	// Error case
+	// Error case (still clears)
 	out2 := NewMockWritable()
 	prog2 := NewProgress(ProgressOptions{Output: out2, Style: "heavy", Max: 10, Size: 20})
 	prog2.Start("start")
@@ -242,5 +242,5 @@ func TestProgress_OSC94Signals(t *testing.T) {
 	time.Sleep(2 * time.Millisecond)
 	prog2.Stop("err", 2)
 	frames2 := strings.Join(out2.GetFrames(), "")
-	assert.Contains(t, frames2, "\x1b]9;4;2\x1b\\")
+	assert.Contains(t, frames2, "\x1b]9;4;0\x1b\\")
 }

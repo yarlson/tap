@@ -152,15 +152,7 @@ func (p *Progress) Stop(msg string, code int) {
 	}
 	close(p.stopChan)
 
-	// OSC 9;4 final state
-	switch code {
-	case 0:
-		oscClear(p.output)
-	case 1:
-		oscPause(p.output)
-	default:
-		oscError(p.output)
-	}
+	oscClear(p.output)
 
 	// Final render with state symbol
 	var symbol string
