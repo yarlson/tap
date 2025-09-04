@@ -115,3 +115,44 @@ var (
 	ioReader Reader
 	ioWriter Writer
 )
+
+// Table-related types
+
+type TableAlignment string
+
+const (
+	TableAlignLeft   TableAlignment = "left"
+	TableAlignCenter TableAlignment = "center"
+	TableAlignRight  TableAlignment = "right"
+)
+
+type TableStyle string
+
+const (
+	TableStyleNormal TableStyle = "normal"
+	TableStyleBold   TableStyle = "bold"
+	TableStyleDim    TableStyle = "dim"
+)
+
+type TableColor string
+
+const (
+	TableColorDefault TableColor = "default"
+	TableColorGray    TableColor = "gray"
+	TableColorRed     TableColor = "red"
+	TableColorGreen   TableColor = "green"
+	TableColorYellow  TableColor = "yellow"
+	TableColorCyan    TableColor = "cyan"
+)
+
+// TableOptions defines options for styled table rendering
+type TableOptions struct {
+	Output           Writer
+	ShowBorders      bool
+	IncludePrefix    bool
+	MaxWidth         int
+	ColumnAlignments []TableAlignment
+	HeaderStyle      TableStyle
+	HeaderColor      TableColor
+	FormatBorder     func(string) string
+}

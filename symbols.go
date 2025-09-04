@@ -72,3 +72,50 @@ func Symbol(state ClackState) string {
 	}
 	return StepActive
 }
+
+// Table symbols
+const (
+	// Table border symbols
+	TableTopLeft     = "┌"
+	TableTopRight    = "┐"
+	TableBottomLeft  = "└"
+	TableBottomRight = "┘"
+	TableTopTee      = "┬"
+	TableBottomTee   = "┴"
+	TableLeftTee     = "├"
+	TableRightTee    = "┤"
+	TableCross       = "┼"
+	TableHorizontal  = "─"
+	TableVertical    = "│"
+)
+
+// Table styling helper functions
+func tableStyle(text string, style TableStyle, color TableColor) string {
+	result := text
+	
+	// Apply color first
+	switch color {
+	case TableColorGray:
+		result = gray(result)
+	case TableColorRed:
+		result = red(result)
+	case TableColorGreen:
+		result = green(result)
+	case TableColorYellow:
+		result = yellow(result)
+	case TableColorCyan:
+		result = cyan(result)
+	}
+	
+	// Apply style - but ensure we reset properly
+	switch style {
+	case TableStyleBold:
+		// Remove any existing reset codes and apply bold with proper reset
+		result = "\033[1m" + result + "\033[0m"
+	case TableStyleDim:
+		// Remove any existing reset codes and apply dim with proper reset
+		result = "\033[2m" + result + "\033[0m"
+	}
+	
+	return result
+}
