@@ -39,7 +39,19 @@ func Table(headers []string, rows [][]string, opts TableOptions) {
 	}
 
 	// Calculate column widths
-	columnWidths := calculateColumnWidths(headers, rows, opts.MaxWidth-len(linePrefix))
+	// Use visible width for prefix and subtract border glyphs so final width fits MaxWidth
+	available := opts.MaxWidth - visibleWidth(linePrefix)
+	if available < 1 {
+		available = 1
+	}
+	if opts.ShowBorders {
+		borderGlyphs := len(headers) + 1 // number of vertical borders per line
+		available -= borderGlyphs
+		if available < 1 {
+			available = 1
+		}
+	}
+	columnWidths := calculateColumnWidths(headers, rows, available)
 
 	// Normalize rows to have same number of columns as headers
 	normalizedRows := normalizeRows(rows, len(headers))
@@ -55,39 +67,99 @@ func Table(headers []string, rows [][]string, opts TableOptions) {
 // calculateColumnWidths determines the optimal width for each column
 func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []int {
 	numCols := len(headers)
-	widths := make([]int, numCols)
 
-	// Calculate minimum width needed for each column
+	// Compute natural content width (no padding) for each column
+	natural := make([]int, numCols)
 	for i, header := range headers {
-		widths[i] = visibleWidth(header)
+		natural[i] = visibleWidth(header)
 	}
-
 	for _, row := range rows {
 		for i := 0; i < numCols && i < len(row); i++ {
-			if visibleWidth(row[i]) > widths[i] {
-				widths[i] = visibleWidth(row[i])
+			if w := visibleWidth(row[i]); w > natural[i] {
+				natural[i] = w
 			}
 		}
 	}
 
-	// Add padding
-	for i := range widths {
-		widths[i] += 2 // 1 space on each side
-	}
-
-	// If total width exceeds maxWidth, proportionally reduce
-	totalWidth := 0
-	for _, w := range widths {
-		totalWidth += w
-	}
-
-	if totalWidth > maxWidth {
-		scale := float64(maxWidth) / float64(totalWidth)
-		for i := range widths {
-			widths[i] = int(math.Floor(float64(widths[i]) * scale))
-			if widths[i] < 3 { // minimum width
-				widths[i] = 3
+	// Desired full widths (content + padding) and minimum widths
+	desiredFull := make([]int, numCols)
+	minWidth := make([]int, numCols)
+	for i := 0; i < numCols; i++ {
+		desiredFull[i] = natural[i] + 2 // 1 space padding each side
+		if natural[i] <= 3 {
+			m := natural[i] + 2 // show small values fully
+			if m < 3 {
+				m = 3
 			}
+			minWidth[i] = m
+		} else {
+			minWidth[i] = 5 // 2 padding + 3 for ellipsis
+		}
+	}
+
+	// If even minimums exceed maxWidth, distribute fairly from 3 per column
+	sumMin := 0
+	for _, m := range minWidth {
+		sumMin += m
+	}
+	if sumMin >= maxWidth {
+		widths := make([]int, numCols)
+		for i := range widths {
+			widths[i] = 3
+		}
+		rem := maxWidth - 3*numCols
+		for i := 0; rem > 0 && numCols > 0; i++ {
+			idx := i % numCols
+			widths[idx]++
+			rem--
+		}
+		return widths
+	}
+
+	// Start from minimums and distribute remaining space toward desiredFull
+	widths := make([]int, numCols)
+	copy(widths, minWidth)
+	remaining := maxWidth - sumMin
+
+	// Compute wishes (how much each column wants to reach desiredFull)
+	wishes := make([]int, numCols)
+	totalWish := 0
+	for i := 0; i < numCols; i++ {
+		w := desiredFull[i] - minWidth[i]
+		if w < 0 {
+			w = 0
+		}
+		wishes[i] = w
+		totalWish += w
+	}
+	if totalWish == 0 {
+		return widths
+	}
+
+	// Proportional allocation by wish
+	assigned := 0
+	for i := 0; i < numCols; i++ {
+		share := int(math.Floor(float64(remaining) * float64(wishes[i]) / float64(totalWish)))
+		if share > wishes[i] {
+			share = wishes[i]
+		}
+		widths[i] += share
+		assigned += share
+	}
+	leftover := remaining - assigned
+
+	// Distribute leftover one-by-one to columns still below desiredFull
+	for leftover > 0 {
+		progressed := false
+		for i := 0; i < numCols && leftover > 0; i++ {
+			if widths[i] < desiredFull[i] {
+				widths[i]++
+				leftover--
+				progressed = true
+			}
+		}
+		if !progressed {
+			break
 		}
 	}
 
@@ -247,8 +319,21 @@ func truncateTableText(text string, width int) string {
 	if visibleWidth(text) <= width {
 		return text
 	}
+	if width <= 0 {
+		return ""
+	}
 	if width <= 3 {
-		return "..."
+		var b strings.Builder
+		w := 0
+		for _, r := range text {
+			rw := runewidth.RuneWidth(r)
+			if w+rw > width {
+				break
+			}
+			b.WriteRune(r)
+			w += rw
+		}
+		return b.String()
 	}
 	target := width - 3
 	var b strings.Builder

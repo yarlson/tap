@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/yarlson/tap"
 )
@@ -115,43 +114,6 @@ func main() {
 		HeaderStyle: tap.TableStyleBold,
 		HeaderColor: tap.TableColorRed,
 	})
-
-	// Show a progress bar while "processing" the table data
-	fmt.Println("\n8. Processing table data...")
-	progress := tap.NewProgress(tap.ProgressOptions{
-		Style: "heavy",
-		Max:   100,
-		Size:  40,
-	})
-
-	progress.Start("Analyzing table data...")
-	time.Sleep(500 * time.Millisecond)
-
-	progress.Advance(30, "Calculating statistics...")
-	time.Sleep(500 * time.Millisecond)
-
-	progress.Advance(40, "Generating report...")
-	time.Sleep(500 * time.Millisecond)
-
-	progress.Advance(30, "Finalizing results...")
-	time.Sleep(500 * time.Millisecond)
-
-	progress.Stop("Table analysis complete! 📈", 0)
-
-	// Final summary in a box
-	tap.Box(
-		"Tables are now available in Tap! 🎉\n\nFeatures demonstrated:\n• Borders and borderless tables\n• Custom styling and colors\n• Column alignment options\n• Width constraints and truncation\n• Prefix support for integration\n• Graceful handling of uneven data",
-		"📊 TABLE WRITER SUMMARY",
-		tap.BoxOptions{
-			Columns:        80,
-			WidthFraction:  1.0,
-			TitlePadding:   1,
-			ContentPadding: 1,
-			Rounded:        true,
-			IncludePrefix:  true,
-			FormatBorder:   tap.CyanBorder,
-		},
-	)
 
 	tap.Outro("Thanks for exploring the table writer! 🚀")
 }
