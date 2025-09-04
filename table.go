@@ -115,31 +115,31 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 	numCols := len(headers)
 
 	// Top border
-	fmt.Fprint(out, linePrefix)
-	fmt.Fprint(out, formatBorder(TableTopLeft))
+	_, _ = fmt.Fprint(out, linePrefix)
+	_, _ = fmt.Fprint(out, formatBorder(TableTopLeft))
 	for i, width := range columnWidths {
-		fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
+		_, _ = fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
 		if i < numCols-1 {
-			fmt.Fprint(out, formatBorder(TableTopTee))
+			_, _ = fmt.Fprint(out, formatBorder(TableTopTee))
 		}
 	}
-	fmt.Fprint(out, formatBorder(TableTopRight))
-	fmt.Fprint(out, "\n")
+	_, _ = fmt.Fprint(out, formatBorder(TableTopRight))
+	_, _ = fmt.Fprint(out, "\n")
 
 	// Header row
 	renderTableRow(out, headers, columnWidths, linePrefix, formatBorder, opts, true)
 
 	// Header separator
-	fmt.Fprint(out, linePrefix)
-	fmt.Fprint(out, formatBorder(TableLeftTee))
+	_, _ = fmt.Fprint(out, linePrefix)
+	_, _ = fmt.Fprint(out, formatBorder(TableLeftTee))
 	for i, width := range columnWidths {
-		fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
+		_, _ = fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
 		if i < numCols-1 {
-			fmt.Fprint(out, formatBorder(TableCross))
+			_, _ = fmt.Fprint(out, formatBorder(TableCross))
 		}
 	}
-	fmt.Fprint(out, formatBorder(TableRightTee))
-	fmt.Fprint(out, "\n")
+	_, _ = fmt.Fprint(out, formatBorder(TableRightTee))
+	_, _ = fmt.Fprint(out, "\n")
 
 	// Data rows
 	for _, row := range rows {
@@ -147,16 +147,16 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 	}
 
 	// Bottom border
-	fmt.Fprint(out, linePrefix)
-	fmt.Fprint(out, formatBorder(TableBottomLeft))
+	_, _ = fmt.Fprint(out, linePrefix)
+	_, _ = fmt.Fprint(out, formatBorder(TableBottomLeft))
 	for i, width := range columnWidths {
-		fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
+		_, _ = fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
 		if i < numCols-1 {
-			fmt.Fprint(out, formatBorder(TableBottomTee))
+			_, _ = fmt.Fprint(out, formatBorder(TableBottomTee))
 		}
 	}
-	fmt.Fprint(out, formatBorder(TableBottomRight))
-	fmt.Fprint(out, "\n")
+	_, _ = fmt.Fprint(out, formatBorder(TableBottomRight))
+	_, _ = fmt.Fprint(out, "\n")
 }
 
 // renderTableWithoutBorders renders a table without borders
@@ -172,7 +172,7 @@ func renderTableWithoutBorders(out Writer, headers []string, rows [][]string, co
 
 // renderTableRow renders a single table row
 func renderTableRow(out Writer, row []string, columnWidths []int, linePrefix string, formatBorder func(string) string, opts TableOptions, isHeader bool) {
-	fmt.Fprint(out, linePrefix)
+	_, _ = fmt.Fprint(out, linePrefix)
 
 	for i, cell := range row {
 		if i >= len(columnWidths) {
@@ -187,18 +187,19 @@ func renderTableRow(out Writer, row []string, columnWidths []int, linePrefix str
 			alignment = opts.ColumnAlignments[i]
 		}
 
-		// Apply header styling
-		styledCell := cell
-		if isHeader {
-			styledCell = tableStyle(cell, opts.HeaderStyle, opts.HeaderColor)
-		}
-
 		// Calculate available width for content (subtract padding only)
 		contentWidth := width - 2 // 1 space on each side
 
-		// Truncate if necessary
-		if visibleWidth(styledCell) > contentWidth {
-			styledCell = truncateTableText(styledCell, contentWidth)
+		// Truncate the raw text first to avoid cutting ANSI sequences later
+		cellContent := cell
+		if visibleWidth(cellContent) > contentWidth {
+			cellContent = truncateTableText(cellContent, contentWidth)
+		}
+
+		// Apply header styling after truncation so resets remain intact
+		styledCell := cellContent
+		if isHeader {
+			styledCell = tableStyle(cellContent, opts.HeaderStyle, opts.HeaderColor)
 		}
 
 		// Apply alignment
@@ -206,18 +207,18 @@ func renderTableRow(out Writer, row []string, columnWidths []int, linePrefix str
 
 		// Add borders if needed
 		if formatBorder != nil {
-			fmt.Fprint(out, formatBorder(TableVertical))
+			_, _ = fmt.Fprint(out, formatBorder(TableVertical))
 		}
-		fmt.Fprint(out, " ")
-		fmt.Fprint(out, alignedCell)
-		fmt.Fprint(out, " ")
+		_, _ = fmt.Fprint(out, " ")
+		_, _ = fmt.Fprint(out, alignedCell)
+		_, _ = fmt.Fprint(out, " ")
 	}
 
 	// Right border
 	if formatBorder != nil {
-		fmt.Fprint(out, formatBorder(TableVertical))
+		_, _ = fmt.Fprint(out, formatBorder(TableVertical))
 	}
-	fmt.Fprint(out, "\n")
+	_, _ = fmt.Fprint(out, "\n")
 }
 
 // alignText aligns text within the given width, accounting for ANSI escape sequences

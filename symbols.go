@@ -92,7 +92,7 @@ const (
 // Table styling helper functions
 func tableStyle(text string, style TableStyle, color TableColor) string {
 	result := text
-	
+
 	// Apply color first
 	switch color {
 	case TableColorGray:
@@ -106,7 +106,7 @@ func tableStyle(text string, style TableStyle, color TableColor) string {
 	case TableColorCyan:
 		result = cyan(result)
 	}
-	
+
 	// Apply style - but ensure we reset properly
 	switch style {
 	case TableStyleBold:
@@ -116,6 +116,6 @@ func tableStyle(text string, style TableStyle, color TableColor) string {
 		// Remove any existing reset codes and apply dim with proper reset
 		result = "\033[2m" + result + "\033[0m"
 	}
-	
+
 	return result
 }
