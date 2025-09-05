@@ -192,6 +192,7 @@ func Box(message string, title string, opts BoxOptions) {
 		strings.Repeat(hSymbol, innerWidth),
 		symbols[3],
 	)
+	_, _ = fmt.Fprintf(out, "%s\n", linePrefix)
 }
 
 // getPaddingForLine mirrors the TS logic.

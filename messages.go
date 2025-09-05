@@ -63,3 +63,21 @@ func Outro(message string, opts ...MessageOptions) {
 
 	_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), message)
 }
+
+func Message(message string, opts ...MessageOptions) {
+	var out Writer
+	if len(opts) > 0 {
+		out = opts[0].Output
+	}
+
+	if out == nil {
+		out, _ = resolveWriter()
+	}
+
+	if out == nil {
+		return
+	}
+
+	_, _ = fmt.Fprintf(out, "%s  %s\n", green(StepSubmit), message)
+	_, _ = fmt.Fprintf(out, "%s \n", gray(Bar))
+}

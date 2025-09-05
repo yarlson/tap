@@ -158,5 +158,30 @@ func main() {
 		},
 	)
 
+	tap.Message("Here's a table summary of your selections:")
+
+	// Show a concise summary table of the user's selections
+	mode := "Brief"
+	if detailed {
+		mode = "Detailed"
+	}
+
+	headers := []string{"Field", "Value"}
+	rows := [][]string{
+		{"Name", name},
+		{"Languages", strings.Join(languages, ", ")},
+		{"Project Type", getProjectLabel(projectType)},
+		{"Experience (years)", experience},
+		{"Summary Mode", mode},
+	}
+
+	tap.Table(headers, rows, tap.TableOptions{
+		ShowBorders:   true,
+		IncludePrefix: true,
+		HeaderStyle:   tap.TableStyleBold,
+		HeaderColor:   tap.TableColorCyan,
+		FormatBorder:  border,
+	})
+
 	tap.Outro("Thanks for trying out the Tap prompts library! 🎉")
 }

@@ -80,13 +80,16 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - `func (p *tap.Progress) Message(msg string)`
   - `func (p *tap.Progress) Stop(msg string, code int)` // 0=success, 1=cancel, >1=error
 
-- Messages and Box
+- Messages, Box, and Table
   - `func tap.Intro(title string)`
   - `func tap.Outro(message string)`
+  - `func tap.Message(message string)`
   - `type tap.BoxOptions struct { Columns int; WidthFraction float64; WidthAuto bool; TitlePadding, ContentPadding int; TitleAlign, ContentAlign tap.BoxAlignment; Rounded, IncludePrefix bool; FormatBorder func(string) string }`
   - `func tap.Box(message string, title string, opts tap.BoxOptions)`
   - `func tap.GrayBorder(s string) string`
   - `func tap.CyanBorder(s string) string`
+  - `type tap.TableOptions struct { Output tap.Writer; ShowBorders, IncludePrefix bool; MaxWidth int; ColumnAlignments []tap.TableAlignment; HeaderStyle tap.TableStyle; HeaderColor tap.TableColor; FormatBorder func(string) string }`
+  - `func tap.Table(headers []string, rows [][]string, opts tap.TableOptions)`
 
 ## Behavior and conventions
 
@@ -185,6 +188,26 @@ st.Start("Building project")
 st.WriteLine("step 1: deps")
 st.WriteLine("step 2: compile")
 st.Stop("Done", 0)
+```
+
+### Messages
+
+```go
+tap.Message("Here's a summary table:")
+```
+
+### Table
+
+```go
+headers := []string{"Field", "Value"}
+rows := [][]string{{"Name", name}, {"Languages", strings.Join(langs, ", ")}}
+
+tap.Table(headers, rows, tap.TableOptions{
+  ShowBorders:   true,
+  IncludePrefix: true,
+  HeaderStyle:   tap.TableStyleBold,
+  HeaderColor:   tap.TableColorCyan,
+})
 ```
 
 ## Testing (override terminal I/O)

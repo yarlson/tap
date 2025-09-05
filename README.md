@@ -165,6 +165,26 @@ selected := tap.MultiSelect(ctx, tap.MultiSelectOptions[string]{
 fmt.Printf("You selected: %v\n", selected)
 ```
 
+### Messages, Box, and Table
+
+```go
+tap.Intro("Summary")
+tap.Message("Here's a table summary of your selections:")
+
+headers := []string{"Field", "Value"}
+rows := [][]string{
+  {"Name", name},
+  {"Languages", strings.Join(selected, ", ")},
+}
+
+tap.Table(headers, rows, tap.TableOptions{
+  ShowBorders:   true,
+  IncludePrefix: true,
+  HeaderStyle:   tap.TableStyleBold,
+  HeaderColor:   tap.TableColorCyan,
+})
+```
+
 ### Context Support and Cancellation
 
 All interactive prompts support Go's context package for cancellation and timeouts:
