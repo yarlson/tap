@@ -34,6 +34,23 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
     - `Input tap.Reader` (optional)
     - `Output tap.Writer` (optional)
 
+- `func tap.Autocomplete(ctx context.Context, opts tap.AutocompleteOptions) string`
+
+  - Options:
+    - `Message string`
+    - `Placeholder string`
+    - `DefaultValue string`
+    - `InitialValue string`
+    - `Validate func(string) error`
+    - `Suggest func(string) []string` (return candidate suggestions for current input)
+    - `MaxResults int` (max suggestions to display; default 5)
+    - `Input tap.Reader` (optional)
+    - `Output tap.Writer` (optional)
+  - Behavior:
+    - Arrow Up/Down navigates suggestions; `Tab` accepts the highlighted suggestion
+    - `Enter` submits the current input (or accepted suggestion)
+    - `Ctrl+C`/`Esc` cancel and return an empty string
+
 - `func tap.Password(ctx context.Context, opts tap.PasswordOptions) string`
 
   - Same options as `TextOptions` (input is masked in the UI)
@@ -119,6 +136,7 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - Submit: `Enter`
   - Cancel: `Ctrl+C` or `Esc`
   - Toggle (MultiSelect): `Space`
+  - Accept suggestion (Autocomplete): `Tab`
 
 - **Validation errors** (Text/Password)
 
@@ -152,6 +170,31 @@ email := tap.Text(ctx, tap.TextOptions{
     if !strings.Contains(s, "@") { return errors.New("please enter a valid email") }
     return nil
   },
+})
+```
+
+### Autocomplete
+
+```go
+// Suggest function to filter a static list
+suggest := func(input string) []string {
+  all := []string{"Go", "Golang", "Python", "Rust", "Java"}
+  if input == "" { return all }
+  low := strings.ToLower(input)
+  var out []string
+  for _, s := range all {
+    if strings.Contains(strings.ToLower(s), low) {
+      out = append(out, s)
+    }
+  }
+  return out
+}
+
+val := tap.Autocomplete(ctx, tap.AutocompleteOptions{
+  Message:     "Search language:",
+  Placeholder: "Start typing...",
+  Suggest:     suggest,
+  MaxResults:  6,
 })
 ```
 

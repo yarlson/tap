@@ -66,6 +66,19 @@ type MultiSelectOptions[T any] struct {
 	Output        Writer
 }
 
+// AutocompleteOptions defines options for styled autocomplete text prompt
+type AutocompleteOptions struct {
+	Message      string
+	Placeholder  string
+	DefaultValue string
+	InitialValue string
+	Validate     func(string) error
+	Suggest      func(string) []string // returns suggestion list for current input
+	MaxResults   int                   // maximum suggestions to show (default 5)
+	Input        Reader
+	Output       Writer
+}
+
 type ClackState string
 
 const (

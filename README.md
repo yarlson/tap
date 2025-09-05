@@ -21,6 +21,7 @@ Building CLI applications shouldn't require wrestling with terminal complexities
 ### Available Components
 
 - **Text Input** — Single-line input with validation, placeholders, and defaults
+- **Autocomplete** — Text input with inline, navigable suggestions (Tab to accept)
 - **Password Input** — Masked input for sensitive data
 - **Confirm** — Yes/No prompts with customizable labels
 - **Select** — Single selection from typed options with hints
@@ -81,6 +82,7 @@ func main() {
 - Submit: `Enter`
 - Cancel: `Ctrl+C` or `Esc`
 - Toggle (MultiSelect): `Space`
+- Accept suggestion (Autocomplete): `Tab`
 
 ## API Examples
 
@@ -97,6 +99,31 @@ email := tap.Text(ctx, tap.TextOptions{
         }
         return nil
     },
+})
+```
+
+### Autocomplete
+
+```go
+// Define a simple suggest function
+suggest := func(input string) []string {
+    all := []string{"Go", "Golang", "Python", "Rust", "Java"}
+    if input == "" { return all }
+    low := strings.ToLower(input)
+    var out []string
+    for _, s := range all {
+        if strings.Contains(strings.ToLower(s), low) {
+            out = append(out, s)
+        }
+    }
+    return out
+}
+
+lang := tap.Autocomplete(ctx, tap.AutocompleteOptions{
+    Message:     "Search language:",
+    Placeholder: "Start typing...",
+    Suggest:     suggest,
+    MaxResults:  6,
 })
 ```
 
@@ -307,6 +334,7 @@ Explore working examples in the [`examples/`](examples/) directory. Each example
 
 ```bash
 # Basic prompts
+go run examples/autocomplete/main.go
 go run examples/text/main.go
 go run examples/password/main.go
 go run examples/confirm/main.go
