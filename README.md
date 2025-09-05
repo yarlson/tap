@@ -3,7 +3,7 @@
 **Beautiful, interactive command-line prompts for Go** — A Go port inspired by the TypeScript [Clack](https://clack.cc/) library.
 
 <div>
-  <img src="assets/demo.gif" alt="Tap Demo" width="1400">
+  <img src="examples/multiple/demo.gif" alt="Tap Demo" width="1400">
 </div>
 
 ## Why Tap?

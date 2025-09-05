@@ -1,4 +1,4 @@
-Output ../../assets/demo.gif
+Output ./demo.gif
 
 Set Shell zsh
 Set FontSize 24
