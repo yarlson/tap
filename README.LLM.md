@@ -31,10 +31,13 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
     - `DefaultValue string`
     - `InitialValue string`
     - `Validate func(string) error` (return non-nil to block submission and show error)
+    - `Input tap.Reader` (optional)
+    - `Output tap.Writer` (optional)
 
 - `func tap.Password(ctx context.Context, opts tap.PasswordOptions) string`
 
   - Same options as `TextOptions` (input is masked in the UI)
+  - Includes `Input tap.Reader` and `Output tap.Writer`
 
 - `func tap.Confirm(ctx context.Context, opts tap.ConfirmOptions) bool`
 
@@ -43,42 +46,45 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
     - `Active string` (label for true)
     - `Inactive string` (label for false)
     - `InitialValue bool`
+    - `Input tap.Reader`
+    - `Output tap.Writer`
 
 - `type tap.SelectOption[T any] struct { Value T; Label, Hint string }`
-- `type tap.SelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValue *T; MaxItems *int }`
+- `type tap.SelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValue *T; MaxItems *int; Input tap.Reader; Output tap.Writer }`
 - `func tap.Select[T any](ctx context.Context, opts tap.SelectOptions[T]) T`
 
-- `type tap.MultiSelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValues []T; MaxItems *int }`
+- `type tap.MultiSelectOptions[T any] struct { Message string; Options []tap.SelectOption[T]; InitialValues []T; MaxItems *int; Input tap.Reader; Output tap.Writer }`
 - `func tap.MultiSelect[T any](ctx context.Context, opts tap.MultiSelectOptions[T]) []T`
 
 - Spinner
 
-  - `type tap.SpinnerOptions struct { Indicator string; Frames []string; Delay time.Duration; CancelMessage, ErrorMessage string }`
+  - `type tap.SpinnerOptions struct { Indicator string; Frames []string; Delay time.Duration; Output tap.Writer; CancelMessage, ErrorMessage string }`
   - `type tap.Spinner struct { /* unexported */ }`
   - `func tap.NewSpinner(opts tap.SpinnerOptions) *tap.Spinner`
   - `func (s *tap.Spinner) Start(msg string)`
   - `func (s *tap.Spinner) Message(msg string)`
   - `func (s *tap.Spinner) Stop(msg string, code int)` // 0=success, 1=cancel, >1=error
-  - `func (s *tap.Spinner) IsCanceled() bool` (idiomatic) — `IsCancelled()` is kept for backward compat
+  - `func (s *tap.Spinner) IsCancelled() bool`
 
 - Progress
-- Stream (live output)
 
-  - `type tap.StreamOptions struct { ShowTimer bool }`
-  - `type tap.Stream struct { /* unexported */ }`
-  - `func tap.NewStream(opts tap.StreamOptions) *tap.Stream`
-  - `func (s *tap.Stream) Start(msg string)`
-  - `func (s *tap.Stream) WriteLine(line string)`
-  - `func (s *tap.Stream) Pipe(r io.Reader)`
-  - `func (s *tap.Stream) Stop(msg string, code int)` // 0=success, 1=cancel, >1=error
-
-  - `type tap.ProgressOptions struct { Style string; Max, Size int }`
+  - `type tap.ProgressOptions struct { Style string; Max, Size int; Output tap.Writer }`
   - `type tap.Progress struct { /* unexported */ }`
   - `func tap.NewProgress(opts tap.ProgressOptions) *tap.Progress`
   - `func (p *tap.Progress) Start(msg string)`
   - `func (p *tap.Progress) Advance(step int, msg string)`
   - `func (p *tap.Progress) Message(msg string)`
   - `func (p *tap.Progress) Stop(msg string, code int)` // 0=success, 1=cancel, >1=error
+
+- Stream (live output)
+
+  - `type tap.StreamOptions struct { ShowTimer bool; Output tap.Writer }`
+  - `type tap.Stream struct { /* unexported */ }`
+  - `func tap.NewStream(opts tap.StreamOptions) *tap.Stream`
+  - `func (s *tap.Stream) Start(msg string)`
+  - `func (s *tap.Stream) WriteLine(line string)`
+  - `func (s *tap.Stream) Pipe(r io.Reader)`
+  - `func (s *tap.Stream) Stop(msg string, code int)` // 0=success, 1=cancel, >1=error
 
 - Messages, Box, and Table
   - `func tap.Intro(title string)`
@@ -106,6 +112,13 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - `Select[T]` → `T`
   - `MultiSelect[T]` → `[]T`
   - If the user cancels, helpers return a reasonable zero value (`""`, `false`, `var zero T`).
+
+- **Keybindings**
+
+  - Navigate: Arrow keys or `h`/`j`/`k`/`l`
+  - Submit: `Enter`
+  - Cancel: `Ctrl+C` or `Esc`
+  - Toggle (MultiSelect): `Space`
 
 - **Validation errors** (Text/Password)
 
@@ -215,26 +228,29 @@ tap.Table(headers, rows, tap.TableOptions{
 In tests, route I/O to mocks:
 
 ```go
-in := core.NewMockReadable()
-out := core.NewMockWritable()
+in := tap.NewMockReadable()
+out := tap.NewMockWritable()
 
 tap.SetTermIO(in, out)
 defer tap.SetTermIO(nil, nil)
 
 _ = tap.Text(ctx, tap.TextOptions{Message: "Your name:"})
 // feed input
-in.EmitKeypress("A", core.Key{Name: "a"})
-in.EmitKeypress("", core.Key{Name: "return"})
+in.EmitKeypress("A", tap.Key{Name: "a"})
+in.EmitKeypress("", tap.Key{Name: "return"})
 // assert frames in out.Buffer
 ```
+
+Alternatively, pass per-call I/O via options: set `Input` and `Output` on the options (e.g., `TextOptions`, `ConfirmOptions`) to avoid global overrides.
 
 ## Gotchas and guidance for code generation
 
 - For `Select[T]`, supply `[]tap.SelectOption[T]`. Labels/hints are optional.
-- Always call `Stop` on `Spinner`/`Progress` to restore the terminal when used.
+- Always call `Stop` on `Spinner`/`Progress`/`Stream` to restore the terminal when used.
 - For validation, return `error` (not `bool`) from the provided function; non-nil blocks submit and shows an error line.
 - The library uses ANSI; ensure output is sent to a TTY when running examples.
 - Use `context.Background()` for basic usage, or create custom contexts for cancellation/timeout behavior.
+- Generics inference: you can omit type parameters on `Select`/`MultiSelect` if the compiler can infer them from `SelectOptions[T]`/`MultiSelectOptions[T]`.
 
 ## Minimal end-to-end example
 

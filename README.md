@@ -25,17 +25,24 @@ Building CLI applications shouldn't require wrestling with terminal complexities
 - **Confirm** — Yes/No prompts with customizable labels
 - **Select** — Single selection from typed options with hints
 - **MultiSelect** — Multiple selection with checkboxes
-- **Context Support** — All interactive prompts support context cancellation and timeouts
-- **Progress Bar** — Animated progress indicators (light, heavy, block styles)
 - **Spinner** — Loading indicators with dots, timer, or custom frames
-- **Stream** — Real-time output with start/write/stop lifecycle
+- **Progress Bar** — Animated progress indicators (light, heavy, or block styles)
+- **Stream** — Real-time output with a start/write/stop lifecycle
 - **Messages** — Intro, outro, and styled message boxes
+- **Box** — A flexible, styled box for surrounding content
+- **Table** — A component for displaying data in a tabular format
+- **Context Support** — All interactive prompts support context cancellation and timeouts
 
 ## Installation
 
 ```bash
 go get github.com/yarlson/tap@latest
 ```
+
+### Requirements
+
+- Go 1.20+
+- A TTY-capable terminal (ANSI escape sequences); Linux/macOS and modern Windows terminals supported
 
 ## Quick Start
 
@@ -68,6 +75,13 @@ func main() {
 }
 ```
 
+### Controls
+
+- Navigate: Arrow keys or `h`/`j`/`k`/`l`
+- Submit: `Enter`
+- Cancel: `Ctrl+C` or `Esc`
+- Toggle (MultiSelect): `Space`
+
 ## API Examples
 
 ### Text Input with Validation
@@ -80,6 +94,20 @@ email := tap.Text(ctx, tap.TextOptions{
     Validate: func(input string) error {
         if !strings.Contains(input, "@") {
             return errors.New("Please enter a valid email")
+        }
+        return nil
+    },
+})
+```
+
+### Password Input
+
+```go
+password := tap.Password(ctx, tap.PasswordOptions{
+    Message: "Enter a new password:",
+    Validate: func(input string) error {
+        if len(input) < 8 {
+            return errors.New("Password must be at least 8 characters long")
         }
         return nil
     },
@@ -105,50 +133,7 @@ env := tap.Select(ctx, tap.SelectOptions[Environment]{
 // env is strongly typed as Environment
 ```
 
-### Progress Indicators
-
-```go
-// Progress Bar
-progress := tap.NewProgress(tap.ProgressOptions{
-    Style: "heavy",  // "light", "heavy", or "block"
-    Max:   100,
-    Size:  40,
-})
-
-progress.Start("Processing...")
-for i := 0; i <= 100; i += 10 {
-    time.Sleep(200 * time.Millisecond)
-    progress.Advance(10, fmt.Sprintf("Step %d/10", i/10+1))
-}
-progress.Stop("Complete!", 0)
-
-// Spinner
-spinner := tap.NewSpinner(tap.SpinnerOptions{})
-spinner.Start("Loading...")
-// ... do work ...
-spinner.Stop("Done!", 0)
-```
-
-## OSC 9;4 Integration (Terminal Progress)
-
-Tap emits OSC 9;4 control sequences to signal progress/spinner state to compatible terminals. Unsupported terminals ignore these sequences (no-op), so visuals remain unchanged.
-
-What’s emitted automatically:
-
-- Spinner:
-  - Start → indeterminate: `ESC ] 9 ; 4 ; 3 ST`
-  - Stop → always clear: `ESC ] 9 ; 4 ; 0 ST`
-- Progress:
-  - On render when percent changes → `ESC ] 9 ; 4 ; 1 ; <PCT> ST`
-  - Stop → always clear: `ESC ] 9 ; 4 ; 0 ST`
-
-Notes:
-
-- Terminator: Tap uses ST (`ESC \\`) for robustness. Some terminals also accept BEL (`\a`).
-- Throttling: Progress only emits a new percentage when it changes to avoid spam.
-- Multiplexers: tmux/screen may swallow OSC sequences unless configured to passthrough.
-
-### Multiple Selection
+### MultiSelect
 
 ```go
 languages := []tap.SelectOption[string]{
@@ -162,19 +147,52 @@ selected := tap.MultiSelect(ctx, tap.MultiSelectOptions[string]{
     Options: languages,
 })
 
-fmt.Printf("You selected: %v\n", selected)
+fmt.Printf("You selected: %v
+", selected)
 ```
 
-### Messages, Box, and Table
+### Progress Indicators
 
 ```go
-tap.Intro("Summary")
-tap.Message("Here's a table summary of your selections:")
+// Spinner
+spinner := tap.NewSpinner(tap.SpinnerOptions{})
+spinner.Start("Loading...")
+// ... do work ...
+spinner.Stop("Done!", 0)
 
+// Progress Bar
+progress := tap.NewProgress(tap.ProgressOptions{
+    Style: "heavy",  // "light", "heavy", or "block"
+    Max:   100,
+    Size:  40,
+})
+
+progress.Start("Processing...")
+for i := 0; i <= 100; i += 10 {
+    time.Sleep(200 * time.Millisecond)
+    progress.Advance(10, fmt.Sprintf("Step %d/10", i/10+1))
+}
+progress.Stop("Complete!", 0)
+```
+
+### Stream
+
+```go
+stream := tap.NewStream(tap.StreamOptions{ShowTimer: true})
+stream.Start("Streaming output...")
+stream.WriteLine("First line of output.")
+time.Sleep(500 * time.Millisecond)
+stream.WriteLine("Second line of output.")
+stream.Stop("Stream finished.", 0)
+```
+
+### Table
+
+```go
 headers := []string{"Field", "Value"}
 rows := [][]string{
-  {"Name", name},
-  {"Languages", strings.Join(selected, ", ")},
+  {"Name", "Alice"},
+  {"Languages", "Go, Python"},
 }
 
 tap.Table(headers, rows, tap.TableOptions{
@@ -184,6 +202,23 @@ tap.Table(headers, rows, tap.TableOptions{
   HeaderColor:   tap.TableColorCyan,
 })
 ```
+
+### Styled Messages (Box)
+
+```go
+// Message box with custom styling
+tap.Box("This is important information!", "⚠️ Warning", tap.BoxOptions{
+    Rounded:       true,
+    FormatBorder:  tap.CyanBorder,
+    TitleAlign:    tap.BoxAlignCenter,
+    ContentAlign:  tap.BoxAlignCenter,
+})
+```
+
+### Usage Tips
+
+- Always call `Stop` on `Spinner`/`Progress`/`Stream` to restore the terminal state.
+- For `Select[T]`/`MultiSelect[T]`, you can omit the type parameter if it can be inferred from the options' type.
 
 ### Context Support and Cancellation
 
@@ -208,19 +243,29 @@ go func() {
 result := tap.Confirm(ctx, tap.ConfirmOptions{
     Message: "Quick decision needed:",
 })
+
+// On cancel or timeout, helpers return zero values
+// (e.g., Text/Password → "", Confirm → false, Select[T] → zero T).
 ```
 
-### Styled Messages
+## OSC 9;4 Integration (Terminal Progress)
 
-```go
-// Message box with custom styling
-tap.Box("This is important information!", "⚠️ Warning", tap.BoxOptions{
-    Rounded:       true,
-    FormatBorder:  tap.CyanBorder,
-    TitleAlign:    tap.BoxAlignCenter,
-    ContentAlign:  tap.BoxAlignCenter,
-})
-```
+Tap emits OSC 9;4 control sequences to signal progress/spinner state to compatible terminals. Unsupported terminals ignore these sequences (no-op), so visuals remain unchanged.
+
+What’s emitted automatically:
+
+- Spinner:
+  - Start → indeterminate: `ESC ] 9 ; 4 ; 3 ST`
+  - Stop → always clear: `ESC ] 9 ; 4 ; 0 ST`
+- Progress:
+  - On render when percent changes → `ESC ] 9 ; 4 ; 1 ; <PCT> ST`
+  - Stop → always clear: `ESC ] 9 ; 4 ; 0 ST`
+
+Notes:
+
+- Terminator: Tap uses ST (`ESC \`) for robustness. Some terminals also accept BEL (``).
+- Throttling: Progress only emits a new percentage when it changes to avoid spam.
+- Multiplexers: tmux/screen may swallow OSC sequences unless configured to passthrough.
 
 ## Testing
 
@@ -247,6 +292,8 @@ func TestYourPrompt(t *testing.T) {
 }
 ```
 
+Alternatively, pass I/O per call by setting `Input` and `Output` on options like `TextOptions`, `ConfirmOptions`, etc. This avoids using the global override when you need finer control.
+
 Run tests:
 
 ```bash
@@ -256,13 +303,26 @@ go test -race ./...  # with race detection
 
 ## Examples
 
-Explore working examples in the [`examples/`](examples/) directory:
+Explore working examples in the [`examples/`](examples/) directory. Each example is self-contained and can be run directly.
 
 ```bash
-go run examples/text/main.go      # Text input
-go run examples/select/main.go    # Selection menus
-go run examples/progress/main.go  # Progress bars
-go run examples/multiple/main.go  # Complete workflow
+# Basic prompts
+go run examples/text/main.go
+go run examples/password/main.go
+go run examples/confirm/main.go
+go run examples/select/main.go
+go run examples/multiselect/main.go
+
+# Long-running tasks
+go run examples/spinner/main.go
+go run examples/progress/main.go
+go run examples/stream/main.go
+
+# Output and formatting
+go run examples/table/main.go
+
+# Complete workflow
+go run examples/multiple/main.go
 ```
 
 ## Architecture
