@@ -133,6 +133,11 @@ func TestWrapTextHardWidth_IgnoresANSISequences(t *testing.T) {
 	assert.Contains(t, lines[0], Green)
 }
 
+func TestWrapTextHardWidth_PrefersWhitespaceBreaks(t *testing.T) {
+	lines := wrapTextHardWidth("Alpha Beta Gamma", 8)
+	assert.Equal(t, []string{"Alpha", "Beta", "Gamma"}, lines)
+}
+
 func TestTruncateToWidth_PreservesColorSafety(t *testing.T) {
 	colored := green("ColorfulText")
 	truncated := truncateToWidth(colored, 8)

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 type BoxAlignment string
@@ -300,45 +302,112 @@ func wrapTextHardWidth(s string, width int) []string {
 
 	var result []string
 
+	type segment struct {
+		text       string
+		width      int
+		breakAfter bool
+	}
+
+	build := func(segs []segment) string {
+		if len(segs) == 0 {
+			return ""
+		}
+
+		var b strings.Builder
+		for _, seg := range segs {
+			b.WriteString(seg.text)
+		}
+
+		return b.String()
+	}
+
 	for _, line := range strings.Split(s, "\n") {
 		if line == "" {
 			result = append(result, "")
 			continue
 		}
 
-		var b strings.Builder
+		var tokens []segment
 
 		currentWidth := 0
+		lastBreak := -1
+
+		recalc := func() {
+			currentWidth = 0
+			lastBreak = -1
+
+			for i, seg := range tokens {
+				currentWidth += seg.width
+				if seg.breakAfter {
+					lastBreak = i
+				}
+			}
+		}
+
+		appendToken := func(seg segment) {
+			tokens = append(tokens, seg)
+
+			currentWidth += seg.width
+			if seg.breakAfter {
+				lastBreak = len(tokens) - 1
+			}
+		}
+
+		dropTokens := func(n int) {
+			if n <= 0 {
+				return
+			}
+
+			tokens = append([]segment{}, tokens[n:]...)
+
+			recalc()
+		}
+
+		flush := func(end int) {
+			if end < 0 {
+				return
+			}
+
+			result = append(result, build(tokens[:end]))
+		}
 
 		for i := 0; i < len(line); {
 			token, tw, next := scanANSIToken(line, i)
 			i = next
 
-			if tw == 0 {
-				b.WriteString(token)
-				continue
+			breakAfter := false
+
+			if tw > 0 {
+				r, _ := utf8.DecodeRuneInString(token)
+				if unicode.IsSpace(r) {
+					breakAfter = true
+				}
 			}
 
-			if currentWidth+tw > width && currentWidth > 0 {
-				result = append(result, b.String())
-				b.Reset()
+			appendToken(segment{token, tw, breakAfter})
 
-				currentWidth = 0
-			}
+			for width > 0 && currentWidth > width {
+				if lastBreak >= 0 {
+					flush(lastBreak)
+					dropTokens(lastBreak + 1)
 
-			b.WriteString(token)
+					continue
+				}
 
-			currentWidth += tw
-
-			if currentWidth >= width {
-				result = append(result, b.String())
-				b.Reset()
-
-				currentWidth = 0
+				hardIdx := len(tokens) - 1
+				if hardIdx <= 0 {
+					flush(len(tokens))
+					dropTokens(len(tokens))
+				} else {
+					flush(hardIdx)
+					dropTokens(hardIdx)
+				}
 			}
 		}
 
-		result = append(result, b.String())
+		if len(tokens) > 0 {
+			result = append(result, build(tokens))
+		}
 	}
 
 	return result
