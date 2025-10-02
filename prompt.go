@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"regexp"
 	"strings"
 	"sync/atomic"
 
@@ -456,9 +455,6 @@ func (p *Prompt) adoptPreSubscribers() {
 		p.subscribers[k] = append(p.subscribers[k], v...)
 	}
 }
-
-// Strip ANSI sequences for width calculations
-var ansiRegexp = regexp.MustCompile("\x1b\\[[0-9;?]*[ -/]*[@-~]")
 
 // Detect terminal width; fall back to 80
 func getColumns() int {

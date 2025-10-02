@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"strings"
-
-	"github.com/mattn/go-runewidth"
 )
 
 type BoxAlignment string
@@ -243,7 +241,7 @@ func truncateToWidth(s string, width int) string {
 	}
 
 	if width <= 3 {
-		return s[:0]
+		return ""
 	}
 
 	target := width - 3
@@ -251,19 +249,40 @@ func truncateToWidth(s string, width int) string {
 	var b strings.Builder
 
 	w := 0
+	sawANSI := false
+	sawReset := false
 
-	for _, r := range s {
-		rw := runewidth.RuneWidth(r)
-		if w+rw > target {
+	for i := 0; i < len(s); {
+		token, tw, next := scanANSIToken(s, i)
+		i = next
+
+		if tw == 0 {
+			if len(token) > 0 && token[0] == '\x1b' {
+				sawANSI = true
+				if token == Reset {
+					sawReset = true
+				}
+			}
+
+			b.WriteString(token)
+
+			continue
+		}
+
+		if w+tw > target {
 			break
 		}
 
-		b.WriteRune(r)
+		b.WriteString(token)
 
-		w += rw
+		w += tw
 	}
 
 	b.WriteString("...")
+
+	if sawANSI && !sawReset {
+		b.WriteString(Reset)
+	}
 
 	return b.String()
 }
@@ -289,20 +308,34 @@ func wrapTextHardWidth(s string, width int) []string {
 
 		var b strings.Builder
 
-		w := 0
+		currentWidth := 0
 
-		for _, r := range line {
-			rw := runewidth.RuneWidth(r)
-			if w+rw > width {
+		for i := 0; i < len(line); {
+			token, tw, next := scanANSIToken(line, i)
+			i = next
+
+			if tw == 0 {
+				b.WriteString(token)
+				continue
+			}
+
+			if currentWidth+tw > width && currentWidth > 0 {
 				result = append(result, b.String())
 				b.Reset()
 
-				w = 0
+				currentWidth = 0
 			}
 
-			b.WriteRune(r)
+			b.WriteString(token)
 
-			w += rw
+			currentWidth += tw
+
+			if currentWidth >= width {
+				result = append(result, b.String())
+				b.Reset()
+
+				currentWidth = 0
+			}
 		}
 
 		result = append(result, b.String())

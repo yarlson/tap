@@ -135,24 +135,49 @@ func main() {
 			if detailed {
 				var b strings.Builder
 
-				_, _ = fmt.Fprintf(&b, "👤 Name: %s\n", name)
-				_, _ = fmt.Fprintf(&b, "💻 Languages: %s\n", strings.Join(languages, ", "))
-				_, _ = fmt.Fprintf(&b, "🚀 Project Type: %s\n", getProjectLabel(projectType))
-				_, _ = fmt.Fprintf(&b, "📈 Experience Level: %s years\n", experience)
-
-				_, _ = fmt.Fprintf(&b, "\n🎯 Profile Analysis:\n")
-				if experience == "0" || experience == "1" {
-					_, _ = fmt.Fprintf(&b, "   You're just getting started - keep learning!\n")
-				} else {
-					_, _ = fmt.Fprintf(&b, "   Great! You have solid experience.\n")
+				highlight := func(ansi, text string) string {
+					return fmt.Sprintf("%s%s%s", ansi, text, tap.Reset)
 				}
 
-				_, _ = fmt.Fprintf(&b, "   %s development is a great choice!", getProjectLabel(projectType))
+				_, _ = fmt.Fprintf(&b, "%s👤 Name:%s %s\n", tap.Cyan, tap.Reset, highlight(tap.Green, name))
+				_, _ = fmt.Fprintf(&b, "%s💻 Languages:%s %s\n", tap.Cyan, tap.Reset, highlight(tap.Yellow, strings.Join(languages, ", ")))
+				_, _ = fmt.Fprintf(&b, "%s🚀 Project Type:%s %s\n", tap.Cyan, tap.Reset, highlight(tap.Green, getProjectLabel(projectType)))
+				_, _ = fmt.Fprintf(&b, "%s📈 Experience Level:%s %s %s\n", tap.Cyan, tap.Reset, highlight(tap.Green, experience), highlight(tap.Dim, "years"))
+
+				_, _ = fmt.Fprintf(&b, "\n%s🎯 Profile Analysis:%s\n", tap.Cyan, tap.Reset)
+				if experience == "0" || experience == "1" {
+					_, _ = fmt.Fprintf(&b, "   %sYou're just getting started - keep learning!%s\n", tap.Yellow, tap.Reset)
+				} else {
+					_, _ = fmt.Fprintf(&b, "   %sGreat! You have solid experience.%s\n", tap.Green, tap.Reset)
+				}
+
+				_, _ = fmt.Fprintf(&b, "   %s%s development%s is a great choice!", tap.Cyan, getProjectLabel(projectType), tap.Reset)
 
 				return b.String()
 			}
 
-			return fmt.Sprintf("%s • %s • %s • %s years experience", name, strings.Join(languages, ", "), getProjectLabel(projectType), experience)
+			var short strings.Builder
+			short.WriteString(tap.Green)
+			short.WriteString(name)
+			short.WriteString(tap.Reset)
+			short.WriteString(" • ")
+			short.WriteString(tap.Yellow)
+			short.WriteString(strings.Join(languages, ", "))
+			short.WriteString(tap.Reset)
+			short.WriteString(" • ")
+			short.WriteString(tap.Cyan)
+			short.WriteString(getProjectLabel(projectType))
+			short.WriteString(tap.Reset)
+			short.WriteString(" • ")
+			short.WriteString(tap.Green)
+			short.WriteString(experience)
+			short.WriteString(tap.Reset)
+			short.WriteString(" ")
+			short.WriteString(tap.Dim)
+			short.WriteString("years experience")
+			short.WriteString(tap.Reset)
+
+			return short.String()
 		}(),
 		"📋 PROFILE SUMMARY",
 		tap.BoxOptions{

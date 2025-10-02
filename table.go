@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"strings"
-
-	"github.com/mattn/go-runewidth"
 )
 
 // Table renders a formatted table with headers and rows
@@ -357,16 +355,37 @@ func truncateTableText(text string, width int) string {
 		var b strings.Builder
 
 		w := 0
+		sawANSI := false
+		sawReset := false
 
-		for _, r := range text {
-			rw := runewidth.RuneWidth(r)
-			if w+rw > width {
+		for i := 0; i < len(text); {
+			token, tw, next := scanANSIToken(text, i)
+			i = next
+
+			if tw == 0 {
+				if len(token) > 0 && token[0] == '\x1b' {
+					sawANSI = true
+					if token == Reset {
+						sawReset = true
+					}
+				}
+
+				b.WriteString(token)
+
+				continue
+			}
+
+			if w+tw > width {
 				break
 			}
 
-			b.WriteRune(r)
+			b.WriteString(token)
 
-			w += rw
+			w += tw
+		}
+
+		if sawANSI && !sawReset {
+			b.WriteString(Reset)
 		}
 
 		return b.String()
@@ -377,19 +396,40 @@ func truncateTableText(text string, width int) string {
 	var b strings.Builder
 
 	w := 0
+	sawANSI := false
+	sawReset := false
 
-	for _, r := range text {
-		rw := runewidth.RuneWidth(r)
-		if w+rw > target {
+	for i := 0; i < len(text); {
+		token, tw, next := scanANSIToken(text, i)
+		i = next
+
+		if tw == 0 {
+			if len(token) > 0 && token[0] == '\x1b' {
+				sawANSI = true
+				if token == Reset {
+					sawReset = true
+				}
+			}
+
+			b.WriteString(token)
+
+			continue
+		}
+
+		if w+tw > target {
 			break
 		}
 
-		b.WriteRune(r)
+		b.WriteString(token)
 
-		w += rw
+		w += tw
 	}
 
 	b.WriteString("...")
+
+	if sawANSI && !sawReset {
+		b.WriteString(Reset)
+	}
 
 	return b.String()
 }

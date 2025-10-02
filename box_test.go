@@ -120,3 +120,24 @@ func TestBox_FormatBorder_Applied(t *testing.T) {
 	// Should contain gray-colored border character
 	assert.Contains(t, text, gray(BarStart))
 }
+
+func TestWrapTextHardWidth_IgnoresANSISequences(t *testing.T) {
+	colored := green("ColoredContent")
+	lines := wrapTextHardWidth(colored, 6)
+	assert.Greater(t, len(lines), 1)
+
+	for _, line := range lines {
+		assert.LessOrEqual(t, visibleWidth(line), 6)
+	}
+	// First line should retain color prefix
+	assert.Contains(t, lines[0], Green)
+}
+
+func TestTruncateToWidth_PreservesColorSafety(t *testing.T) {
+	colored := green("ColorfulText")
+	truncated := truncateToWidth(colored, 8)
+
+	assert.Equal(t, 8, visibleWidth(truncated))
+	assert.Contains(t, truncated, Green)
+	assert.True(t, strings.HasSuffix(truncated, Reset))
+}

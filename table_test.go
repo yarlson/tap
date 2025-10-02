@@ -262,3 +262,12 @@ func TestTable_ColumnWidths(t *testing.T) {
 	assert.Contains(t, text, "A")
 	assert.Contains(t, text, "B")
 }
+
+func TestTruncateTableText_IgnoresANSISequences(t *testing.T) {
+	colored := cyan("Very colorful value")
+	truncated := truncateTableText(colored, 10)
+
+	assert.LessOrEqual(t, visibleWidth(truncated), 10)
+	assert.Contains(t, truncated, Cyan)
+	assert.Contains(t, truncated, Reset)
+}
