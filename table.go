@@ -44,13 +44,16 @@ func Table(headers []string, rows [][]string, opts TableOptions) {
 	if available < 1 {
 		available = 1
 	}
+
 	if opts.ShowBorders {
 		borderGlyphs := len(headers) + 1 // number of vertical borders per line
+
 		available -= borderGlyphs
 		if available < 1 {
 			available = 1
 		}
 	}
+
 	columnWidths := calculateColumnWidths(headers, rows, available)
 
 	// Normalize rows to have same number of columns as headers
@@ -73,6 +76,7 @@ func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []in
 	for i, header := range headers {
 		natural[i] = visibleWidth(header)
 	}
+
 	for _, row := range rows {
 		for i := 0; i < numCols && i < len(row); i++ {
 			if w := visibleWidth(row[i]); w > natural[i] {
@@ -83,6 +87,7 @@ func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []in
 
 	// Desired full widths (content + padding) and minimum widths
 	desiredFull := make([]int, numCols)
+
 	minWidth := make([]int, numCols)
 	for i := 0; i < numCols; i++ {
 		desiredFull[i] = natural[i] + 2 // 1 space padding each side
@@ -91,6 +96,7 @@ func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []in
 			if m < 3 {
 				m = 3
 			}
+
 			minWidth[i] = m
 		} else {
 			minWidth[i] = 5 // 2 padding + 3 for ellipsis
@@ -102,55 +108,66 @@ func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []in
 	for _, m := range minWidth {
 		sumMin += m
 	}
+
 	if sumMin >= maxWidth {
 		widths := make([]int, numCols)
 		for i := range widths {
 			widths[i] = 3
 		}
+
 		rem := maxWidth - 3*numCols
 		for i := 0; rem > 0 && numCols > 0; i++ {
 			idx := i % numCols
 			widths[idx]++
 			rem--
 		}
+
 		return widths
 	}
 
 	// Start from minimums and distribute remaining space toward desiredFull
 	widths := make([]int, numCols)
 	copy(widths, minWidth)
+
 	remaining := maxWidth - sumMin
 
 	// Compute wishes (how much each column wants to reach desiredFull)
 	wishes := make([]int, numCols)
 	totalWish := 0
+
 	for i := 0; i < numCols; i++ {
 		w := desiredFull[i] - minWidth[i]
 		if w < 0 {
 			w = 0
 		}
+
 		wishes[i] = w
 		totalWish += w
 	}
+
 	if totalWish == 0 {
 		return widths
 	}
 
 	// Proportional allocation by wish
 	assigned := 0
+
 	for i := 0; i < numCols; i++ {
 		share := int(math.Floor(float64(remaining) * float64(wishes[i]) / float64(totalWish)))
 		if share > wishes[i] {
 			share = wishes[i]
 		}
+
 		widths[i] += share
 		assigned += share
 	}
+
 	leftover := remaining - assigned
 
 	// Distribute leftover one-by-one to columns still below desiredFull
 	for leftover > 0 {
 		progressed := false
+
 		for i := 0; i < numCols && leftover > 0; i++ {
 			if widths[i] < desiredFull[i] {
 				widths[i]++
@@ -158,6 +175,7 @@ func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []in
 				progressed = true
 			}
 		}
+
 		if !progressed {
 			break
 		}
@@ -179,6 +197,7 @@ func normalizeRows(rows [][]string, numCols int) [][]string {
 			}
 		}
 	}
+
 	return normalized
 }
 
@@ -188,6 +207,7 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 
 	// Top border
 	_, _ = fmt.Fprint(out, linePrefix)
+
 	_, _ = fmt.Fprint(out, formatBorder(TableTopLeft))
 	for i, width := range columnWidths {
 		_, _ = fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
@@ -195,6 +215,7 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 			_, _ = fmt.Fprint(out, formatBorder(TableTopTee))
 		}
 	}
+
 	_, _ = fmt.Fprint(out, formatBorder(TableTopRight))
 	_, _ = fmt.Fprint(out, "\n")
 
@@ -203,6 +224,7 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 
 	// Header separator
 	_, _ = fmt.Fprint(out, linePrefix)
+
 	_, _ = fmt.Fprint(out, formatBorder(TableLeftTee))
 	for i, width := range columnWidths {
 		_, _ = fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
@@ -210,6 +232,7 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 			_, _ = fmt.Fprint(out, formatBorder(TableCross))
 		}
 	}
+
 	_, _ = fmt.Fprint(out, formatBorder(TableRightTee))
 	_, _ = fmt.Fprint(out, "\n")
 
@@ -220,6 +243,7 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 
 	// Bottom border
 	_, _ = fmt.Fprint(out, linePrefix)
+
 	_, _ = fmt.Fprint(out, formatBorder(TableBottomLeft))
 	for i, width := range columnWidths {
 		_, _ = fmt.Fprint(out, strings.Repeat(formatBorder(TableHorizontal), width))
@@ -227,6 +251,7 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 			_, _ = fmt.Fprint(out, formatBorder(TableBottomTee))
 		}
 	}
+
 	_, _ = fmt.Fprint(out, formatBorder(TableBottomRight))
 	_, _ = fmt.Fprint(out, "\n")
 }
@@ -281,6 +306,7 @@ func renderTableRow(out Writer, row []string, columnWidths []int, linePrefix str
 		if formatBorder != nil {
 			_, _ = fmt.Fprint(out, formatBorder(TableVertical))
 		}
+
 		_, _ = fmt.Fprint(out, " ")
 		_, _ = fmt.Fprint(out, alignedCell)
 		_, _ = fmt.Fprint(out, " ")
@@ -290,6 +316,7 @@ func renderTableRow(out Writer, row []string, columnWidths []int, linePrefix str
 	if formatBorder != nil {
 		_, _ = fmt.Fprint(out, formatBorder(TableVertical))
 	}
+
 	_, _ = fmt.Fprint(out, "\n")
 }
 
@@ -302,10 +329,12 @@ func alignText(text string, width int, alignment TableAlignment) string {
 	}
 
 	padding := width - textWidth
+
 	switch alignment {
 	case TableAlignCenter:
 		leftPad := padding / 2
 		rightPad := padding - leftPad
+
 		return strings.Repeat(" ", leftPad) + text + strings.Repeat(" ", rightPad)
 	case TableAlignRight:
 		return strings.Repeat(" ", padding) + text
@@ -319,33 +348,48 @@ func truncateTableText(text string, width int) string {
 	if visibleWidth(text) <= width {
 		return text
 	}
+
 	if width <= 0 {
 		return ""
 	}
+
 	if width <= 3 {
 		var b strings.Builder
+
 		w := 0
+
 		for _, r := range text {
 			rw := runewidth.RuneWidth(r)
 			if w+rw > width {
 				break
 			}
+
 			b.WriteRune(r)
+
 			w += rw
 		}
+
 		return b.String()
 	}
+
 	target := width - 3
+
 	var b strings.Builder
+
 	w := 0
+
 	for _, r := range text {
 		rw := runewidth.RuneWidth(r)
 		if w+rw > target {
 			break
 		}
+
 		b.WriteRune(r)
+
 		w += rw
 	}
+
 	b.WriteString("...")
+
 	return b.String()
 }

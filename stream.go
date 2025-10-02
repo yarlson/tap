@@ -43,11 +43,14 @@ func NewStream(opts StreamOptions) *Stream {
 func (s *Stream) Start(message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if s.open {
 		return
 	}
+
 	s.open = true
 	s.start = time.Now()
+
 	s.title = message
 	if s.out != nil {
 		header := fmt.Sprintf("%s\n%s  %s\n", gray(Bar), Symbol(StateActive), message)
@@ -59,9 +62,11 @@ func (s *Stream) Start(message string) {
 func (s *Stream) WriteLine(line string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if !s.open || s.out == nil {
 		return
 	}
+
 	content := fmt.Sprintf("%s  %s\n", cyan(Bar), line)
 	_, _ = s.out.Write([]byte(content))
 	s.lines = append(s.lines, line)
@@ -72,6 +77,7 @@ func (s *Stream) Pipe(r io.Reader) {
 	s.mu.Lock()
 	open := s.open
 	s.mu.Unlock()
+
 	if !open {
 		return
 	}
@@ -86,10 +92,12 @@ func (s *Stream) Pipe(r io.Reader) {
 // code: 0 submit, 1 cancel, >1 error
 func (s *Stream) Stop(finalMessage string, code int) {
 	s.mu.Lock()
+
 	if !s.open {
 		s.mu.Unlock()
 		return
 	}
+
 	s.open = false
 	start := s.start
 	showTimer := s.opts.ShowTimer
@@ -106,10 +114,12 @@ func (s *Stream) Stop(finalMessage string, code int) {
 	if msg == "" {
 		msg = ""
 	}
+
 	if showTimer {
 		d := time.Since(start)
 		secs := int(d.Seconds())
 		m := secs / 60
+
 		sec := secs % 60
 		if m > 0 {
 			msg = fmt.Sprintf("%s [%dm %ds]", msg, m, sec)
@@ -150,6 +160,7 @@ func (s *Stream) Stop(finalMessage string, code int) {
 	} else if code > 1 {
 		statusSymbol = yellow(StepError)
 	}
+
 	status := fmt.Sprintf("%s  %s\n", statusSymbol, msg)
 	_, _ = out.Write([]byte(status))
 }

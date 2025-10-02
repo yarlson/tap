@@ -65,12 +65,14 @@ func TestBox_IncludePrefix(t *testing.T) {
 	lines := strings.Split(strings.Join(out.GetFrames(), ""), "\n")
 	// First non-empty line should start with prefix "│ " (gray or plain)
 	var first string
+
 	for _, l := range lines {
 		if strings.TrimSpace(l) != "" {
 			first = l
 			break
 		}
 	}
+
 	if first == "" && len(lines) > 0 {
 		first = lines[0]
 	}
@@ -94,11 +96,13 @@ func TestBox_AutoWidth_WrapsContent(t *testing.T) {
 	lines := strings.Split(strings.Join(out.GetFrames(), ""), "\n")
 	// Expect more than three lines: top border, at least two content lines, bottom border
 	nonEmpty := 0
+
 	for _, l := range lines {
 		if strings.TrimSpace(l) != "" {
 			nonEmpty++
 		}
 	}
+
 	assert.GreaterOrEqual(t, nonEmpty, 4)
 }
 

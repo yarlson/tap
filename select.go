@@ -22,6 +22,7 @@ func Select[T any](ctx context.Context, opts SelectOptions[T]) T {
 		if opts.Input == nil {
 			opts.Input = in
 		}
+
 		if opts.Output == nil {
 			opts.Output = out
 		}
@@ -42,6 +43,7 @@ func selectInternal[T any](ctx context.Context, opts SelectOptions[T]) T {
 	}
 
 	initialCursor := 0
+
 	initialValue := getInitialValue(opts, coreOptions)
 	for i, option := range coreOptions {
 		if isEqual(option.Value, initialValue) {
@@ -90,7 +92,9 @@ func selectInternal[T any](ctx context.Context, opts SelectOptions[T]) T {
 	if t, ok := v.(T); ok {
 		return t
 	}
+
 	var zero T
+
 	return zero
 }
 
@@ -98,10 +102,13 @@ func getInitialValue[T any](opts SelectOptions[T], coreOptions []SelectOption[T]
 	if opts.InitialValue != nil {
 		return *opts.InitialValue
 	}
+
 	if len(coreOptions) > 0 {
 		return coreOptions[0].Value
 	}
+
 	var zero T
+
 	return zero
 }
 
@@ -118,14 +125,17 @@ func renderStyledSelect[T any](p *Prompt, opts SelectOptions[T], coreOptions []S
 	switch state {
 	case StateSubmit:
 		selected := coreOptions[cursor]
+
 		label := selected.Label
 		if label == "" {
 			label = fmt.Sprintf("%v", selected.Value)
 		}
+
 		return fmt.Sprintf("%s%s  %s", title, gray(Bar), dim(label))
 
 	default:
 		var lines []string
+
 		for i, option := range coreOptions {
 			label := option.Label
 			if label == "" {
@@ -137,6 +147,7 @@ func renderStyledSelect[T any](p *Prompt, opts SelectOptions[T], coreOptions []S
 				if option.Hint != "" {
 					line += fmt.Sprintf(" %s", dim(fmt.Sprintf("(%s)", option.Hint)))
 				}
+
 				lines = append(lines, line)
 			} else {
 				lines = append(lines, fmt.Sprintf("%s %s", dim(RadioInactive), dim(label)))
@@ -144,6 +155,7 @@ func renderStyledSelect[T any](p *Prompt, opts SelectOptions[T], coreOptions []S
 		}
 
 		optionsText := strings.Join(lines, fmt.Sprintf("\n%s  ", cyan(Bar)))
+
 		return fmt.Sprintf("%s%s  %s\n%s\n", title, cyan(Bar), optionsText, cyan(BarEnd))
 	}
 }

@@ -12,6 +12,7 @@ func Confirm(ctx context.Context, opts ConfirmOptions) bool {
 		if opts.Input == nil {
 			opts.Input = in
 		}
+
 		if opts.Output == nil {
 			opts.Output = out
 		}
@@ -26,6 +27,7 @@ func confirm(ctx context.Context, opts ConfirmOptions) bool {
 	if active == "" {
 		active = "Yes"
 	}
+
 	inactive := opts.Inactive
 	if inactive == "" {
 		inactive = "No"
@@ -79,6 +81,7 @@ func confirm(ctx context.Context, opts ConfirmOptions) bool {
 	p.On("confirm", func(val bool) {})
 
 	p.SetValue(currentValue)
+
 	v := p.Prompt(ctx)
 	if b, ok := v.(bool); ok {
 		return b

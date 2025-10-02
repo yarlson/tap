@@ -11,15 +11,18 @@ import (
 func suggestFn(list []string) func(string) []string {
 	return func(input string) []string {
 		var out []string
+
 		if input == "" {
 			return list
 		}
+
 		low := strings.ToLower(input)
 		for _, s := range list {
 			if strings.Contains(strings.ToLower(s), low) {
 				out = append(out, s)
 			}
 		}
+
 		return out
 	}
 }
@@ -27,10 +30,12 @@ func suggestFn(list []string) func(string) []string {
 func TestAutocomplete_EnterReturnsTypedInput(t *testing.T) {
 	in := NewMockReadable()
 	out := NewMockWritable()
+
 	SetTermIO(in, out)
 	defer SetTermIO(nil, nil)
 
 	resultCh := make(chan string, 1)
+
 	go func() {
 		res := Autocomplete(context.Background(), AutocompleteOptions{
 			Message:    "Package name:",
@@ -56,10 +61,12 @@ func TestAutocomplete_EnterReturnsTypedInput(t *testing.T) {
 func TestAutocomplete_TabAcceptsSuggestion(t *testing.T) {
 	in := NewMockReadable()
 	out := NewMockWritable()
+
 	SetTermIO(in, out)
 	defer SetTermIO(nil, nil)
 
 	resultCh := make(chan string, 1)
+
 	go func() {
 		res := Autocomplete(context.Background(), AutocompleteOptions{
 			Message:    "Language:",
@@ -86,10 +93,12 @@ func TestAutocomplete_TabAcceptsSuggestion(t *testing.T) {
 func TestAutocomplete_ArrowNavigationChangesSelection(t *testing.T) {
 	in := NewMockReadable()
 	out := NewMockWritable()
+
 	SetTermIO(in, out)
 	defer SetTermIO(nil, nil)
 
 	resultCh := make(chan string, 1)
+
 	go func() {
 		res := Autocomplete(context.Background(), AutocompleteOptions{
 			Message:    "Pick:",

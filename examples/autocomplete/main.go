@@ -13,13 +13,17 @@ func suggest(list []string) func(string) []string {
 		if input == "" {
 			return list
 		}
+
 		low := strings.ToLower(input)
+
 		var out []string
+
 		for _, s := range list {
 			if strings.Contains(strings.ToLower(s), low) {
 				out = append(out, s)
 			}
 		}
+
 		return out
 	}
 }

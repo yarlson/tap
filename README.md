@@ -230,13 +230,32 @@ tap.Table(headers, rows, tap.TableOptions{
 })
 ```
 
+### Message Helpers
+
+```go
+tap.Intro("Welcome! 👋")
+tap.Message("Here's what's next:")
+tap.Outro("Let's go! 🎉")
+```
+
+Produces:
+
+```
+┌  Welcome! 👋
+│
+│
+◇  Here's what's next:
+│
+└  Let's go! 🎉
+```
+
 ### Styled Messages (Box)
 
 ```go
 // Message box with custom styling
 tap.Box("This is important information!", "⚠️ Warning", tap.BoxOptions{
     Rounded:       true,
-    FormatBorder:  tap.CyanBorder,
+    FormatBorder:  tap.CyanBorder, // also GrayBorder, GreenBorder, YellowBorder, RedBorder
     TitleAlign:    tap.BoxAlignCenter,
     ContentAlign:  tap.BoxAlignCenter,
 })

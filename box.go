@@ -34,8 +34,11 @@ func defaultBorderFormat(s string) string { return s }
 
 // Common border formatters for examples
 
-func GrayBorder(s string) string { return gray(s) }
-func CyanBorder(s string) string { return cyan(s) }
+func GrayBorder(s string) string   { return gray(s) }
+func CyanBorder(s string) string   { return cyan(s) }
+func GreenBorder(s string) string  { return green(s) }
+func YellowBorder(s string) string { return yellow(s) }
+func RedBorder(s string) string    { return red(s) }
 
 // Box renders a framed message with optional title.
 func Box(message string, title string, opts BoxOptions) {
@@ -89,12 +92,14 @@ func Box(message string, title string, opts BoxOptions) {
 
 	// Determine box width
 	var boxWidth int
+
 	if opts.WidthAuto {
 		// start from fraction if provided else full width
 		frac := opts.WidthFraction
 		if frac <= 0 {
 			frac = 1.0
 		}
+
 		boxWidth = int(math.Floor(float64(columns)*frac)) - visibleWidth(linePrefix)
 		if boxWidth <= 0 {
 			boxWidth = maxBoxWidth
@@ -104,6 +109,7 @@ func Box(message string, title string, opts BoxOptions) {
 		if frac <= 0 {
 			frac = 1.0
 		}
+
 		boxWidth = int(math.Floor(float64(columns)*frac)) - visibleWidth(linePrefix)
 		if boxWidth <= 0 {
 			boxWidth = maxBoxWidth
@@ -132,12 +138,14 @@ func Box(message string, title string, opts BoxOptions) {
 				longest = l
 			}
 		}
+
 		want := longest + borderTotal
 		if want < boxWidth {
 			boxWidth = want
 			if boxWidth%2 != 0 {
 				boxWidth++
 			}
+
 			innerWidth = boxWidth - borderTotal
 		}
 	}
@@ -145,6 +153,7 @@ func Box(message string, title string, opts BoxOptions) {
 	// Title alignment and truncation
 	maxTitle := innerWidth - titlePadding*2
 	truncatedTitle := title
+
 	if maxTitle < 0 {
 		maxTitle = 0
 	}
@@ -171,6 +180,7 @@ func Box(message string, title string, opts BoxOptions) {
 	if wrapWidth < 0 {
 		wrapWidth = 0
 	}
+
 	wrappedLines := wrapTextHardWidth(message, wrapWidth)
 
 	for _, line := range wrappedLines {
@@ -198,7 +208,9 @@ func Box(message string, title string, opts BoxOptions) {
 // getPaddingForLine mirrors the TS logic.
 func getPaddingForLine(lineLength int, innerWidth int, padding int, align BoxAlignment) (int, int) {
 	left := padding
+
 	var right int
+
 	switch align {
 	case BoxAlignCenter:
 		left = int(math.Floor(float64(innerWidth-lineLength) / 2.0))
@@ -211,13 +223,16 @@ func getPaddingForLine(lineLength int, innerWidth int, padding int, align BoxAli
 			left = padding
 		}
 	}
+
 	right = innerWidth - left - lineLength
 	if right < 0 {
 		right = 0
 	}
+
 	if left < 0 {
 		left = 0
 	}
+
 	return left, right
 }
 
@@ -226,21 +241,30 @@ func truncateToWidth(s string, width int) string {
 	if visibleWidth(s) <= width {
 		return s
 	}
+
 	if width <= 3 {
 		return s[:0]
 	}
+
 	target := width - 3
+
 	var b strings.Builder
+
 	w := 0
+
 	for _, r := range s {
 		rw := runewidth.RuneWidth(r)
 		if w+rw > target {
 			break
 		}
+
 		b.WriteRune(r)
+
 		w += rw
 	}
+
 	b.WriteString("...")
+
 	return b.String()
 }
 
@@ -251,27 +275,38 @@ func wrapTextHardWidth(s string, width int) []string {
 		for i := range parts {
 			parts[i] = ""
 		}
+
 		return parts
 	}
+
 	var result []string
+
 	for _, line := range strings.Split(s, "\n") {
 		if line == "" {
 			result = append(result, "")
 			continue
 		}
+
 		var b strings.Builder
+
 		w := 0
+
 		for _, r := range line {
 			rw := runewidth.RuneWidth(r)
 			if w+rw > width {
 				result = append(result, b.String())
 				b.Reset()
+
 				w = 0
 			}
+
 			b.WriteRune(r)
+
 			w += rw
 		}
+
 		result = append(result, b.String())
 	}
+
 	return result
 }

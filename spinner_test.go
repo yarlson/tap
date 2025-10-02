@@ -118,6 +118,7 @@ func TestSpinner_OSC94Signals(t *testing.T) {
 	s2.Start("working")
 	time.Sleep(2 * time.Millisecond)
 	s2.Stop("boom", 2)
+
 	frames2 := strings.Join(out2.GetFrames(), "")
 	assert.Contains(t, frames2, "\x1b]9;4;0\x1b\\")
 
@@ -127,6 +128,7 @@ func TestSpinner_OSC94Signals(t *testing.T) {
 	s3.Start("working")
 	time.Sleep(2 * time.Millisecond)
 	s3.Stop("cancel", 1)
+
 	frames3 := strings.Join(out3.GetFrames(), "")
 	assert.Contains(t, frames3, "\x1b]9;4;0\x1b\\")
 }

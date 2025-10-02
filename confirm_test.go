@@ -12,6 +12,7 @@ func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan bool, 1)
+
 	go func() {
 		result := Confirm(context.Background(), ConfirmOptions{
 			Message: "Continue?",
@@ -23,6 +24,7 @@ func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
 
 	time.Sleep(time.Millisecond)
 	mock.EmitKeypress("y", Key{Name: "y"})
+
 	result := <-done
 
 	if result != true {
@@ -36,6 +38,7 @@ func TestStyledConfirm_RendersWithRadioButtons(t *testing.T) {
 
 	// Should show radio buttons in some frame
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "●") || strings.Contains(frame, "○") { // active/inactive radio
 			found = true
@@ -53,6 +56,7 @@ func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan bool, 1)
+
 	go func() {
 		result := Confirm(context.Background(), ConfirmOptions{
 			Message:  "Delete file?",
@@ -73,10 +77,12 @@ func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
 	// Should show custom active/inactive labels
 	foundActive := false
 	foundInactive := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "Delete") {
 			foundActive = true
 		}
+
 		if strings.Contains(frame, "Keep") {
 			foundInactive = true
 		}
@@ -85,6 +91,7 @@ func TestStyledConfirm_ShowsActiveInactiveOptions(t *testing.T) {
 	if !foundActive {
 		t.Error("Expected 'Delete' label in frames")
 	}
+
 	if !foundInactive {
 		t.Error("Expected 'Keep' label in frames")
 	}
@@ -95,6 +102,7 @@ func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan bool, 1)
+
 	go func() {
 		result := Confirm(context.Background(), ConfirmOptions{
 			Message: "Proceed?",
@@ -113,10 +121,12 @@ func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
 	// Should contain styled elements: symbol and bars
 	foundSymbol := false
 	foundBar := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "◆") || strings.Contains(frame, "◇") { // active or submit symbol
 			foundSymbol = true
 		}
+
 		if strings.Contains(frame, "│") { // bar
 			foundBar = true
 		}
@@ -125,6 +135,7 @@ func TestStyledConfirm_ShowsSymbolsAndBars(t *testing.T) {
 	if !foundSymbol {
 		t.Error("Expected prompt symbol in frames")
 	}
+
 	if !foundBar {
 		t.Error("Expected bar symbol in frames")
 	}
@@ -135,6 +146,7 @@ func TestStyledConfirm_ShowsInitialValue(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan bool, 1)
+
 	go func() {
 		result := Confirm(context.Background(), ConfirmOptions{
 			Message:      "Continue?",
@@ -149,6 +161,7 @@ func TestStyledConfirm_ShowsInitialValue(t *testing.T) {
 	mock.EmitKeypress("", Key{Name: "left"})
 	time.Sleep(time.Millisecond) // Give time for the value to update
 	mock.EmitKeypress("", Key{Name: "return"})
+
 	result := <-done
 
 	// After pressing left arrow, should be false
@@ -162,6 +175,7 @@ func TestStyledConfirm_ShowsCancelState(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan any, 1)
+
 	go func() {
 		result := Confirm(context.Background(), ConfirmOptions{
 			Message: "Continue?",
@@ -173,6 +187,7 @@ func TestStyledConfirm_ShowsCancelState(t *testing.T) {
 
 	time.Sleep(time.Millisecond)
 	mock.EmitKeypress("\x03", Key{Ctrl: true, Name: "c"}) // Ctrl+C
+
 	result := <-done
 	// typed API: cancel returns false
 	if result != false {
@@ -183,6 +198,7 @@ func TestStyledConfirm_ShowsCancelState(t *testing.T) {
 
 	// Should show cancel state
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "■") { // cancel symbol
 			found = true

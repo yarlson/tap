@@ -64,8 +64,10 @@ func TestStream_PipeReader(t *testing.T) {
 	st := NewStream(StreamOptions{Output: out})
 
 	st.Start("Streaming logs")
+
 	data := bytes.NewBufferString("line 1\nline 2\nline 3\n")
 	done := make(chan struct{})
+
 	go func() {
 		st.Pipe(data)
 		st.Stop("OK", 0)

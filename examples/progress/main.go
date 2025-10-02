@@ -14,6 +14,7 @@ func main() {
 
 	// Example 1: File download simulation (heavy style)
 	fmt.Println("Example 1: File Download Simulation (Heavy Style)")
+
 	downloadProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "heavy",
 		Max:   100,
@@ -25,6 +26,7 @@ func main() {
 	// Simulate download progress
 	for i := 0; i <= 100; i += 10 {
 		time.Sleep(200 * time.Millisecond)
+
 		msg := fmt.Sprintf("Downloading file... %d%%", i)
 		downloadProgress.Advance(10, msg)
 	}
@@ -34,6 +36,7 @@ func main() {
 
 	// Example 2: Data processing (block style)
 	fmt.Println("Example 2: Data Processing (Block Style)")
+
 	processProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "block",
 		Max:   50,
@@ -55,6 +58,7 @@ func main() {
 
 	for i, step := range steps {
 		time.Sleep(300 * time.Millisecond)
+
 		if i < len(messages) {
 			processProgress.Advance(step, messages[i])
 		} else {
@@ -67,6 +71,7 @@ func main() {
 
 	// Example 3: Installation progress (light style)
 	fmt.Println("Example 3: Package Installation (Light Style)")
+
 	installProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "light",
 		Max:   20,
@@ -93,6 +98,7 @@ func main() {
 
 	// Example 4: Task with message updates (no progress advancement)
 	fmt.Println("Example 4: Task Status Updates")
+
 	statusProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "heavy",
 		Max:   10,
@@ -127,6 +133,7 @@ func main() {
 
 	// Example 5: Demonstrate cancellation
 	fmt.Println("Example 5: Cancelled Task")
+
 	cancelProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "heavy",
 		Max:   100,
@@ -147,6 +154,7 @@ func main() {
 
 	// Example 6: Error scenario
 	fmt.Println("Example 6: Task with Error")
+
 	errorProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "block",
 		Max:   10,

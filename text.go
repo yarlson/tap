@@ -15,6 +15,7 @@ func Text(ctx context.Context, opts TextOptions) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}
+
 		if opts.Output == nil {
 			opts.Output = out
 		}
@@ -106,6 +107,7 @@ func text(ctx context.Context, opts TextOptions) string {
 	if s, ok := v.(string); ok {
 		return s
 	}
+
 	return ""
 }
 
@@ -123,5 +125,6 @@ func renderTextWithCursor(text string, cursor int, state ClackState) string {
 	before := string(runes[:cursor])
 	char := string(runes[cursor])
 	after := string(runes[cursor+1:])
+
 	return before + inverse(char) + after
 }

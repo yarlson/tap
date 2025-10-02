@@ -23,7 +23,9 @@ func main() {
 
 	// Example 2: Pipe external command output
 	cmd := exec.Command("bash", "-lc", "printf 'line 1\\nline 2\\nline 3\\n'")
+
 	var buf bytes.Buffer
+
 	cmd.Stdout = &buf
 	_ = cmd.Run()
 

@@ -11,6 +11,7 @@ func main() {
 
 	// Example 1: Basic table with borders
 	fmt.Println("\n1. Basic Table with Borders:")
+
 	headers := []string{"Name", "Age", "City", "Status"}
 	rows := [][]string{
 		{"Alice Johnson", "28", "New York", "Active"},
@@ -25,6 +26,7 @@ func main() {
 
 	// Example 2: Table without borders
 	fmt.Println("\n2. Table without Borders:")
+
 	simpleHeaders := []string{"ID", "Product", "Price"}
 	simpleRows := [][]string{
 		{"1", "Laptop", "$999"},
@@ -38,6 +40,7 @@ func main() {
 
 	// Example 3: Table with custom styling and alignment
 	fmt.Println("\n3. Styled Table with Custom Alignment:")
+
 	styledHeaders := []string{"Metric", "Value", "Trend"}
 	styledRows := [][]string{
 		{"Users", "1,234", "↗ +12%"},
@@ -59,6 +62,7 @@ func main() {
 
 	// Example 4: Table with prefix (like in a box)
 	fmt.Println("\n4. Table with Prefix:")
+
 	prefixedHeaders := []string{"Service", "Status", "Uptime"}
 	prefixedRows := [][]string{
 		{"API Gateway", "🟢 Running", "99.9%"},
@@ -76,6 +80,7 @@ func main() {
 
 	// Example 5: Table with constrained width
 	fmt.Println("\n5. Table with Max Width Constraint:")
+
 	longHeaders := []string{"Very Long Column Name", "Another Long Header", "Short"}
 	longRows := [][]string{
 		{"This is a very long piece of data that should be truncated", "More long data here", "OK"},
@@ -91,6 +96,7 @@ func main() {
 
 	// Example 6: Empty table
 	fmt.Println("\n6. Empty Table (headers only):")
+
 	emptyHeaders := []string{"No Data", "Available"}
 	emptyRows := [][]string{}
 
@@ -102,6 +108,7 @@ func main() {
 
 	// Example 7: Table with uneven rows
 	fmt.Println("\n7. Table with Uneven Rows:")
+
 	unevenHeaders := []string{"A", "B", "C"}
 	unevenRows := [][]string{
 		{"1", "2"},                // missing third column

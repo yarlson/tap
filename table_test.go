@@ -206,6 +206,7 @@ func TestTable_WithPrefix(t *testing.T) {
 
 	// First non-empty line should start with prefix
 	var first string
+
 	for _, l := range lines {
 		if strings.TrimSpace(l) != "" {
 			first = l

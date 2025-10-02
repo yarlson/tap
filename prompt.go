@@ -123,6 +123,7 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 	}
 	// Default TTY will be provided by a higher-level adapter when needed
 	p.snap.Store(promptState{State: StateInitial})
+
 	return p
 }
 
@@ -192,6 +193,7 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 			}
 		})
 	}
+
 	if p.output != nil {
 		p.output.On("resize", func() {
 			select {
@@ -200,9 +202,11 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 			}
 		})
 	}
+
 	if ctx != nil {
 		go func() {
 			<-ctx.Done()
+
 			select {
 			case p.evCh <- func(s *promptState) { p.handleAbort(s) }:
 			case <-p.stopped:
@@ -217,6 +221,7 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 			p.Emit("userInput", s.UserInput)
 		}
 	}
+
 	p.evCh <- func(s *promptState) { p.handleInitialRender(s) }
 
 	return <-p.doneCh
@@ -230,9 +235,11 @@ func isCancel(char string, key Key) bool {
 	if char == "\x03" || (key.Ctrl && key.Name == "c") {
 		return true
 	}
+
 	if key.Name == "escape" || strings.ToLower(char) == "escape" {
 		return true
 	}
+
 	return false
 }
 
@@ -243,6 +250,7 @@ func getMovementAlias(keyName string) string {
 		"h": "left",
 		"l": "right",
 	}
+
 	return aliases[keyName]
 }
 
@@ -272,6 +280,7 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 			s.UserInput = newInput
 			p.Emit("userInput", s.UserInput)
 		}
+
 		if cursorChanged {
 			s.Cursor = newCursor
 		}
@@ -285,6 +294,7 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 	if isMovementKey(key.Name) {
 		p.Emit("cursor", key.Name)
 	}
+
 	if alias := getMovementAlias(key.Name); !p.track && alias != "" {
 		p.Emit("cursor", alias)
 	}
@@ -296,6 +306,7 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 		s.Value = val
 		s.State = StateSubmit
 	}
+
 	p.Emit("key", strings.ToLower(char), key)
 
 	if key.Name == "return" {
@@ -316,6 +327,7 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 				} else {
 					s.Error = err.Error()
 				}
+
 				s.State = StateError
 			} else {
 				s.Error = ""
@@ -325,6 +337,7 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 			s.State = StateSubmit
 		}
 	}
+
 	if isCancel(char, key) {
 		s.State = StateCancel
 	}
@@ -338,6 +351,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 	if cursor < 0 {
 		cursor = 0
 	}
+
 	if cursor > len(runes) {
 		cursor = len(runes)
 	}
@@ -348,6 +362,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 		if cursor > 0 {
 			return current, cursor - 1
 		}
+
 		return current, cursor
 
 	case "right":
@@ -355,6 +370,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 		if cursor < len(runes) {
 			return current, cursor + 1
 		}
+
 		return current, cursor
 
 	case "backspace":
@@ -363,6 +379,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 			newRunes := append(runes[:cursor-1], runes[cursor:]...)
 			return string(newRunes), cursor - 1
 		}
+
 		return current, cursor
 
 	case "delete":
@@ -371,6 +388,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 			newRunes := append(runes[:cursor], runes[cursor+1:]...)
 			return string(newRunes), cursor
 		}
+
 		return current, cursor
 
 	case "up", "down", "escape":
@@ -397,12 +415,14 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 				}
 			}
 		}
+
 		return current, cursor
 	}
 }
 
 func (p *Prompt) loop() {
 	st := promptState{State: StateInitial}
+
 	p.adoptPreSubscribers()
 	p.snap.Store(st)
 
@@ -415,12 +435,16 @@ func (p *Prompt) loop() {
 		if p.shouldFinalize(st.State) {
 			p.renderIfNeeded(&st)
 			p.snap.Store(st)
+
 			res := p.finalize(&st)
 			p.doneCh <- res
+
 			close(p.stopped)
 			p.cur = nil
+
 			return
 		}
+
 		p.cur = nil
 	}
 }
@@ -442,6 +466,7 @@ func getColumns() int {
 	if cols, _, err := xterm.GetSize(fd); err == nil && cols > 0 {
 		return cols
 	}
+
 	return 80
 }
 
@@ -456,6 +481,7 @@ func countPhysicalLines(s string) int {
 	if s == "" {
 		return 0
 	}
+
 	cols := getColumns()
 	if cols <= 0 {
 		cols = 80
@@ -474,6 +500,7 @@ func countPhysicalLines(s string) int {
 		rows := (w-1)/cols + 1
 		total += rows
 	}
+
 	return total
 }
 
@@ -503,6 +530,7 @@ func (p *Prompt) renderIfNeeded(st *promptState) {
 			for i := 0; i < st.PrevFrameLines-1; i++ {
 				_, _ = p.output.Write([]byte(CursorUp))
 			}
+
 			_, _ = p.output.Write([]byte("\r"))
 			_, _ = p.output.Write([]byte(EraseDown))
 		} else {
@@ -513,6 +541,7 @@ func (p *Prompt) renderIfNeeded(st *promptState) {
 	}
 
 	_, _ = p.output.Write([]byte(frame))
+
 	if st.State == StateInitial {
 		st.State = StateActive
 	}
@@ -542,6 +571,7 @@ func (p *Prompt) finalize(st *promptState) any {
 	if st.State == StateCancel {
 		var res any = nil
 		p.Emit("cancel", res)
+
 		return res
 	}
 

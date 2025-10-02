@@ -241,6 +241,7 @@ func TestProgress_OSC94Signals(t *testing.T) {
 	prog2.Advance(3, "some")
 	time.Sleep(2 * time.Millisecond)
 	prog2.Stop("err", 2)
+
 	frames2 := strings.Join(out2.GetFrames(), "")
 	assert.Contains(t, frames2, "\x1b]9;4;0\x1b\\")
 }

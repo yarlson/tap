@@ -44,6 +44,7 @@ const (
 
 	// Text styles
 	Dim           = "\033[2m"
+	Bold          = "\033[1m"
 	Inverse       = "\033[7m"
 	Strikethrough = "\033[9m"
 )
@@ -55,6 +56,7 @@ func green(s string) string         { return Green + s + Reset }
 func yellow(s string) string        { return Yellow + s + Reset }
 func cyan(s string) string          { return Cyan + s + Reset }
 func dim(s string) string           { return Dim + s + Reset }
+func bold(s string) string          { return Bold + s + Reset }
 func inverse(s string) string       { return Inverse + s + Reset }
 func strikethrough(s string) string { return Strikethrough + s + Reset }
 
@@ -70,6 +72,7 @@ func Symbol(state ClackState) string {
 	case StateSubmit:
 		return green(StepSubmit)
 	}
+
 	return StepActive
 }
 

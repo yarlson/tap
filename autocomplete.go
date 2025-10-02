@@ -16,6 +16,7 @@ func Autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}
+
 		if opts.Output == nil {
 			opts.Output = out
 		}
@@ -35,6 +36,7 @@ func (st *acState) clampSelected() {
 		st.selected = 0
 		return
 	}
+
 	if st.selected < 0 {
 		st.selected = len(st.suggestions) - 1
 	} else if st.selected >= len(st.suggestions) {
@@ -64,16 +66,20 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 		if opts.Suggest == nil {
 			return nil
 		}
+
 		list := opts.Suggest(input)
 		if len(list) > max {
 			return append([]string{}, list[:max]...)
 		}
+
 		return append([]string{}, list...)
 	}
 
 	// Local input state
-	var inBuf []rune
-	var cur int
+	var (
+		inBuf []rune
+		cur   int
+	)
 
 	p := NewPromptWithTracking(PromptOptions{
 		Input:        opts.Input,
@@ -152,6 +158,7 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 		inBuf = []rune(opts.InitialValue)
 		cur = len(inBuf)
 		p.SetImmediateValue(string(inBuf))
+
 		state.suggestions = getSugs(string(inBuf))
 		if state.selected >= len(state.suggestions) {
 			state.selected = 0
@@ -210,6 +217,7 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 
 		// After any edit/update, reflect in value and recompute suggestions
 		p.SetImmediateValue(string(inBuf))
+
 		state.suggestions = getSugs(string(inBuf))
 		if state.selected >= len(state.suggestions) {
 			state.selected = 0
@@ -225,5 +233,6 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 	if s, ok := v.(string); ok {
 		return s
 	}
+
 	return ""
 }

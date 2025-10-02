@@ -25,7 +25,7 @@ func Cancel(message string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s  %s\n\n", gray(BarEnd), red(message))
+	_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), red(message))
 }
 
 // Intro prints an intro title (bar start + title).
@@ -43,7 +43,7 @@ func Intro(title string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s  %s\n", gray(BarStart), title)
+	_, _ = fmt.Fprintf(out, "%s  %s\n%s\n", gray(BarStart), bold(title), gray(Bar))
 }
 
 // Outro prints a final outro (bar line, then bar end + message).
@@ -61,7 +61,7 @@ func Outro(message string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), message)
+	_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), bold(message))
 }
 
 func Message(message string, opts ...MessageOptions) {
@@ -78,6 +78,7 @@ func Message(message string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s  %s\n", green(StepSubmit), message)
-	_, _ = fmt.Fprintf(out, "%s \n", gray(Bar))
+	_, _ = fmt.Fprintf(out, "%s\n", gray(Bar))
+	_, _ = fmt.Fprintf(out, "%s  %s\n", green(StepSubmit), bold(message))
+	_, _ = fmt.Fprintf(out, "%s\n", gray(Bar))
 }

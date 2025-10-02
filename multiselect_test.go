@@ -29,6 +29,7 @@ func TestStyledMultiSelect_RendersTitleAndOptions(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	frames := out.GetFrames()
@@ -36,6 +37,7 @@ func TestStyledMultiSelect_RendersTitleAndOptions(t *testing.T) {
 
 	foundTitle := false
 	foundMarkers := false
+
 	for _, f := range frames {
 		if strings.Contains(f, "Pick colors:") {
 			foundTitle = true
@@ -44,10 +46,12 @@ func TestStyledMultiSelect_RendersTitleAndOptions(t *testing.T) {
 		if strings.Contains(f, CheckboxUnchecked) {
 			foundMarkers = true
 		}
+
 		if foundTitle && foundMarkers {
 			break
 		}
 	}
+
 	assert.True(t, foundTitle, "should render the message title")
 	assert.True(t, foundMarkers, "should render active and inactive markers")
 }
@@ -63,6 +67,7 @@ func TestStyledMultiSelect_ToggleAndSubmit(t *testing.T) {
 	}
 
 	resCh := make(chan []string, 1)
+
 	go func() {
 		resCh <- MultiSelect[string](context.Background(), MultiSelectOptions[string]{
 			Message: "Choose many:",
@@ -71,6 +76,7 @@ func TestStyledMultiSelect_ToggleAndSubmit(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	// Cursor at 0 -> toggle A
@@ -101,6 +107,7 @@ func TestStyledMultiSelect_InitialValuesPreselected(t *testing.T) {
 	initial := []string{"two", "three"}
 
 	resCh := make(chan []string, 1)
+
 	go func() {
 		resCh <- MultiSelect[string](context.Background(), MultiSelectOptions[string]{
 			Message:       "Pick:",
@@ -110,6 +117,7 @@ func TestStyledMultiSelect_InitialValuesPreselected(t *testing.T) {
 			Output:        out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	// Submit immediately; should keep initial selections
@@ -128,6 +136,7 @@ func TestStyledMultiSelect_CancelWithCtrlC(t *testing.T) {
 	}
 
 	resCh := make(chan []string, 1)
+
 	go func() {
 		resCh <- MultiSelect[string](context.Background(), MultiSelectOptions[string]{
 			Message: "Pick:",
@@ -136,9 +145,11 @@ func TestStyledMultiSelect_CancelWithCtrlC(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	in.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
+
 	res := <-resCh
 	// On cancel, typed API should return the zero value for []string which is nil
 	assert.Nil(t, res)

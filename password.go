@@ -15,6 +15,7 @@ func Password(ctx context.Context, opts PasswordOptions) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}
+
 		if opts.Output == nil {
 			opts.Output = out
 		}
@@ -96,6 +97,7 @@ func password(ctx context.Context, opts PasswordOptions) string {
 	if s, ok := v.(string); ok {
 		return s
 	}
+
 	return ""
 }
 
@@ -107,6 +109,7 @@ func renderMaskedWithCursor(text string, cursor int, state ClackState) string {
 	}
 
 	runes := []rune(text)
+
 	maskedRunes := []rune(strings.Repeat("●", len(runes)))
 	if cursor >= len(runes) {
 		return string(maskedRunes) + inverse(" ")
@@ -115,5 +118,6 @@ func renderMaskedWithCursor(text string, cursor int, state ClackState) string {
 	before := string(maskedRunes[:cursor])
 	char := string(maskedRunes[cursor])
 	after := string(maskedRunes[cursor+1:])
+
 	return before + inverse(char) + after
 }

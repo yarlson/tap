@@ -32,19 +32,23 @@ func (m *MockReadable) Read(p []byte) (int, error) {
 
 	n := copy(p, m.buffer)
 	m.buffer = m.buffer[n:]
+
 	return n, nil
 }
 
 func (m *MockReadable) Close() error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
 	m.closed = true
+
 	return nil
 }
 
 func (m *MockReadable) On(event string, handler func(string, Key)) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
 	m.listeners[event] = append(m.listeners[event], handler)
 }
 
@@ -79,13 +83,16 @@ func NewMockWritable() *MockWritable {
 func (m *MockWritable) Write(p []byte) (int, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
 	m.Buffer = append(m.Buffer, string(p))
+
 	return len(p), nil
 }
 
 func (m *MockWritable) On(event string, handler func()) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
 	m.listeners[event] = append(m.listeners[event], handler)
 }
 
@@ -103,5 +110,6 @@ func (m *MockWritable) Emit(event string) {
 func (m *MockWritable) GetFrames() []string {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+
 	return append([]string{}, m.Buffer...)
 }

@@ -12,6 +12,7 @@ func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan any, 1)
+
 	go func() {
 		result := Password(context.Background(), PasswordOptions{
 			Message: "Enter password:",
@@ -25,6 +26,7 @@ func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {
 	in.EmitKeypress("h", Key{Name: "h"})
 	in.EmitKeypress("i", Key{Name: "i"})
 	in.EmitKeypress("", Key{Name: "return"})
+
 	result := <-done
 
 	// Should return the typed value
@@ -39,21 +41,26 @@ func TestStyledPassword_RendersWithSymbolBarsAndMasksValue(t *testing.T) {
 
 	// Find a submit frame with bars and symbol, and ensure masked bullets present and raw text absent
 	var submitFrame string
+
 	for _, f := range frames {
 		if strings.Contains(f, "◇") && strings.Contains(f, "Enter password:") {
 			submitFrame = f
 			break
 		}
 	}
+
 	if submitFrame == "" {
 		t.Fatal("could not find submit frame")
 	}
+
 	if !strings.Contains(submitFrame, "│") {
 		t.Error("expected bar │ in submit frame")
 	}
+
 	if strings.Contains(submitFrame, "hi") {
 		t.Error("password should not render raw text in submit frame")
 	}
+
 	if !strings.Contains(submitFrame, "●") {
 		t.Error("expected masked bullets in submit frame")
 	}
@@ -64,6 +71,7 @@ func TestStyledPassword_ShowsBulletsDuringTyping(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan any, 1)
+
 	go func() {
 		done <- Password(context.Background(), PasswordOptions{
 			Message: "Password:",
@@ -80,12 +88,14 @@ func TestStyledPassword_ShowsBulletsDuringTyping(t *testing.T) {
 
 	frames := out.GetFrames()
 	found := false
+
 	for _, f := range frames {
 		if strings.Contains(f, "◆") && strings.Contains(f, "│") && strings.Contains(f, "●") {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		t.Error("expected active state with masked bullets during typing")
 	}
@@ -99,10 +109,12 @@ func TestStyledPassword_ShowsErrorState(t *testing.T) {
 		if len(s) < 3 {
 			return &ValidationError{Message: "Too short"}
 		}
+
 		return nil
 	}
 
 	done := make(chan any, 1)
+
 	go func() {
 		done <- Password(context.Background(), PasswordOptions{
 			Message:  "Enter:",
@@ -125,12 +137,14 @@ func TestStyledPassword_ShowsErrorState(t *testing.T) {
 
 	frames := out.GetFrames()
 	foundError := false
+
 	for _, f := range frames {
 		if strings.Contains(f, "▲") { // error symbol
 			foundError = true
 			break
 		}
 	}
+
 	if !foundError {
 		t.Error("expected error symbol ▲ in frames")
 	}

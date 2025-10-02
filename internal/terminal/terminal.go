@@ -45,6 +45,7 @@ type Terminal struct {
 func New() (*Terminal, error) {
 	// Save original terminal state for restoration
 	fd := int(os.Stdin.Fd())
+
 	originalState, err := term.GetState(fd)
 	if err != nil {
 		// If we can't get terminal state, continue anyway - might not be a TTY
@@ -65,8 +66,10 @@ func New() (*Terminal, error) {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	var cleanupOnce sync.Once
+
 	doCleanup := func() {
 		close(stop)
+
 		_ = keyboard.Close()
 
 		// Restore original terminal state if we saved it
@@ -80,19 +83,27 @@ func New() (*Terminal, error) {
 	// Keyboard input handling goroutine
 	go func() {
 		start := time.Now()
-		var escPending bool
-		var escStarted time.Time
+
+		var (
+			escPending bool
+			escStarted time.Time
+		)
+
 		var escPrefix rune // 0, '[' or 'O'
+
 		var escBuf []rune
 		// Window to assemble ESC-based sequences (keep small to reduce latency)
 		const escWindow = 10 * time.Millisecond
+
 		var escTimer *time.Timer
+
 		stopEscTimer := func() {
 			if escTimer != nil {
 				escTimer.Stop()
 				escTimer = nil
 			}
 		}
+
 		for {
 			select {
 			case <-stop:
@@ -123,17 +134,20 @@ func New() (*Terminal, error) {
 					case keyboard.KeyArrowRight:
 						name = "right"
 					}
+
 					escPending = false
 					escPrefix = 0
 					escBuf = nil
 					k := Key{Name: name, Ctrl: false}
 					reader.emit("", k)
+
 					continue
 				}
 				// First follow-up may be '[' or 'O'
 				if escPrefix == 0 && (r == '[' || r == 'O') {
 					escPrefix = r
 					escBuf = append(escBuf, r)
+
 					continue
 				}
 				// If we have a prefix, map final byte
@@ -153,9 +167,12 @@ func New() (*Terminal, error) {
 					escPrefix = 0
 					escBuf = nil
 					char = ""
+
 					stopEscTimer()
+
 					k := Key{Name: name, Ctrl: false}
 					reader.emit(char, k)
+
 					continue
 				}
 				// Timeout or unrelated key: if we saw a prefix, swallow; if not, emit escape
@@ -164,6 +181,7 @@ func New() (*Terminal, error) {
 						// Plain ESC
 						escPending = false
 						kEsc := Key{Name: "escape", Ctrl: false}
+
 						stopEscTimer()
 						reader.emit("", kEsc)
 						// Fall through to process current event below
@@ -172,9 +190,11 @@ func New() (*Terminal, error) {
 						escPending = false
 						escDir := "right"
 						kMv := Key{Name: escDir, Ctrl: false}
+
 						stopEscTimer()
 						reader.emit("", kMv)
 					}
+
 					escPrefix = 0
 					escBuf = nil
 				} else {
@@ -182,6 +202,7 @@ func New() (*Terminal, error) {
 					if r != 0 {
 						escBuf = append(escBuf, r)
 					}
+
 					continue
 				}
 			}
@@ -216,11 +237,13 @@ func New() (*Terminal, error) {
 				}
 				// Arm timer to emit fallback without needing another key event
 				stopEscTimer()
+
 				escTimer = time.AfterFunc(escWindow, func() {
 					// Timer callback runs concurrently; emit based on current pending state
 					if !escPending {
 						return
 					}
+
 					if escPrefix == 0 && len(escBuf) == 0 {
 						// Plain Escape
 						kEsc := Key{Name: "escape", Ctrl: false}
@@ -230,11 +253,14 @@ func New() (*Terminal, error) {
 						kMv := Key{Name: "right", Ctrl: false}
 						reader.emit("", kMv)
 					}
+
 					escPending = false
 					escPrefix = 0
 					escBuf = nil
+
 					stopEscTimer()
 				})
+
 				continue
 			case keyboard.KeyCtrlC:
 				char = "\x03"
@@ -262,6 +288,7 @@ func New() (*Terminal, error) {
 	// the signal so the hosting application decides the exit policy.
 	go func() {
 		sig := <-sigChan
+
 		cleanupOnce.Do(doCleanup)
 		// stop notifications and restore default behavior for this signal
 		signal.Stop(sigChan)
@@ -275,6 +302,7 @@ func New() (*Terminal, error) {
 	// Terminal resize notifications
 	resizeChan := make(chan os.Signal, 1)
 	signal.Notify(resizeChan, syscall.SIGWINCH)
+
 	go func() {
 		for range resizeChan {
 			writer.Emit("resize")
@@ -306,6 +334,7 @@ func (r *Reader) Read(_ []byte) (int, error) { return 0, nil }
 func (r *Reader) On(event string, handler func(string, Key)) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	r.listeners[event] = append(r.listeners[event], handler)
 }
 
@@ -313,6 +342,7 @@ func (r *Reader) emit(char string, key Key) {
 	r.mu.Lock()
 	hs := append([]func(string, Key){}, r.listeners["keypress"]...)
 	r.mu.Unlock()
+
 	for _, h := range hs {
 		h(char, key)
 	}
@@ -323,6 +353,7 @@ func (w *Writer) Write(b []byte) (int, error) { return os.Stdout.Write(b) }
 func (w *Writer) On(event string, handler func()) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
 	w.listeners[event] = append(w.listeners[event], handler)
 }
 
@@ -330,6 +361,7 @@ func (w *Writer) Emit(event string) {
 	w.mu.Lock()
 	hs := append([]func(){}, w.listeners[event]...)
 	w.mu.Unlock()
+
 	for _, h := range hs {
 		h()
 	}

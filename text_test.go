@@ -12,6 +12,7 @@ func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan any, 1)
+
 	go func() {
 		result := Text(context.Background(), TextOptions{
 			Message: "Enter your name:",
@@ -40,6 +41,7 @@ func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {
 
 	// Find the frame with the submit content (not the final cursor control frame)
 	var submitFrame string
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "◇") && strings.Contains(frame, "Enter your name:") {
 			submitFrame = frame
@@ -55,9 +57,11 @@ func TestStyledText_RendersWithSymbolAndBars(t *testing.T) {
 	if !strings.Contains(submitFrame, "◇") { // submit symbol
 		t.Error("Expected submit symbol ◇ in submit frame")
 	}
+
 	if !strings.Contains(submitFrame, "│") { // bar
 		t.Error("Expected bar │ in submit frame")
 	}
+
 	if !strings.Contains(submitFrame, "Enter your name:") {
 		t.Error("Expected message in submit frame")
 	}
@@ -68,6 +72,7 @@ func TestStyledText_ShowsPlaceholderWhenEmpty(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan any, 1)
+
 	go func() {
 		result := Text(context.Background(), TextOptions{
 			Message:     "Enter text:",
@@ -86,6 +91,7 @@ func TestStyledText_ShowsPlaceholderWhenEmpty(t *testing.T) {
 
 	// Find a frame that should show the placeholder (with or without ANSI codes)
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "ype something...") { // Look for part of placeholder text
 			found = true
@@ -103,6 +109,7 @@ func TestStyledText_ShowsCursorDuringTyping(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan any, 1)
+
 	go func() {
 		result := Text(context.Background(), TextOptions{
 			Message: "Type:",
@@ -121,6 +128,7 @@ func TestStyledText_ShowsCursorDuringTyping(t *testing.T) {
 
 	// Should show the active state with cyan bars
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "◆") && strings.Contains(frame, "│") { // active symbol and cyan bar
 			found = true
@@ -141,10 +149,12 @@ func TestStyledText_ShowsErrorState(t *testing.T) {
 		if len(val) < 3 {
 			return &ValidationError{Message: "Too short"}
 		}
+
 		return nil
 	}
 
 	done := make(chan any, 1)
+
 	go func() {
 		result := Text(context.Background(), TextOptions{
 			Message:  "Enter at least 3 chars:",
@@ -171,6 +181,7 @@ func TestStyledText_ShowsErrorState(t *testing.T) {
 
 	// Should show error state with error symbol
 	foundSymbol := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "▲") { // error symbol
 			foundSymbol = true
@@ -188,6 +199,7 @@ func TestStyledText_ShowsDefaultValue(t *testing.T) {
 	out := NewMockWritable()
 
 	done := make(chan any, 1)
+
 	go func() {
 		result := Text(context.Background(), TextOptions{
 			Message:      "Enter name:",
@@ -200,6 +212,7 @@ func TestStyledText_ShowsDefaultValue(t *testing.T) {
 
 	time.Sleep(time.Millisecond)
 	mock.EmitKeypress("", Key{Name: "return"})
+
 	result := <-done
 
 	if result != "John" {

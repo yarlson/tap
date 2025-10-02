@@ -79,10 +79,12 @@ func newSpinner(opts SpinnerOptions) *Spinner {
 // Start begins the spinner animation
 func (s *Spinner) Start(msg string) {
 	s.mu.Lock()
+
 	if s.isActive {
 		s.mu.Unlock()
 		return
 	}
+
 	s.isActive = true
 	s.message = removeTrailingDots(msg)
 	s.frameIndex = 0
@@ -102,6 +104,7 @@ func (s *Spinner) Start(msg string) {
 			_, _ = s.output.Write([]byte("\033[1A\r\033[J"))
 		}
 	}
+
 	s.render()
 }
 
@@ -117,10 +120,12 @@ func (s *Spinner) Message(msg string) {
 // code: 0 submit, 1 cancel, >1 error
 func (s *Spinner) Stop(msg string, code int) {
 	s.mu.Lock()
+
 	if !s.isActive {
 		s.mu.Unlock()
 		return
 	}
+
 	s.isActive = false
 	s.isCancelled = code == 1
 	currentMsg := s.message
@@ -131,6 +136,7 @@ func (s *Spinner) Stop(msg string, code int) {
 	if s.ticker != nil {
 		s.ticker.Stop()
 	}
+
 	close(s.stopCh)
 
 	oscClear(s.output)
@@ -139,7 +145,9 @@ func (s *Spinner) Stop(msg string, code int) {
 		if s.lastFrameLength > 0 {
 			_, _ = s.output.Write([]byte("\033[1A\r\033[J"))
 		}
+
 		var symbol string
+
 		switch code {
 		case 0:
 			symbol = green(StepSubmit)
@@ -148,13 +156,16 @@ func (s *Spinner) Stop(msg string, code int) {
 		default:
 			symbol = red(StepError)
 		}
+
 		finalMsg := msg
 		if finalMsg == "" {
 			finalMsg = currentMsg
 		}
+
 		if indicator == "timer" {
 			finalMsg = fmt.Sprintf("%s %s", finalMsg, formatTimer(start))
 		}
+
 		final := fmt.Sprintf("%s\n%s  %s\n", gray(Bar), symbol, finalMsg)
 		_, _ = s.output.Write([]byte(final))
 	}
@@ -164,6 +175,7 @@ func (s *Spinner) Stop(msg string, code int) {
 func (s *Spinner) IsCancelled() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	return s.isCancelled
 }
 
@@ -223,6 +235,7 @@ func (s *Spinner) currentDotCount() int {
 	if dots > 3 {
 		dots = 3
 	}
+
 	return dots
 }
 
@@ -234,10 +247,12 @@ func formatTimer(start time.Time) string {
 	d := time.Since(start)
 	secs := int(d.Seconds())
 	m := secs / 60
+
 	sec := secs % 60
 	if m > 0 {
 		return fmt.Sprintf("[%dm %ds]", m, sec)
 	}
+
 	return fmt.Sprintf("[%ds]", sec)
 }
 

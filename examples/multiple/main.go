@@ -21,6 +21,7 @@ func getProjectLabel(projectType string) string {
 	if label, exists := labels[projectType]; exists {
 		return label
 	}
+
 	return projectType
 }
 
@@ -85,6 +86,7 @@ func main() {
 	})
 
 	var detailed bool
+
 	if !confirmed {
 		tap.Outro(fmt.Sprintf("No problem! Thanks for trying the example, %s! 👋", name))
 		return
@@ -127,23 +129,29 @@ func main() {
 	if detailed {
 		border = tap.CyanBorder
 	}
+
 	tap.Box(
 		func() string {
 			if detailed {
 				var b strings.Builder
+
 				_, _ = fmt.Fprintf(&b, "👤 Name: %s\n", name)
 				_, _ = fmt.Fprintf(&b, "💻 Languages: %s\n", strings.Join(languages, ", "))
 				_, _ = fmt.Fprintf(&b, "🚀 Project Type: %s\n", getProjectLabel(projectType))
 				_, _ = fmt.Fprintf(&b, "📈 Experience Level: %s years\n", experience)
+
 				_, _ = fmt.Fprintf(&b, "\n🎯 Profile Analysis:\n")
 				if experience == "0" || experience == "1" {
 					_, _ = fmt.Fprintf(&b, "   You're just getting started - keep learning!\n")
 				} else {
 					_, _ = fmt.Fprintf(&b, "   Great! You have solid experience.\n")
 				}
+
 				_, _ = fmt.Fprintf(&b, "   %s development is a great choice!", getProjectLabel(projectType))
+
 				return b.String()
 			}
+
 			return fmt.Sprintf("%s • %s • %s • %s years experience", name, strings.Join(languages, ", "), getProjectLabel(projectType), experience)
 		}(),
 		"📋 PROFILE SUMMARY",

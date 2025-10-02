@@ -25,6 +25,7 @@ func TestStyledSelect_RendersWithSymbolAndBars(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	frames := out.GetFrames()
@@ -32,12 +33,14 @@ func TestStyledSelect_RendersWithSymbolAndBars(t *testing.T) {
 
 	// Should contain the title with message
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "Pick color:") {
 			found = true
 			break
 		}
 	}
+
 	assert.True(t, found, "Should render message")
 }
 
@@ -57,18 +60,21 @@ func TestStyledSelect_ShowsActiveInactiveOptions(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	frames := out.GetFrames()
 
 	// Should show active (●) and inactive (○) radio buttons
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, RadioActive) && strings.Contains(frame, RadioInactive) {
 			found = true
 			break
 		}
 	}
+
 	assert.True(t, found, "Should show both active and inactive radio buttons")
 }
 
@@ -88,18 +94,21 @@ func TestStyledSelect_ShowsHints(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	frames := out.GetFrames()
 
 	// Should show hint for active option
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "This is a hint") {
 			found = true
 			break
 		}
 	}
+
 	assert.True(t, found, "Should show hint for active option")
 }
 
@@ -111,6 +120,7 @@ func TestStyledSelect_ShowsSubmitState(t *testing.T) {
 	}
 
 	resCh := make(chan string, 1)
+
 	go func() {
 		resCh <- Select(context.Background(), SelectOptions[string]{
 			Message: "Choose:",
@@ -119,6 +129,7 @@ func TestStyledSelect_ShowsSubmitState(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	// Submit the selection
@@ -129,12 +140,14 @@ func TestStyledSelect_ShowsSubmitState(t *testing.T) {
 
 	// Should show submit state with dimmed selected option
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "Selected Item") {
 			found = true
 			break
 		}
 	}
+
 	assert.True(t, found, "Should show submitted option")
 }
 
@@ -146,6 +159,7 @@ func TestStyledSelect_ShowsCancelState(t *testing.T) {
 	}
 
 	resCh := make(chan any, 1)
+
 	go func() {
 		resCh <- Select(context.Background(), SelectOptions[string]{
 			Message: "Choose:",
@@ -154,10 +168,12 @@ func TestStyledSelect_ShowsCancelState(t *testing.T) {
 			Output:  out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	// Cancel the selection
 	in.EmitKeypress("\x03", Key{Name: "c", Ctrl: true})
+
 	res := <-resCh
 	// typed API returns zero value on cancel for string
 	assert.Equal(t, "", res, "Should return zero value on cancel")
@@ -166,12 +182,14 @@ func TestStyledSelect_ShowsCancelState(t *testing.T) {
 
 	// Should show cancel state
 	found := false
+
 	for _, frame := range frames {
 		if strings.Contains(frame, "Test Option") {
 			found = true
 			break
 		}
 	}
+
 	assert.True(t, found, "Should show cancelled option")
 }
 
@@ -186,6 +204,7 @@ func TestStyledSelect_InitialValuePositioning(t *testing.T) {
 	initialValue := "second"
 
 	resCh := make(chan string, 1)
+
 	go func() {
 		resCh <- Select(context.Background(), SelectOptions[string]{
 			Message:      "Choose:",
@@ -195,10 +214,12 @@ func TestStyledSelect_InitialValuePositioning(t *testing.T) {
 			Output:       out,
 		})
 	}()
+
 	time.Sleep(time.Millisecond)
 
 	// Submit immediately to test initial positioning
 	in.EmitKeypress("", Key{Name: "return"})
+
 	res := <-resCh
 
 	assert.Equal(t, "second", res, "Should select initial value")

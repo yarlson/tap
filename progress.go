@@ -89,6 +89,7 @@ func newProgress(opts ProgressOptions) *Progress {
 // Start begins the progress bar animation
 func (p *Progress) Start(msg string) {
 	p.mu.Lock()
+
 	if p.isActive {
 		p.mu.Unlock()
 		return
@@ -110,6 +111,7 @@ func (p *Progress) Start(msg string) {
 // Advance updates progress by the given step and optionally updates message
 func (p *Progress) Advance(step int, msg string) {
 	p.mu.Lock()
+
 	if !p.isActive {
 		p.mu.Unlock()
 		return
@@ -137,6 +139,7 @@ func (p *Progress) Message(msg string) {
 // Stop halts the progress bar and shows final state
 func (p *Progress) Stop(msg string, code int) {
 	p.mu.Lock()
+
 	if !p.isActive {
 		p.mu.Unlock()
 		return
@@ -150,12 +153,14 @@ func (p *Progress) Stop(msg string, code int) {
 	if p.ticker != nil {
 		p.ticker.Stop()
 	}
+
 	close(p.stopChan)
 
 	oscClear(p.output)
 
 	// Final render with state symbol
 	var symbol string
+
 	switch code {
 	case 0:
 		symbol = green(StepSubmit)
@@ -185,6 +190,7 @@ func (p *Progress) animate() {
 			return
 		case <-p.ticker.C:
 			p.mu.Lock()
+
 			if p.isActive {
 				p.frameIndex = (p.frameIndex + 1) % len(p.frames)
 				renderMsg := p.previousMsg
@@ -239,12 +245,16 @@ func (p *Progress) render(msg string) {
 
 	// Emit OSC 9;4 set if percent changed, before writing frame
 	p.mu.Lock()
+
 	pct := int(progress * 100.0)
+
 	emitSet := pct != p.lastPct
 	if emitSet {
 		p.lastPct = pct
 	}
+
 	p.mu.Unlock()
+
 	if emitSet {
 		oscSet(p.output, pct)
 	}
