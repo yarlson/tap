@@ -8,12 +8,9 @@ import (
 )
 
 func main() {
-	fmt.Println("Progress Bar Examples")
-	fmt.Println("This demonstrates different progress bar styles and behaviors")
-	fmt.Println()
-
+	tap.Intro("Styled Progress Bar Example")
 	// Example 1: File download simulation (heavy style)
-	fmt.Println("Example 1: File Download Simulation (Heavy Style)")
+	tap.Message("Example 1: File Download Simulation (Heavy Style)")
 
 	downloadProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "heavy",
@@ -32,10 +29,9 @@ func main() {
 	}
 
 	downloadProgress.Stop("Download complete!", 0)
-	fmt.Println()
 
 	// Example 2: Data processing (block style)
-	fmt.Println("Example 2: Data Processing (Block Style)")
+	tap.Message("Example 2: Data Processing (Block Style)")
 
 	processProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "block",
@@ -67,10 +63,9 @@ func main() {
 	}
 
 	processProgress.Stop("Processing complete!", 0)
-	fmt.Println()
 
 	// Example 3: Installation progress (light style)
-	fmt.Println("Example 3: Package Installation (Light Style)")
+	tap.Message("Example 3: Package Installation (Light Style)")
 
 	installProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "light",
@@ -94,10 +89,9 @@ func main() {
 	}
 
 	installProgress.Stop("Installation successful!", 0)
-	fmt.Println()
 
 	// Example 4: Task with message updates (no progress advancement)
-	fmt.Println("Example 4: Task Status Updates")
+	tap.Message("Example 4: Task with Message Updates")
 
 	statusProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "heavy",
@@ -129,10 +123,9 @@ func main() {
 	time.Sleep(400 * time.Millisecond)
 
 	statusProgress.Stop("Task completed successfully!", 0)
-	fmt.Println()
 
 	// Example 5: Demonstrate cancellation
-	fmt.Println("Example 5: Cancelled Task")
+	tap.Message("Example 5: Cancelled Task")
 
 	cancelProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "heavy",
@@ -150,10 +143,9 @@ func main() {
 
 	// Simulate cancellation
 	cancelProgress.Stop("Task was cancelled by user", 1)
-	fmt.Println()
 
 	// Example 6: Error scenario
-	fmt.Println("Example 6: Task with Error")
+	tap.Message("Example 6: Task with Error")
 
 	errorProgress := tap.NewProgress(tap.ProgressOptions{
 		Style: "block",
@@ -172,7 +164,6 @@ func main() {
 
 	// Simulate error
 	errorProgress.Stop("Operation failed with error", 2)
-	fmt.Println()
 
-	fmt.Println("All progress bar examples completed! 🎉")
+	tap.Outro("All progress bar examples completed successfully! 🎉")
 }

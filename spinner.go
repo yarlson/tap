@@ -36,6 +36,21 @@ type Spinner struct {
 
 	ticker *time.Ticker
 	stopCh chan struct{}
+
+	lastFrameLines int
+}
+
+func clearLines(out Writer, lines int) {
+	if out == nil || lines <= 0 {
+		return
+	}
+
+	for i := 0; i < lines; i++ {
+		_, _ = out.Write([]byte("\r\033[2K"))
+		if i < lines-1 {
+			_, _ = out.Write([]byte("\033[1A"))
+		}
+	}
 }
 
 // NewSpinner creates a new Spinner with defaults
@@ -90,7 +105,9 @@ func (s *Spinner) Start(msg string) {
 	s.frameIndex = 0
 	s.dotTick = 0
 	s.startTime = time.Now()
-	lastLen := s.lastFrameLength
+	lastLines := s.lastFrameLines
+	s.lastFrameLines = 0
+	s.lastFrameLength = 0
 	s.mu.Unlock()
 
 	s.ticker = time.NewTicker(s.delay)
@@ -99,11 +116,7 @@ func (s *Spinner) Start(msg string) {
 	// OSC 9;4 indeterminate spinner
 	oscSpin(s.output)
 
-	if lastLen > 0 {
-		if s.output != nil {
-			_, _ = s.output.Write([]byte("\033[1A\r\033[J"))
-		}
-	}
+	clearLines(s.output, lastLines)
 
 	s.render()
 }
@@ -131,6 +144,7 @@ func (s *Spinner) Stop(msg string, code int) {
 	currentMsg := s.message
 	start := s.startTime
 	indicator := s.indicator
+	lastLines := s.lastFrameLines
 	s.mu.Unlock()
 
 	if s.ticker != nil {
@@ -142,8 +156,8 @@ func (s *Spinner) Stop(msg string, code int) {
 	oscClear(s.output)
 
 	if s.output != nil {
-		if s.lastFrameLength > 0 {
-			_, _ = s.output.Write([]byte("\033[1A\r\033[J"))
+		if lastLines > 0 {
+			clearLines(s.output, lastLines)
 		}
 
 		var symbol string
@@ -166,9 +180,18 @@ func (s *Spinner) Stop(msg string, code int) {
 			finalMsg = fmt.Sprintf("%s %s", finalMsg, formatTimer(start))
 		}
 
-		final := fmt.Sprintf("%s\n%s  %s\n", gray(Bar), symbol, finalMsg)
+		final := strings.Join([]string{
+			gray(Bar),
+			fmt.Sprintf("%s  %s", symbol, finalMsg),
+			gray(Bar),
+		}, "\n") + "\n"
 		_, _ = s.output.Write([]byte(final))
 	}
+
+	s.mu.Lock()
+	s.lastFrameLines = 0
+	s.lastFrameLength = 0
+	s.mu.Unlock()
 }
 
 // IsCancelled reports whether Stop was called with cancel code (1)
@@ -201,6 +224,7 @@ func (s *Spinner) render() {
 	indicator := s.indicator
 	start := s.startTime
 	active := s.isActive
+	lastLines := s.lastFrameLines
 	s.mu.RUnlock()
 
 	if !active {
@@ -215,10 +239,15 @@ func (s *Spinner) render() {
 		displayMsg = msg + dots
 	}
 
-	content := fmt.Sprintf("%s\n%s  %s", gray(Bar), cyan(frame), displayMsg)
+	content := strings.Join([]string{
+		gray(Bar),
+		fmt.Sprintf("%s  %s", cyan(frame), displayMsg),
+		gray(Bar),
+	}, "\n")
+	lineCount := strings.Count(content, "\n") + 1
 
-	if s.lastFrameLength > 0 {
-		_, _ = s.output.Write([]byte("\033[1A\r\033[J"))
+	if lastLines > 0 {
+		clearLines(s.output, lastLines)
 	}
 
 	_, _ = s.output.Write([]byte(content))
@@ -227,6 +256,7 @@ func (s *Spinner) render() {
 	s.frameIndex = (s.frameIndex + 1) % len(s.frames)
 	s.dotTick = (s.dotTick + 1) % 24 // full cycle every 24 ticks
 	s.lastFrameLength = len(stripANSI(content))
+	s.lastFrameLines = lineCount
 	s.mu.Unlock()
 }
 
