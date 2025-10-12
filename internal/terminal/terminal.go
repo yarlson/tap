@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/eiannone/keyboard"
+	"github.com/noojuno/keyboard"
 	"golang.org/x/term"
 )
 
