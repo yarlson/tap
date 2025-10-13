@@ -15,6 +15,7 @@ func main() {
 			if len(s) < 6 {
 				return fmt.Errorf("password must be at least 6 characters")
 			}
+
 			return nil
 		},
 	})

@@ -70,6 +70,7 @@ func main() {
 		DefaultValue: "1",
 		Validate: func(s string) error {
 			var years int
+
 			_, err := fmt.Sscanf(s, "%d", &years)
 			if err != nil || years < 0 {
 				return fmt.Errorf("please enter a valid non-negative number")

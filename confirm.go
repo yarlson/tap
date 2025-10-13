@@ -48,6 +48,7 @@ func confirm(ctx context.Context, opts ConfirmOptions) bool {
 			// If we're submitting, show simplified version
 			if s == StateSubmit {
 				value := ""
+
 				if val, ok := p.ValueSnapshot().(bool); ok {
 					if val {
 						value = active
@@ -55,6 +56,7 @@ func confirm(ctx context.Context, opts ConfirmOptions) bool {
 						value = inactive
 					}
 				}
+
 				return title + gray(Bar) + "  " + dim(value)
 			}
 

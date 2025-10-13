@@ -518,6 +518,7 @@ func TestPrompt_ValidatesValueOnReturn(t *testing.T) {
 			if value == "valid" {
 				return nil
 			}
+
 			return NewValidationError("must be valid")
 		},
 	})
@@ -550,6 +551,7 @@ func TestPrompt_AcceptsValidValueWithValidation(t *testing.T) {
 			if value == "valid" {
 				return nil
 			}
+
 			return NewValidationError("must be valid")
 		},
 	})
@@ -677,6 +679,7 @@ func TestPrompt_AcceptsInvalidInitialValue(t *testing.T) {
 			if value == "valid" {
 				return nil
 			}
+
 			return NewValidationError("must be valid")
 		},
 	})
@@ -704,6 +707,7 @@ func TestPrompt_ValidatesValueWithErrorObject(t *testing.T) {
 			if value == "valid" {
 				return nil
 			}
+
 			return errors.New("must be valid")
 		},
 	})
@@ -739,15 +743,18 @@ func TestPrompt_ValidatesValueWithRegexValidation(t *testing.T) {
 			}
 			// Uppercase letters only
 			matched := true
+
 			for _, r := range str {
 				if r < 'A' || r > 'Z' {
 					matched = false
 					break
 				}
 			}
+
 			if matched && len(str) > 0 {
 				return nil
 			}
+
 			return NewValidationError("Invalid value")
 		},
 	})
@@ -783,15 +790,18 @@ func TestPrompt_AcceptsValidValueWithRegexValidation(t *testing.T) {
 			}
 			// Uppercase letters only
 			matched := true
+
 			for _, r := range str {
 				if r < 'A' || r > 'Z' {
 					matched = false
 					break
 				}
 			}
+
 			if matched && len(str) > 0 {
 				return nil
 			}
+
 			return NewValidationError("Invalid value")
 		},
 	})
