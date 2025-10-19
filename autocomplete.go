@@ -94,6 +94,7 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 
 			// Display input using local state
 			var displayInput string
+
 			if state.accepted == "" && len(inBuf) == 0 && opts.Placeholder != "" {
 				r := []rune(opts.Placeholder)
 				if len(r) > 0 {
@@ -114,6 +115,7 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
 				}
+
 				valueText := ""
 				if strings.TrimSpace(value) != "" {
 					valueText = "  " + dim(value)
@@ -126,20 +128,25 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
 				}
+
 				valueText := ""
 				if strings.TrimSpace(value) != "" {
 					valueText = "  " + strikethrough(dim(value))
 				}
+
 				result := title + gray(Bar) + valueText
 				if strings.TrimSpace(value) != "" {
 					result += "\n" + gray(Bar)
 				}
+
 				return result
 			default:
 				if len(state.suggestions) == 0 {
 					return title + cyan(Bar) + "  " + displayInput + "\n" + cyan(BarEnd)
 				}
+
 				var lines []string
+
 				for i, sg := range state.suggestions {
 					if i == state.selected {
 						lines = append(lines, fmt.Sprintf("%s %s", green(RadioActive), sg))
@@ -147,7 +154,9 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 						lines = append(lines, fmt.Sprintf("%s %s", dim(RadioInactive), dim(sg)))
 					}
 				}
+
 				sugs := strings.Join(lines, fmt.Sprintf("\n%s  ", cyan(Bar)))
+
 				return fmt.Sprintf("%s%s  %s\n%s  %s\n%s\n", title, cyan(Bar), displayInput, cyan(Bar), sugs, cyan(BarEnd))
 			}
 		},

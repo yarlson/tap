@@ -30,14 +30,16 @@ type Prompt struct {
 	output Writer
 	opts   PromptOptions
 
-	evCh    chan func(*promptState)
+	evCh    chan<- func(*promptState) // Write-only: for sending events (never blocks with unbounded queue)
+	evOutCh <-chan func(*promptState) // Read-only: for receiving events in the loop
 	doneCh  chan any
 	stopped chan struct{}
 
 	subscribers map[string][]EventHandler
 	preSubs     map[string][]EventHandler
 
-	snap atomic.Value
+	snap        atomic.Value
+	inEventLoop atomic.Bool // true when inside event loop processing
 
 	track bool
 
@@ -88,8 +90,18 @@ func (p *Prompt) snapshot() (ClackState, string) {
 // removed; handled inside loop
 
 // SetValue schedules a value update (for tests or programmatic flows).
-// In the event-loop refactor, this will post to the loop; for now, set under lock.
+// When called from within the event loop, it updates immediately.
+// When called from outside, it enqueues an event.
 func (p *Prompt) SetValue(v any) {
+	// If we're inside the event loop, modify state directly to avoid re-entrant channel send
+	if p.inEventLoop.Load() {
+		p.cur.Value = v
+		p.Emit("value", v)
+
+		return
+	}
+
+	// Outside the event loop, send an event
 	select {
 	case p.evCh <- func(s *promptState) { s.Value = v; p.Emit("value", v) }:
 	case <-p.stopped:
@@ -107,8 +119,54 @@ func NewPrompt(options PromptOptions) *Prompt {
 	return NewPromptWithTracking(options, true)
 }
 
+// unboundedQueue creates an unbounded event queue by using a goroutine with a slice buffer.
+// Returns input and output channels. Input never blocks. Output delivers events in order.
+func unboundedQueue() (chan<- func(*promptState), <-chan func(*promptState)) {
+	in := make(chan func(*promptState))
+	out := make(chan func(*promptState))
+
+	go func() {
+		var queue []func(*promptState)
+		for {
+			if len(queue) == 0 {
+				// Queue is empty, just receive
+				fn, ok := <-in
+				if !ok {
+					close(out)
+					return
+				}
+
+				queue = append(queue, fn)
+			} else {
+				// Queue has items, try to send the first one or receive more
+				select {
+				case out <- queue[0]:
+					queue = queue[1:]
+				case fn, ok := <-in:
+					if !ok {
+						// Input closed, drain queue
+						for _, f := range queue {
+							out <- f
+						}
+
+						close(out)
+
+						return
+					}
+
+					queue = append(queue, fn)
+				}
+			}
+		}
+	}()
+
+	return in, out
+}
+
 // NewPromptWithTracking creates a new prompt instance with specified tracking
 func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
+	evIn, evOut := unboundedQueue()
+
 	p := &Prompt{
 		input:       options.Input,
 		output:      options.Output,
@@ -116,7 +174,8 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 		subscribers: make(map[string][]EventHandler),
 		preSubs:     make(map[string][]EventHandler),
 		track:       trackValue,
-		evCh:        make(chan func(*promptState), 64),
+		evCh:        evIn,
+		evOutCh:     evOut,
 		doneCh:      make(chan any, 1),
 		stopped:     make(chan struct{}),
 	}
@@ -407,12 +466,16 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 	default:
 		// Regular printable characters - insert at cursor position
 		if char != "" && len(char) > 0 {
+			newRunes := runes
+
 			for _, r := range char {
 				if r >= 32 && r <= 126 { // Printable ASCII
-					newRunes := append(runes[:cursor], append([]rune{r}, runes[cursor:]...)...)
-					return string(newRunes), cursor + 1
+					newRunes = append(newRunes[:cursor], append([]rune{r}, newRunes[cursor:]...)...)
+					cursor++
 				}
 			}
+
+			return string(newRunes), cursor
 		}
 
 		return current, cursor
@@ -425,9 +488,13 @@ func (p *Prompt) loop() {
 	p.adoptPreSubscribers()
 	p.snap.Store(st)
 
-	for ev := range p.evCh {
+	for ev := range p.evOutCh {
 		p.cur = &st
+		p.inEventLoop.Store(true)
+
 		ev(&st)
+
+		p.inEventLoop.Store(false)
 		p.renderIfNeeded(&st)
 		p.snap.Store(st)
 

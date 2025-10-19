@@ -219,3 +219,46 @@ func TestStyledText_ShowsDefaultValue(t *testing.T) {
 		t.Errorf("Expected default value 'John', got %v", result)
 	}
 }
+
+func TestStyledText_HandlesPastedText(t *testing.T) {
+	mock := NewMockReadable()
+	out := NewMockWritable()
+
+	done := make(chan any, 1)
+
+	go func() {
+		result := Text(context.Background(), TextOptions{
+			Message: "Enter text:",
+			Input:   mock,
+			Output:  out,
+		})
+		done <- result
+	}()
+
+	time.Sleep(time.Millisecond)
+
+	// Simulate paste: many rapid single-character events (how terminals actually work)
+	// Test with 300+ characters to verify unbounded queue (smaller for race detector performance)
+	pastedText := ""
+	for i := 0; i < 5; i++ {
+		pastedText += "Hello, this is a longer pasted text to test the behavior! "
+	}
+
+	for _, ch := range pastedText {
+		mock.EmitKeypress(string(ch), Key{Name: string(ch)})
+	}
+
+	// Wait longer to ensure all events are processed before submitting
+	time.Sleep(100 * time.Millisecond)
+	mock.EmitKeypress("", Key{Name: "return"})
+
+	select {
+	case result := <-done:
+		// Should return all pasted characters
+		if result != pastedText {
+			t.Errorf("Expected '%s', got '%v'", pastedText, result)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Test timed out - app likely hung during paste simulation")
+	}
+}

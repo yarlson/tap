@@ -62,10 +62,12 @@ func password(ctx context.Context, opts PasswordOptions) string {
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
 				}
+
 				valueText := ""
 				if value != "" {
 					valueText = "  " + dim(strings.Repeat("●", len([]rune(value))))
 				}
+
 				return title + gray(Bar) + valueText
 
 			case StateCancel:
@@ -73,14 +75,17 @@ func password(ctx context.Context, opts PasswordOptions) string {
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
 				}
+
 				valueText := ""
 				if strings.TrimSpace(value) != "" {
 					valueText = "  " + strikethrough(dim(strings.Repeat("●", len([]rune(value)))))
 				}
+
 				result := title + gray(Bar) + valueText
 				if strings.TrimSpace(value) != "" {
 					result += "\n" + gray(Bar)
 				}
+
 				return result
 
 			default:

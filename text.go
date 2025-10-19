@@ -50,6 +50,7 @@ func text(ctx context.Context, opts TextOptions) string {
 
 			// Handle placeholder and cursor
 			var displayInput string
+
 			if userInput == "" && opts.Placeholder != "" {
 				// Show placeholder with inverted first character
 				if len(opts.Placeholder) > 0 {
@@ -72,10 +73,12 @@ func text(ctx context.Context, opts TextOptions) string {
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
 				}
+
 				valueText := ""
 				if value != "" {
 					valueText = "  " + dim(value)
 				}
+
 				return title + gray(Bar) + valueText
 
 			case StateCancel:
@@ -83,14 +86,17 @@ func text(ctx context.Context, opts TextOptions) string {
 				if val, ok := p.ValueSnapshot().(string); ok {
 					value = val
 				}
+
 				valueText := ""
 				if value != "" {
 					valueText = "  " + strikethrough(dim(value))
 				}
+
 				result := title + gray(Bar) + valueText
 				if strings.TrimSpace(value) != "" {
 					result += "\n" + gray(Bar)
 				}
+
 				return result
 
 			default:
