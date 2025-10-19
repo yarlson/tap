@@ -212,10 +212,6 @@ func renderStyledMultiSelect[T any](p *Prompt, opts MultiSelectOptions[T], st *s
 			}
 
 			text := label
-			if !checked {
-				text = dim(label)
-			}
-
 			if i == st.cursor {
 				line := fmt.Sprintf("%s %s", green(box), text)
 				if option.Hint != "" {
@@ -225,10 +221,10 @@ func renderStyledMultiSelect[T any](p *Prompt, opts MultiSelectOptions[T], st *s
 				lines = append(lines, line)
 			} else {
 				if checked {
-					line := fmt.Sprintf("%s %s", green(box), text)
+					line := fmt.Sprintf("%s %s", green(box), dim(text))
 					lines = append(lines, line)
 				} else {
-					line := fmt.Sprintf("%s %s", dim(box), text)
+					line := fmt.Sprintf("%s %s", dim(box), dim(text))
 					lines = append(lines, line)
 				}
 			}
