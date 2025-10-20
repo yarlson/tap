@@ -16,6 +16,8 @@ type Terminal struct {
 	keys      chan Key
 	done      chan struct{}
 	closeOnce sync.Once
+	Reader    *Reader
+	Writer    *Writer
 }
 
 // Reader provides read-only access to the key channel
@@ -33,10 +35,14 @@ func New() (*Terminal, error) {
 		return nil, fmt.Errorf("failed to open tty: %w", err)
 	}
 
+	keysChan := make(chan Key, 10)
+
 	term := &Terminal{
-		tty:  t,
-		keys: make(chan Key, 10), // Buffered to prevent blocking
-		done: make(chan struct{}),
+		tty:    t,
+		keys:   keysChan,
+		done:   make(chan struct{}),
+		Reader: &Reader{keys: keysChan},
+		Writer: &Writer{},
 	}
 
 	// Set up signal handling for clean shutdown
@@ -150,10 +156,67 @@ func (t *Terminal) Close() {
 	})
 }
 
+// On registers a callback for key events (compatibility adapter)
+func (r *Reader) On(event string, handler func(string, Key)) {
+	if event != "keypress" {
+		return
+	}
+
+	// Spawn goroutine to convert channel reads to callbacks
+	go func() {
+		for key := range r.keys {
+			char := ""
+			if key.Rune != 0 {
+				char = string(key.Rune)
+			}
+			handler(char, key)
+		}
+	}()
+}
+
 // Reader methods
 func (r *Reader) Read(p []byte) (int, error) {
 	return 0, nil
 }
+
+type resizeHandler struct {
+	handlers []func()
+	mu       sync.Mutex
+}
+
+var globalResizeHandler = &resizeHandler{}
+
+// On registers a callback for terminal events
+func (w *Writer) On(event string, handler func()) {
+	if event != "resize" {
+		return
+	}
+
+	globalResizeHandler.mu.Lock()
+	defer globalResizeHandler.mu.Unlock()
+
+	if len(globalResizeHandler.handlers) == 0 {
+		// First handler - set up signal
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGWINCH)
+		go func() {
+			for range sigChan {
+				globalResizeHandler.mu.Lock()
+				handlers := append([]func(){}, globalResizeHandler.handlers...)
+				globalResizeHandler.mu.Unlock()
+
+				for _, h := range handlers {
+					h()
+				}
+			}
+		}()
+	}
+
+	globalResizeHandler.handlers = append(globalResizeHandler.handlers, handler)
+}
+
+// Emit triggers an event (no-op for compatibility)
+func (w *Writer) Emit(event string) {}
 
 // Writer methods
 func (w *Writer) Write(b []byte) (int, error) {
