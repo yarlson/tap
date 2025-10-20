@@ -22,10 +22,7 @@ type Terminal struct {
 
 // Reader provides read-only access to the key channel
 type Reader struct {
-	keys     <-chan Key
-	handlers []func(string, Key)
-	mu       sync.Mutex
-	started  bool
+	keys <-chan Key
 }
 
 // Writer wraps stdout
@@ -165,36 +162,16 @@ func (r *Reader) On(event string, handler func(string, Key)) {
 		return
 	}
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	// Add handler to the list
-	r.handlers = append(r.handlers, handler)
-
-	// Start the broadcaster goroutine only once
-	if !r.started {
-		r.started = true
-		go r.broadcast()
-	}
-}
-
-// broadcast reads from keys channel and sends to all handlers
-func (r *Reader) broadcast() {
-	for key := range r.keys {
-		r.mu.Lock()
-		handlers := append([]func(string, Key){}, r.handlers...)
-		r.mu.Unlock()
-
-		char := ""
-		if key.Rune != 0 {
-			char = string(key.Rune)
-		}
-
-		// Call all handlers with the same key
-		for _, handler := range handlers {
+	// Spawn goroutine to convert channel reads to callbacks
+	go func() {
+		for key := range r.keys {
+			char := ""
+			if key.Rune != 0 {
+				char = string(key.Rune)
+			}
 			handler(char, key)
 		}
-	}
+	}()
 }
 
 // Reader methods
