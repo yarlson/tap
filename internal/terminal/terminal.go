@@ -35,13 +35,6 @@ func New() (*Terminal, error) {
 		return nil, fmt.Errorf("failed to open tty: %w", err)
 	}
 
-	// Put terminal in raw mode for immediate key reading
-	_, err = t.Raw()
-	if err != nil {
-		t.Close()
-		return nil, fmt.Errorf("failed to set raw mode: %w", err)
-	}
-
 	keysChan := make(chan Key, 10)
 
 	term := &Terminal{
