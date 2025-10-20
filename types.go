@@ -115,11 +115,11 @@ type Writer interface {
 }
 
 const (
-	CursorHide = "\x1b[?25l"
-	CursorShow = "\x1b[?25h"
-	EraseLine  = "\x1b[K"
-	CursorUp   = "\x1b[A"
-	EraseDown  = "\x1b[J"
+	CursorHide = terminal.CursorHide
+	CursorShow = terminal.CursorShow
+	EraseLine  = terminal.ClearLine
+	CursorUp   = terminal.CursorUp
+	EraseDown  = terminal.EraseDown
 )
 
 // Optional test I/O override. When set, helpers use these instead of opening
