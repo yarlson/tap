@@ -243,6 +243,18 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 
 	go p.loop()
 
+	if p.opts.InitialUserInput != "" {
+		p.evCh <- func(s *promptState) {
+			s.UserInput = p.opts.InitialUserInput
+			s.Cursor = len([]rune(s.UserInput))
+			p.Emit("userInput", s.UserInput)
+		}
+	}
+
+	p.evCh <- func(s *promptState) { p.handleInitialRender(s) }
+
+	// Register handlers AFTER queuing initial render to prevent
+	// race where first keypress is processed before prompt renders
 	if p.input != nil {
 		p.input.On("keypress", func(char string, key Key) {
 			select {
@@ -271,16 +283,6 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 			}
 		}()
 	}
-
-	if p.opts.InitialUserInput != "" {
-		p.evCh <- func(s *promptState) {
-			s.UserInput = p.opts.InitialUserInput
-			s.Cursor = len([]rune(s.UserInput))
-			p.Emit("userInput", s.UserInput)
-		}
-	}
-
-	p.evCh <- func(s *promptState) { p.handleInitialRender(s) }
 
 	return <-p.doneCh
 }
