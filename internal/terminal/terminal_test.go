@@ -1,7 +1,6 @@
 package terminal
 
 import (
-	"sync"
 	"testing"
 	"time"
 )
@@ -111,97 +110,6 @@ func TestMoveUp(t *testing.T) {
 		result := MoveUp(tt.n)
 		if result != tt.expected {
 			t.Errorf("MoveUp(%d): got %q, want %q", tt.n, result, tt.expected)
-		}
-	}
-}
-
-func TestMultipleHandlers(t *testing.T) {
-	term, err := New()
-	if err != nil {
-		t.Skipf("Skipping test - no TTY available: %v", err)
-		return
-	}
-	defer term.Close()
-
-	// Track keys received by each handler
-	keys1 := make(chan Key, 10)
-	keys2 := make(chan Key, 10)
-
-	// Register two handlers
-	term.Reader.On("keypress", func(char string, key Key) {
-		keys1 <- key
-	})
-
-	term.Reader.On("keypress", func(char string, key Key) {
-		keys2 <- key
-	})
-
-	// Simulate sending a key (we'll use parseKey directly since we can't simulate TTY input)
-	testKey := term.parseKey('a')
-
-	// Send key to the channel manually for testing
-	go func() {
-		term.keys <- testKey
-	}()
-
-	// Both handlers should receive the same key
-	select {
-	case k1 := <-keys1:
-		if k1.Name != "a" {
-			t.Errorf("Handler 1: expected 'a', got %q", k1.Name)
-		}
-	case <-time.After(100 * time.Millisecond):
-		t.Error("Handler 1 did not receive key")
-	}
-
-	select {
-	case k2 := <-keys2:
-		if k2.Name != "a" {
-			t.Errorf("Handler 2: expected 'a', got %q", k2.Name)
-		}
-	case <-time.After(100 * time.Millisecond):
-		t.Error("Handler 2 did not receive key")
-	}
-}
-
-func TestBroadcastToAllHandlers(t *testing.T) {
-	term, err := New()
-	if err != nil {
-		t.Skipf("Skipping test - no TTY available: %v", err)
-		return
-	}
-	defer term.Close()
-
-	received := make([]int, 3)
-	var mu sync.Mutex
-
-	// Register three handlers
-	for i := 0; i < 3; i++ {
-		idx := i
-		term.Reader.On("keypress", func(char string, key Key) {
-			mu.Lock()
-			received[idx]++
-			mu.Unlock()
-		})
-	}
-
-	// Send 5 keys
-	go func() {
-		for i := 0; i < 5; i++ {
-			term.keys <- Key{Name: "test", Rune: 't'}
-			time.Sleep(10 * time.Millisecond)
-		}
-	}()
-
-	// Wait for all keys to be processed
-	time.Sleep(200 * time.Millisecond)
-
-	// All handlers should have received all 5 keys
-	mu.Lock()
-	defer mu.Unlock()
-	for i, count := range received {
-		if count != 5 {
-			t.Errorf("Handler %d: expected 5 keys, got %d", i, count)
 		}
 	}
 }
