@@ -47,6 +47,9 @@ func New() (*Terminal, error) {
 		Writer: &Writer{},
 	}
 
+	// Wire Reader back to Terminal for lazy start
+	term.Reader.terminal = term
+
 	// Set up signal handling for clean shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -57,8 +60,8 @@ func New() (*Terminal, error) {
 		os.Exit(1)
 	}()
 
-	// Start key reading goroutine
-	go term.readKeys()
+	// Key reading will start lazily on first Reader.On() call
+	// This prevents the race condition where keys are read before handlers are registered
 
 	return term, nil
 }
