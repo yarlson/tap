@@ -34,6 +34,7 @@ type Prompt struct {
 	evOutCh <-chan func(*promptState) // Read-only: for receiving events in the loop
 	doneCh  chan any
 	stopped chan struct{}
+	ready   chan struct{} // Closed when loop has adopted subscribers
 
 	subscribers map[string][]EventHandler
 	preSubs     map[string][]EventHandler
@@ -178,6 +179,7 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 		evOutCh:     evOut,
 		doneCh:      make(chan any, 1),
 		stopped:     make(chan struct{}),
+		ready:       make(chan struct{}),
 	}
 	// Default TTY will be provided by a higher-level adapter when needed
 	p.snap.Store(promptState{State: StateInitial})
@@ -242,6 +244,10 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 	}
 
 	go p.loop()
+
+	// Wait for loop to adopt subscribers before registering handlers
+	// This prevents race where first keypress is processed before subscribers are ready
+	<-p.ready
 
 	if p.input != nil {
 		p.input.On("keypress", func(char string, key Key) {
@@ -486,6 +492,7 @@ func (p *Prompt) loop() {
 	st := promptState{State: StateInitial}
 
 	p.adoptPreSubscribers()
+	close(p.ready) // Signal that subscribers are ready
 	p.snap.Store(st)
 
 	for ev := range p.evOutCh {
