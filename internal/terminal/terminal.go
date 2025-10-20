@@ -167,6 +167,14 @@ func (r *Reader) On(event string, handler func(string, Key)) {
 		return
 	}
 
+	// Start key reading on first handler registration
+	// This ensures the handler goroutine is running before any keys are read
+	if r.terminal != nil {
+		r.terminal.startOnce.Do(func() {
+			go r.terminal.readKeys()
+		})
+	}
+
 	// Spawn goroutine to convert channel reads to callbacks
 	go func() {
 		for key := range r.keys {
