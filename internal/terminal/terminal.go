@@ -16,13 +16,15 @@ type Terminal struct {
 	keys      chan Key
 	done      chan struct{}
 	closeOnce sync.Once
+	startOnce sync.Once
 	Reader    *Reader
 	Writer    *Writer
 }
 
 // Reader provides read-only access to the key channel
 type Reader struct {
-	keys <-chan Key
+	keys     <-chan Key
+	terminal *Terminal
 }
 
 // Writer wraps stdout
