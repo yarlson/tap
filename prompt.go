@@ -241,10 +241,6 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 		}
 	}
 
-	// Adopt pre-registered subscribers before starting event loop
-	// This ensures handlers are active before any events can be emitted
-	p.adoptPreSubscribers()
-
 	go p.loop()
 
 	if p.input != nil {
@@ -489,7 +485,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 func (p *Prompt) loop() {
 	st := promptState{State: StateInitial}
 
-	// Subscribers already adopted in Prompt() before loop started
+	p.adoptPreSubscribers()
 	p.snap.Store(st)
 
 	for ev := range p.evOutCh {
