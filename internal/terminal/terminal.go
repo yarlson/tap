@@ -149,10 +149,12 @@ func (t *Terminal) Write(b []byte) (int, error) {
 // Close releases terminal resources
 func (t *Terminal) Close() {
 	t.closeOnce.Do(func() {
-		close(t.done)
+		// Close TTY first to unblock ReadRune()
 		if t.tty != nil {
 			t.tty.Close()
 		}
+		// Then signal done
+		close(t.done)
 	})
 }
 
@@ -163,7 +165,9 @@ func (r *Reader) On(event string, handler func(string, Key)) {
 	}
 
 	// Spawn goroutine to convert channel reads to callbacks
+	ready := make(chan struct{})
 	go func() {
+		close(ready) // Signal that we're about to start reading
 		for key := range r.keys {
 			char := ""
 			if key.Rune != 0 {
@@ -172,6 +176,7 @@ func (r *Reader) On(event string, handler func(string, Key)) {
 			handler(char, key)
 		}
 	}()
+	<-ready // Wait for goroutine to start
 }
 
 // Reader methods
