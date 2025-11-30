@@ -24,7 +24,6 @@ import (
 All helpers create and close a terminal per call, unless I/O is overridden in tests.
 
 - `func tap.Text(ctx context.Context, opts tap.TextOptions) string`
-
   - Options:
     - `Message string`
     - `Placeholder string`
@@ -35,7 +34,6 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
     - `Output tap.Writer` (optional)
 
 - `func tap.Autocomplete(ctx context.Context, opts tap.AutocompleteOptions) string`
-
   - Options:
     - `Message string`
     - `Placeholder string`
@@ -52,12 +50,10 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
     - `Ctrl+C`/`Esc` cancel and return an empty string
 
 - `func tap.Password(ctx context.Context, opts tap.PasswordOptions) string`
-
   - Same options as `TextOptions` (input is masked in the UI)
   - Includes `Input tap.Reader` and `Output tap.Writer`
 
 - `func tap.Confirm(ctx context.Context, opts tap.ConfirmOptions) bool`
-
   - Options:
     - `Message string`
     - `Active string` (label for true)
@@ -74,7 +70,6 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 - `func tap.MultiSelect[T any](ctx context.Context, opts tap.MultiSelectOptions[T]) []T`
 
 - Spinner
-
   - `type tap.SpinnerOptions struct { Indicator string; Frames []string; Delay time.Duration; Output tap.Writer; CancelMessage, ErrorMessage string }`
   - `type tap.Spinner struct { /* unexported */ }`
   - `func tap.NewSpinner(opts tap.SpinnerOptions) *tap.Spinner`
@@ -84,7 +79,6 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - `func (s *tap.Spinner) IsCancelled() bool`
 
 - Progress
-
   - `type tap.ProgressOptions struct { Style string; Max, Size int; Output tap.Writer }`
   - `type tap.Progress struct { /* unexported */ }`
   - `func tap.NewProgress(opts tap.ProgressOptions) *tap.Progress`
@@ -94,7 +88,6 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - `func (p *tap.Progress) Stop(msg string, code int)` // 0=success, 1=cancel, >1=error
 
 - Stream (live output)
-
   - `type tap.StreamOptions struct { ShowTimer bool; Output tap.Writer }`
   - `type tap.Stream struct { /* unexported */ }`
   - `func tap.NewStream(opts tap.StreamOptions) *tap.Stream`
@@ -117,13 +110,11 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
 ## Behavior and conventions
 
 - **Context Support**
-
   - All interactive prompt functions (Text, Password, Confirm, Select, MultiSelect) require a `context.Context` as the first parameter
   - Use `context.Background()` for basic usage, or pass custom contexts for cancellation/timeouts
   - If context is cancelled, prompts return zero values (empty string, false, etc.)
 
 - **Typed returns**
-
   - `Text`/`Password` → `string`
   - `Confirm` → `bool`
   - `Select[T]` → `T`
@@ -131,7 +122,6 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - If the user cancels, helpers return a reasonable zero value (`""`, `false`, `var zero T`).
 
 - **Keybindings**
-
   - Navigate: Arrow keys or `h`/`j`/`k`/`l`
   - Submit: `Enter`
   - Cancel: `Ctrl+C` or `Esc`
@@ -139,7 +129,6 @@ All helpers create and close a terminal per call, unless I/O is overridden in te
   - Accept suggestion (Autocomplete): `Tab`
 
 - **Validation errors** (Text/Password)
-
   - Provide `Validate: func(string) error { ... }`
   - If non-nil error is returned on submit, the prompt stays active and shows a yellow error line below the input:
     - Yellow left bar for the input line

@@ -8,4 +8,3 @@ Run:
 - From this folder: `go run .`
 
 ![Demo](./demo.gif)
-
