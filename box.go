@@ -260,6 +260,7 @@ func truncateToWidth(s string, width int) string {
 		if tw == 0 {
 			if len(token) > 0 && token[0] == '\x1b' {
 				sawANSI = true
+
 				if token == Reset {
 					sawReset = true
 				}
@@ -385,7 +386,7 @@ func wrapTextHardWidth(s string, width int) []string {
 
 			appendToken(segment{token, tw, breakAfter})
 
-			for width > 0 && currentWidth > width {
+			for currentWidth > width {
 				if lastBreak >= 0 {
 					flush(lastBreak)
 					dropTokens(lastBreak + 1)

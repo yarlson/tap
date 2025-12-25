@@ -241,12 +241,19 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 		}
 	}
 
+	// Adopt pre-subscribers synchronously BEFORE starting the loop or registering
+	// keypress handlers. This fixes a race condition where the first keypress could
+	// be ignored if it arrived before adoptPreSubscribers() ran in the loop goroutine.
+	p.adoptPreSubscribers()
+
 	go p.loop()
 
 	if p.input != nil {
 		p.input.On("keypress", func(char string, key Key) {
 			select {
-			case p.evCh <- func(s *promptState) { p.handleKey(s, char, key) }:
+			case p.evCh <- func(s *promptState) {
+				p.handleKey(s, char, key)
+			}:
 			case <-p.stopped:
 			}
 		})
@@ -485,7 +492,8 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 func (p *Prompt) loop() {
 	st := promptState{State: StateInitial}
 
-	p.adoptPreSubscribers()
+	// Note: adoptPreSubscribers() is now called synchronously in Prompt() before
+	// the loop starts, to avoid a race condition with keypress events.
 	p.snap.Store(st)
 
 	for ev := range p.evOutCh {
@@ -660,30 +668,47 @@ func runWithTerminal[T any](fn func(Reader, Writer) T) T {
 		var zero T
 		return zero
 	}
-	defer t.Close()
 
 	return fn(t.Reader, t.Writer)
 }
 
 // resolveWriter returns the output writer and an optional terminal to close.
+// For simple output operations (like Intro, Outro, Message), we use a lightweight
+// stdout wrapper that doesn't start a readKeys goroutine. This prevents zombie
+// terminals from stealing keypresses from interactive prompts.
 func resolveWriter() (Writer, *terminal.Terminal) {
 	// Check if we have override I/O set
 	if out := getOverrideWriter(); out != nil {
 		return out, nil
 	}
 
-	// Need to create a new terminal
-	t, err := terminal.New()
-	if err != nil {
-		return nil, nil
-	}
+	// Return a simple stdout writer - no full terminal needed for output-only operations.
+	// This avoids the bug where resolveWriter would create a terminal that keeps reading
+	// keys and interferes with interactive prompts.
+	return &stdoutWriter{}, nil
+}
 
-	return t.Writer, t
+// stdoutWriter is a simple Writer implementation that writes to stdout.
+// It doesn't start any goroutines or open a TTY, making it safe to use
+// for output-only utilities like Intro, Outro, Message, etc.
+type stdoutWriter struct{}
+
+func (w *stdoutWriter) Write(p []byte) (int, error) {
+	return os.Stdout.Write(p)
+}
+
+func (w *stdoutWriter) On(event string, handler func()) {
+	// No-op: output-only writer doesn't need resize handling
+}
+
+func (w *stdoutWriter) Emit(event string) {
+	// No-op: output-only writer doesn't emit events
 }
 
 // getOverrideWriter returns the override writer if set
 func getOverrideWriter() Writer {
-	return runWithTerminal(func(in Reader, out Writer) Writer {
-		return out
-	})
+	// Just return the override writer directly - do NOT create a terminal here!
+	// Creating a terminal just to check for an override would leave a zombie
+	// readKeys goroutine that steals keypresses from the real terminal.
+	return ioWriter
 }

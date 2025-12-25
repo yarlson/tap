@@ -18,7 +18,6 @@ Integration guidance:
 Key files and their roles (examples taken from this project):
 
 - Root package (tap):
-
   - text.go, password.go, confirm.go: Interactive prompts using Prompt with Render closures and state snapshots.
   - select.go, multiselect.go: Typed selections with generics, cursor navigation via “cursor” events, and styled rendering.
   - spinner.go, progress.go, stream.go: Long‑running UI components with Start/Message/Stop, frame rendering, and OSC 9;4 integrations (osc.go).
@@ -33,7 +32,6 @@ Key files and their roles (examples taken from this project):
   - assets/demo.gif: Visual demo asset.
 
 - Internal terminal layer:
-
   - internal/terminal/terminal.go: Keyboard input, ESC sequence handling, resize notifications, signal cleanup, and Reader/Writer implementations.
 
 - Examples:

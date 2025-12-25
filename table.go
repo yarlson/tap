@@ -365,6 +365,7 @@ func truncateTableText(text string, width int) string {
 			if tw == 0 {
 				if len(token) > 0 && token[0] == '\x1b' {
 					sawANSI = true
+
 					if token == Reset {
 						sawReset = true
 					}
@@ -406,6 +407,7 @@ func truncateTableText(text string, width int) string {
 		if tw == 0 {
 			if len(token) > 0 && token[0] == '\x1b' {
 				sawANSI = true
+
 				if token == Reset {
 					sawReset = true
 				}
