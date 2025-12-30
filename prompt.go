@@ -669,6 +669,11 @@ func runWithTerminal[T any](fn func(Reader, Writer) T) T {
 		return zero
 	}
 
+	defer func() {
+		// Close the terminal to restore the TTY to its original state
+		_ = t.Close()
+	}()
+
 	return fn(t.Reader, t.Writer)
 }
 

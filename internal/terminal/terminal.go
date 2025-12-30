@@ -213,6 +213,34 @@ func (t *Terminal) Keys() <-chan Key {
 	return t.keys
 }
 
+// Close closes the terminal and restores the TTY to its original state
+func (t *Terminal) Close() error {
+	terminalMu.Lock()
+	defer terminalMu.Unlock()
+
+	// Signal the readKeys goroutine to stop
+	select {
+	case <-t.done:
+		// Already closed
+	default:
+		close(t.done)
+	}
+
+	// Close the TTY
+	if t.tty != nil {
+		if err := t.tty.Close(); err != nil {
+			return fmt.Errorf("failed to close tty: %w", err)
+		}
+	}
+
+	// Clear the global terminal reference if this is the main one
+	if globalTerminal == t {
+		globalTerminal = nil
+	}
+
+	return nil
+}
+
 // Write implements io.Writer
 func (t *Terminal) Write(b []byte) (int, error) {
 	return os.Stdout.Write(b)
@@ -288,7 +316,11 @@ func (w *Writer) On(event string, handler func()) {
 	if len(globalResizeHandler.handlers) == 0 {
 		// First handler - set up signal
 		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGWINCH)
+		if runtime.GOOS == "windows" {
+			signal.Notify(sigChan)
+		} else {
+			signal.Notify(sigChan, syscall.SIGWINCH)
+		}
 
 		go func() {
 			for range sigChan {
