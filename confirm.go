@@ -1,14 +1,18 @@
 package tap
 
-import "context"
+import (
+	"context"
+
+	"github.com/yarlson/tap/internal/terminal"
+)
 
 // Confirm creates a styled confirm prompt
 func Confirm(ctx context.Context, opts ConfirmOptions) bool {
 	if opts.Input != nil && opts.Output != nil {
-		return confirm(ctx, opts)
+		return confirm(ctx, opts, nil)
 	}
 
-	return runWithTerminal(func(in Reader, out Writer) bool {
+	return runWithTerminalAndRef(func(in Reader, out Writer, term *terminal.Terminal) bool {
 		if opts.Input == nil {
 			opts.Input = in
 		}
@@ -17,12 +21,12 @@ func Confirm(ctx context.Context, opts ConfirmOptions) bool {
 			opts.Output = out
 		}
 
-		return confirm(ctx, opts)
+		return confirm(ctx, opts, term)
 	})
 }
 
 // confirm implements the core confirm prompt logic
-func confirm(ctx context.Context, opts ConfirmOptions) bool {
+func confirm(ctx context.Context, opts ConfirmOptions, term *terminal.Terminal) bool {
 	active := opts.Active
 	if active == "" {
 		active = "Yes"
@@ -83,6 +87,11 @@ func confirm(ctx context.Context, opts ConfirmOptions) bool {
 	p.On("confirm", func(val bool) {})
 
 	p.SetValue(currentValue)
+
+	// Set terminal reference so prompt can listen for Ctrl+C
+	if term != nil {
+		p.SetTerminal(term)
+	}
 
 	v := p.Prompt(ctx)
 	if b, ok := v.(bool); ok {

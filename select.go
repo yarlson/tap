@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 // styledSelectState holds the state for a styled select prompt
@@ -15,10 +17,10 @@ type styledSelectState[T any] struct {
 // Select creates a styled select prompt
 func Select[T any](ctx context.Context, opts SelectOptions[T]) T {
 	if opts.Input != nil && opts.Output != nil {
-		return selectInternal(ctx, opts)
+		return selectInternal(ctx, opts, nil)
 	}
 
-	return runWithTerminal(func(in Reader, out Writer) T {
+	return runWithTerminalAndRef(func(in Reader, out Writer, term *terminal.Terminal) T {
 		if opts.Input == nil {
 			opts.Input = in
 		}
@@ -27,12 +29,12 @@ func Select[T any](ctx context.Context, opts SelectOptions[T]) T {
 			opts.Output = out
 		}
 
-		return selectInternal(ctx, opts)
+		return selectInternal(ctx, opts, term)
 	})
 }
 
 // selectInternal implements the core select prompt logic
-func selectInternal[T any](ctx context.Context, opts SelectOptions[T]) T {
+func selectInternal[T any](ctx context.Context, opts SelectOptions[T], term *terminal.Terminal) T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
 		coreOptions[i] = SelectOption[T]{
@@ -87,6 +89,11 @@ func selectInternal[T any](ctx context.Context, opts SelectOptions[T]) T {
 		newValue := state.options[state.cursor].Value
 		styledPrompt.SetImmediateValue(newValue)
 	})
+
+	// Set terminal reference so prompt can listen for Ctrl+C
+	if term != nil {
+		styledPrompt.SetTerminal(term)
+	}
 
 	v := styledPrompt.Prompt(ctx)
 	if t, ok := v.(T); ok {

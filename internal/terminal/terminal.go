@@ -44,6 +44,7 @@ type Terminal struct {
 	tty       *tty.TTY
 	keys      chan Key
 	done      chan struct{}
+	cancel    chan struct{} // Signal for Ctrl+C to cancel active prompts
 	closeOnce sync.Once
 	Reader    *Reader
 	Writer    *Writer
@@ -82,6 +83,7 @@ func New() (*Terminal, error) {
 			tty:       globalTerminal.tty,
 			keys:      globalTerminal.keys,
 			done:      globalTerminal.done,
+			cancel:    globalTerminal.cancel,
 			Reader:    globalTerminal.Reader,
 			Writer:    globalTerminal.Writer,
 			closeOnce: sync.Once{}, // Fresh once for this wrapper
@@ -98,11 +100,13 @@ func New() (*Terminal, error) {
 
 	keysChan := make(chan Key, 10)
 	doneChan := make(chan struct{})
+	cancelChan := make(chan struct{})
 
 	term := &Terminal{
 		tty:    t,
 		keys:   keysChan,
 		done:   doneChan,
+		cancel: cancelChan,
 		Reader: &Reader{keys: keysChan},
 		Writer: &Writer{},
 	}
@@ -115,8 +119,13 @@ func New() (*Terminal, error) {
 
 	go func() {
 		<-sigChan
-		fmt.Print(CursorShow, "\n")
-		os.Exit(1)
+		// Signal cancel to active prompts instead of exiting
+		select {
+		case <-cancelChan:
+			// Already closed
+		default:
+			close(cancelChan)
+		}
 	}()
 
 	// Start key reading goroutine
@@ -211,6 +220,11 @@ func (t *Terminal) parseKey(r rune) Key {
 // Keys returns the read-only key channel
 func (t *Terminal) Keys() <-chan Key {
 	return t.keys
+}
+
+// Cancel returns the cancel channel that signals Ctrl+C
+func (t *Terminal) Cancel() <-chan struct{} {
+	return t.cancel
 }
 
 // Close closes the terminal and restores the TTY to its original state

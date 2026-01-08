@@ -3,15 +3,17 @@ package tap
 import (
 	"context"
 	"strings"
+
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 // Password creates a styled password input prompt that masks user input
 func Password(ctx context.Context, opts PasswordOptions) string {
 	if opts.Input != nil && opts.Output != nil {
-		return password(ctx, opts)
+		return password(ctx, opts, nil)
 	}
 
-	return runWithTerminal(func(in Reader, out Writer) string {
+	return runWithTerminalAndRef(func(in Reader, out Writer, term *terminal.Terminal) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}
@@ -20,12 +22,12 @@ func Password(ctx context.Context, opts PasswordOptions) string {
 			opts.Output = out
 		}
 
-		return password(ctx, opts)
+		return password(ctx, opts, term)
 	})
 }
 
 // password implements the core password prompt logic
-func password(ctx context.Context, opts PasswordOptions) string {
+func password(ctx context.Context, opts PasswordOptions, term *terminal.Terminal) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
@@ -97,6 +99,11 @@ func password(ctx context.Context, opts PasswordOptions) string {
 	p.On("userInput", func(input string) {
 		p.SetImmediateValue(input)
 	})
+
+	// Set terminal reference so prompt can listen for Ctrl+C
+	if term != nil {
+		p.SetTerminal(term)
+	}
 
 	v := p.Prompt(ctx)
 	if s, ok := v.(string); ok {

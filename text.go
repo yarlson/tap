@@ -3,15 +3,17 @@ package tap
 import (
 	"context"
 	"strings"
+
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 // Text creates a styled text input prompt
 func Text(ctx context.Context, opts TextOptions) string {
 	if opts.Input != nil && opts.Output != nil {
-		return text(ctx, opts)
+		return text(ctx, opts, nil)
 	}
 
-	return runWithTerminal(func(in Reader, out Writer) string {
+	return runWithTerminalAndRef(func(in Reader, out Writer, term *terminal.Terminal) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}
@@ -20,12 +22,12 @@ func Text(ctx context.Context, opts TextOptions) string {
 			opts.Output = out
 		}
 
-		return text(ctx, opts)
+		return text(ctx, opts, term)
 	})
 }
 
 // text implements the core text prompt logic
-func text(ctx context.Context, opts TextOptions) string {
+func text(ctx context.Context, opts TextOptions, term *terminal.Terminal) string {
 	var validate func(any) error
 	if opts.Validate != nil {
 		validate = func(v any) error {
@@ -108,6 +110,11 @@ func text(ctx context.Context, opts TextOptions) string {
 	p.On("userInput", func(input string) {
 		p.SetImmediateValue(input)
 	})
+
+	// Set terminal reference so prompt can listen for Ctrl+C
+	if term != nil {
+		p.SetTerminal(term)
+	}
 
 	v := p.Prompt(ctx)
 	if s, ok := v.(string); ok {
