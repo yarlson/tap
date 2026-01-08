@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 type styledMultiSelectState[T any] struct {
@@ -16,10 +18,10 @@ type styledMultiSelectState[T any] struct {
 // MultiSelect renders a styled multi-select and returns selected values.
 func MultiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 	if opts.Input != nil && opts.Output != nil {
-		return multiSelect(ctx, opts)
+		return multiSelect(ctx, opts, nil)
 	}
 
-	return runWithTerminal(func(in Reader, out Writer) []T {
+	return runWithTerminalAndRef(func(in Reader, out Writer, term *terminal.Terminal) []T {
 		if opts.Input == nil {
 			opts.Input = in
 		}
@@ -28,12 +30,12 @@ func MultiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 			opts.Output = out
 		}
 
-		return multiSelect(ctx, opts)
+		return multiSelect(ctx, opts, term)
 	})
 }
 
 // multiSelect implements the core multiselect prompt logic
-func multiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
+func multiSelect[T any](ctx context.Context, opts MultiSelectOptions[T], term *terminal.Terminal) []T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
 		coreOptions[i] = SelectOption[T]{Value: opt.Value, Label: opt.Label, Hint: opt.Hint}
@@ -148,6 +150,11 @@ func multiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 			prompt.SetImmediateValue(cur)
 		}
 	})
+
+	// Set terminal reference so prompt can listen for Ctrl+C
+	if term != nil {
+		prompt.SetTerminal(term)
+	}
 
 	v := prompt.Prompt(ctx)
 	if t, ok := v.([]T); ok {

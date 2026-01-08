@@ -43,7 +43,7 @@ func Intro(title string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s  %s\n%s\n", gray(BarStart), bold(title), gray(Bar))
+	_, _ = fmt.Fprintf(out, "%s  %s\n", gray(BarStart), bold(title))
 }
 
 // Outro prints a final outro (bar line, then bar end + message).

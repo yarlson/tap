@@ -4,15 +4,17 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 // Autocomplete renders a text prompt with inline suggestions.
 func Autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 	if opts.Input != nil && opts.Output != nil {
-		return autocomplete(ctx, opts)
+		return autocomplete(ctx, opts, nil)
 	}
 
-	return runWithTerminal(func(in Reader, out Writer) string {
+	return runWithTerminalAndRef(func(in Reader, out Writer, term *terminal.Terminal) string {
 		if opts.Input == nil {
 			opts.Input = in
 		}
@@ -21,7 +23,7 @@ func Autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 			opts.Output = out
 		}
 
-		return autocomplete(ctx, opts)
+		return autocomplete(ctx, opts, term)
 	})
 }
 
@@ -44,7 +46,7 @@ func (st *acState) clampSelected() {
 	}
 }
 
-func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
+func autocomplete(ctx context.Context, opts AutocompleteOptions, term *terminal.Terminal) string {
 	// Wrap validator to match PromptOptions
 	var validate func(any) error
 	if opts.Validate != nil {
@@ -237,6 +239,11 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 			p.SetValue(string(inBuf))
 		}
 	})
+
+	// Set terminal reference so prompt can listen for Ctrl+C
+	if term != nil {
+		p.SetTerminal(term)
+	}
 
 	v := p.Prompt(ctx)
 	if s, ok := v.(string); ok {

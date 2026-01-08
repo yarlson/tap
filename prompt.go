@@ -45,6 +45,7 @@ type Prompt struct {
 
 	cleanup func()
 	cur     *promptState
+	term    *terminal.Terminal // Reference to the terminal for listening to cancel signal
 }
 
 type promptState struct {
@@ -178,7 +179,9 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 		evOutCh:     evOut,
 		doneCh:      make(chan any, 1),
 		stopped:     make(chan struct{}),
+		term:        nil, // Will be set by runWithTerminal
 	}
+
 	// Default TTY will be provided by a higher-level adapter when needed
 	p.snap.Store(promptState{State: StateInitial})
 
@@ -188,6 +191,11 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 // On subscribes to an event
 func (p *Prompt) On(event string, handler any) {
 	p.preSubs[event] = append(p.preSubs[event], handler)
+}
+
+// SetTerminal sets the terminal reference for listening to cancel signals
+func (p *Prompt) SetTerminal(t *terminal.Terminal) {
+	p.term = t
 }
 
 // Emit emits an event to all subscribers
@@ -274,6 +282,20 @@ func (p *Prompt) Prompt(ctx context.Context) any {
 
 			select {
 			case p.evCh <- func(s *promptState) { p.handleAbort(s) }:
+			case <-p.stopped:
+			}
+		}()
+	}
+
+	// Listen for terminal cancel signal (Ctrl+C)
+	if p.term != nil {
+		go func() {
+			select {
+			case <-p.term.Cancel():
+				select {
+				case p.evCh <- func(s *promptState) { p.handleAbort(s) }:
+				case <-p.stopped:
+				}
 			case <-p.stopped:
 			}
 		}()
@@ -669,7 +691,34 @@ func runWithTerminal[T any](fn func(Reader, Writer) T) T {
 		return zero
 	}
 
+	defer func() {
+		// Close the terminal to restore the TTY to its original state
+		_ = t.Close()
+	}()
+
 	return fn(t.Reader, t.Writer)
+}
+
+// runWithTerminalAndRef creates a terminal and passes both I/O and the terminal reference
+// This is used internally to allow prompts to listen for Ctrl+C signals
+func runWithTerminalAndRef[T any](fn func(Reader, Writer, *terminal.Terminal) T) T {
+	if ioReader != nil || ioWriter != nil {
+		// When using mock I/O, we can't provide a real terminal
+		return fn(ioReader, ioWriter, nil)
+	}
+
+	t, err := terminal.New()
+	if err != nil {
+		var zero T
+		return zero
+	}
+
+	defer func() {
+		// Close the terminal to restore the TTY to its original state
+		_ = t.Close()
+	}()
+
+	return fn(t.Reader, t.Writer, t)
 }
 
 // resolveWriter returns the output writer and an optional terminal to close.

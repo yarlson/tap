@@ -44,6 +44,7 @@ type Terminal struct {
 	tty       *tty.TTY
 	keys      chan Key
 	done      chan struct{}
+	cancel    chan struct{} // Signal for Ctrl+C to cancel active prompts
 	closeOnce sync.Once
 	Reader    *Reader
 	Writer    *Writer
@@ -82,6 +83,7 @@ func New() (*Terminal, error) {
 			tty:       globalTerminal.tty,
 			keys:      globalTerminal.keys,
 			done:      globalTerminal.done,
+			cancel:    globalTerminal.cancel,
 			Reader:    globalTerminal.Reader,
 			Writer:    globalTerminal.Writer,
 			closeOnce: sync.Once{}, // Fresh once for this wrapper
@@ -98,11 +100,13 @@ func New() (*Terminal, error) {
 
 	keysChan := make(chan Key, 10)
 	doneChan := make(chan struct{})
+	cancelChan := make(chan struct{})
 
 	term := &Terminal{
 		tty:    t,
 		keys:   keysChan,
 		done:   doneChan,
+		cancel: cancelChan,
 		Reader: &Reader{keys: keysChan},
 		Writer: &Writer{},
 	}
@@ -115,8 +119,13 @@ func New() (*Terminal, error) {
 
 	go func() {
 		<-sigChan
-		fmt.Print(CursorShow, "\n")
-		os.Exit(1)
+		// Signal cancel to active prompts instead of exiting
+		select {
+		case <-cancelChan:
+			// Already closed
+		default:
+			close(cancelChan)
+		}
 	}()
 
 	// Start key reading goroutine
@@ -213,6 +222,39 @@ func (t *Terminal) Keys() <-chan Key {
 	return t.keys
 }
 
+// Cancel returns the cancel channel that signals Ctrl+C
+func (t *Terminal) Cancel() <-chan struct{} {
+	return t.cancel
+}
+
+// Close closes the terminal and restores the TTY to its original state
+func (t *Terminal) Close() error {
+	terminalMu.Lock()
+	defer terminalMu.Unlock()
+
+	// Signal the readKeys goroutine to stop
+	select {
+	case <-t.done:
+		// Already closed
+	default:
+		close(t.done)
+	}
+
+	// Close the TTY
+	if t.tty != nil {
+		if err := t.tty.Close(); err != nil {
+			return fmt.Errorf("failed to close tty: %w", err)
+		}
+	}
+
+	// Clear the global terminal reference if this is the main one
+	if globalTerminal == t {
+		globalTerminal = nil
+	}
+
+	return nil
+}
+
 // Write implements io.Writer
 func (t *Terminal) Write(b []byte) (int, error) {
 	return os.Stdout.Write(b)
@@ -288,7 +330,11 @@ func (w *Writer) On(event string, handler func()) {
 	if len(globalResizeHandler.handlers) == 0 {
 		// First handler - set up signal
 		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGWINCH)
+		if runtime.GOOS == "windows" {
+			signal.Notify(sigChan)
+		} else {
+			signal.Notify(sigChan, syscall.SIGWINCH)
+		}
 
 		go func() {
 			for range sigChan {
