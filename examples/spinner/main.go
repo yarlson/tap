@@ -26,5 +26,14 @@ func main() {
 	custom.Start("Working")
 	time.Sleep(1200 * time.Millisecond)
 	custom.Stop("Complete", 0)
-	tap.Outro("All examples completed successfully! 🎉")
+
+	// Example 4: Stop with hint (second line)
+	hintSpin := tap.NewSpinner(tap.SpinnerOptions{})
+	hintSpin.Start("Installing packages")
+	time.Sleep(1500 * time.Millisecond)
+	hintSpin.Stop("Installed 42 packages", 0, tap.StopOptions{
+		Hint: "Run 'npm start' to begin",
+	})
+
+	tap.Outro("All examples completed successfully!")
 }

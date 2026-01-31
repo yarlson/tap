@@ -122,6 +122,11 @@ const (
 	EraseDown  = terminal.EraseDown
 )
 
+// StopOptions configures the Stop behavior for Spinner and Progress.
+type StopOptions struct {
+	Hint string // Optional second line displayed in gray below the message
+}
+
 // Optional test I/O override. When set, helpers use these instead of opening
 // a real terminal.
 var (

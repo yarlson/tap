@@ -131,7 +131,7 @@ func (s *Spinner) Message(msg string) {
 
 // Stop halts the spinner and prints a final line with a status symbol
 // code: 0 submit, 1 cancel, >1 error
-func (s *Spinner) Stop(msg string, code int) {
+func (s *Spinner) Stop(msg string, code int, opts ...StopOptions) {
 	s.mu.Lock()
 
 	if !s.isActive {
@@ -180,11 +180,26 @@ func (s *Spinner) Stop(msg string, code int) {
 			finalMsg = fmt.Sprintf("%s %s", finalMsg, formatTimer(start))
 		}
 
-		final := strings.Join([]string{
-			gray(Bar),
-			fmt.Sprintf("%s  %s", symbol, finalMsg),
-			gray(Bar),
-		}, "\n") + "\n"
+		var hint string
+		if len(opts) > 0 {
+			hint = opts[0].Hint
+		}
+
+		var final string
+		if hint != "" {
+			final = strings.Join([]string{
+				gray(Bar),
+				fmt.Sprintf("%s  %s", symbol, finalMsg),
+				fmt.Sprintf("%s  %s", gray(Bar), gray(hint)),
+			}, "\n") + "\n"
+		} else {
+			final = strings.Join([]string{
+				gray(Bar),
+				fmt.Sprintf("%s  %s", symbol, finalMsg),
+				gray(Bar),
+			}, "\n") + "\n"
+		}
+
 		_, _ = s.output.Write([]byte(final))
 	}
 

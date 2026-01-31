@@ -8,13 +8,19 @@ import (
 // If Output is nil, the helper functions are no-ops.
 type MessageOptions struct {
 	Output Writer
+	Hint   string // Optional second line displayed in gray
 }
 
 // Cancel prints a cancel-styled message (bar end + red message).
 func Cancel(message string, opts ...MessageOptions) {
-	var out Writer
+	var (
+		out  Writer
+		hint string
+	)
+
 	if len(opts) > 0 {
 		out = opts[0].Output
+		hint = opts[0].Hint
 	}
 
 	if out == nil {
@@ -25,14 +31,23 @@ func Cancel(message string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), red(message))
+	if hint != "" {
+		_, _ = fmt.Fprintf(out, "%s\n%s  %s\n   %s\n\n", gray(Bar), gray(BarEnd), red(message), gray(hint))
+	} else {
+		_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), red(message))
+	}
 }
 
 // Intro prints an intro title (bar start + title).
 func Intro(title string, opts ...MessageOptions) {
-	var out Writer
+	var (
+		out  Writer
+		hint string
+	)
+
 	if len(opts) > 0 {
 		out = opts[0].Output
+		hint = opts[0].Hint
 	}
 
 	if out == nil {
@@ -43,14 +58,23 @@ func Intro(title string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s  %s\n%s\n", gray(BarStart), bold(title), gray(Bar))
+	if hint != "" {
+		_, _ = fmt.Fprintf(out, "%s  %s\n%s  %s\n", gray(BarStart), bold(title), gray(Bar), gray(hint))
+	} else {
+		_, _ = fmt.Fprintf(out, "%s  %s\n%s\n", gray(BarStart), bold(title), gray(Bar))
+	}
 }
 
 // Outro prints a final outro (bar line, then bar end + message).
 func Outro(message string, opts ...MessageOptions) {
-	var out Writer
+	var (
+		out  Writer
+		hint string
+	)
+
 	if len(opts) > 0 {
 		out = opts[0].Output
+		hint = opts[0].Hint
 	}
 
 	if out == nil {
@@ -61,13 +85,22 @@ func Outro(message string, opts ...MessageOptions) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), bold(message))
+	if hint != "" {
+		_, _ = fmt.Fprintf(out, "%s\n%s  %s\n   %s\n\n", gray(Bar), gray(BarEnd), bold(message), gray(hint))
+	} else {
+		_, _ = fmt.Fprintf(out, "%s\n%s  %s\n\n", gray(Bar), gray(BarEnd), bold(message))
+	}
 }
 
 func Message(message string, opts ...MessageOptions) {
-	var out Writer
+	var (
+		out  Writer
+		hint string
+	)
+
 	if len(opts) > 0 {
 		out = opts[0].Output
+		hint = opts[0].Hint
 	}
 
 	if out == nil {
@@ -80,5 +113,10 @@ func Message(message string, opts ...MessageOptions) {
 
 	_, _ = fmt.Fprintf(out, "%s\n", gray(Bar))
 	_, _ = fmt.Fprintf(out, "%s  %s\n", green(StepSubmit), bold(message))
-	_, _ = fmt.Fprintf(out, "%s\n", gray(Bar))
+
+	if hint != "" {
+		_, _ = fmt.Fprintf(out, "%s  %s\n", gray(Bar), gray(hint))
+	} else {
+		_, _ = fmt.Fprintf(out, "%s\n", gray(Bar))
+	}
 }

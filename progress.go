@@ -137,7 +137,7 @@ func (p *Progress) Message(msg string) {
 }
 
 // Stop halts the progress bar and shows final state
-func (p *Progress) Stop(msg string, code int) {
+func (p *Progress) Stop(msg string, code int, opts ...StopOptions) {
 	p.mu.Lock()
 
 	if !p.isActive {
@@ -176,8 +176,19 @@ func (p *Progress) Stop(msg string, code int) {
 			_, _ = p.output.Write([]byte("\033[2A\r\033[J"))
 		}
 
+		var hint string
+		if len(opts) > 0 {
+			hint = opts[0].Hint
+		}
+
 		// Write final state following clack pattern
-		finalMsg := fmt.Sprintf("%s\n%s  %s\n%s\n", gray(Bar), symbol, msg, gray(Bar))
+		var finalMsg string
+		if hint != "" {
+			finalMsg = fmt.Sprintf("%s\n%s  %s\n%s  %s\n", gray(Bar), symbol, msg, gray(Bar), gray(hint))
+		} else {
+			finalMsg = fmt.Sprintf("%s\n%s  %s\n%s\n", gray(Bar), symbol, msg, gray(Bar))
+		}
+
 		_, _ = p.output.Write([]byte(finalMsg))
 	}
 }
@@ -233,7 +244,7 @@ func (p *Progress) render(msg string) {
 	if isActive {
 		coloredBar = fmt.Sprintf("%s%s",
 			cyan(filledBar), // active progress in cyan
-			dim(emptyBar))   // remaining progress dimmed
+			dim(emptyBar)) // remaining progress dimmed
 	} else {
 		coloredBar = fmt.Sprintf("%s%s",
 			green(filledBar), // completed progress in green

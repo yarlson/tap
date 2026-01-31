@@ -9,5 +9,5 @@ Set TypingSpeed 100ms
 Sleep 1s
 Type "go run ./main.go"
 Enter
-Sleep 8s
+Sleep 3s
 

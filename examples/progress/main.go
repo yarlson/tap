@@ -28,7 +28,9 @@ func main() {
 		downloadProgress.Advance(10, msg)
 	}
 
-	downloadProgress.Stop("Download complete!", 0)
+	downloadProgress.Stop("Download complete!", 0, tap.StopOptions{
+		Hint: "Saved to ~/Downloads/file.zip (128 MB)",
+	})
 
 	// Example 2: Data processing (block style)
 	tap.Message("Example 2: Data Processing (Block Style)")
@@ -62,7 +64,9 @@ func main() {
 		}
 	}
 
-	processProgress.Stop("Processing complete!", 0)
+	processProgress.Stop("Processing complete!", 0, tap.StopOptions{
+		Hint: "Model accuracy: 94.2%",
+	})
 
 	// Example 3: Installation progress (light style)
 	tap.Message("Example 3: Package Installation (Light Style)")
@@ -88,7 +92,9 @@ func main() {
 		installProgress.Advance(4, pkg)
 	}
 
-	installProgress.Stop("Installation successful!", 0)
+	installProgress.Stop("Installation successful!", 0, tap.StopOptions{
+		Hint: "Installed 156 packages in 4.2s",
+	})
 
 	// Example 4: Task with message updates (no progress advancement)
 	tap.Message("Example 4: Task with Message Updates")
