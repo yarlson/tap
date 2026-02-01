@@ -1,5 +1,7 @@
 # Tap
 
+[![CI](https://github.com/yarlson/tap/actions/workflows/ci.yml/badge.svg)](https://github.com/yarlson/tap/actions/workflows/ci.yml)
+
 A Go library for building beautiful, interactive command-line prompts and terminal UI components.
 
 ## Features
