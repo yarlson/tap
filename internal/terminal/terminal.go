@@ -3,10 +3,8 @@ package terminal
 import (
 	"fmt"
 	"os"
-	"os/signal"
 	"runtime"
 	"sync"
-	"syscall"
 
 	"github.com/mattn/go-tty"
 )
@@ -110,8 +108,7 @@ func New() (*Terminal, error) {
 	globalTerminal = term
 
 	// Set up signal handling for clean shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	sigChan := setupTermSignal()
 
 	go func() {
 		<-sigChan
@@ -287,8 +284,7 @@ func (w *Writer) On(event string, handler func()) {
 
 	if len(globalResizeHandler.handlers) == 0 {
 		// First handler - set up signal
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGWINCH)
+		sigChan := setupResizeSignal()
 
 		go func() {
 			for range sigChan {
