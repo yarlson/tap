@@ -173,11 +173,7 @@ func (t *Terminal) parseKey(r rune) Key {
 			return Key{Name: "escape"}
 		}
 
-		if n1 == '[' {
-			return t.parseCSI()
-		}
-
-		return Key{Name: "escape"}
+		return t.resolveEscapePrefix(n1)
 	case 13: // Enter
 		return Key{Name: "return"}
 	case 10: // Line feed (Shift+Enter fallback in some terminals)
@@ -196,6 +192,19 @@ func (t *Terminal) parseKey(r rune) Key {
 		}
 
 		return Key{Name: "", Rune: r}
+	}
+}
+
+// resolveEscapePrefix resolves the rune that follows ESC.
+func (t *Terminal) resolveEscapePrefix(n1 rune) Key {
+	switch n1 {
+	case '[':
+		return t.parseCSI()
+	case 13, 10:
+		// Option+Enter / Meta+Enter fallback in terminals that encode it as ESC + CR/LF.
+		return Key{Name: "return", Shift: true}
+	default:
+		return Key{Name: "escape"}
 	}
 }
 
@@ -247,10 +256,19 @@ func (t *Terminal) resolveCSI(params []int, terminator rune) Key {
 		return Key{Name: "right"}
 	case 'D':
 		return Key{Name: "left"}
+	case 'H':
+		return Key{Name: "home"}
+	case 'F':
+		return Key{Name: "end"}
 
 	case '~':
 		if len(params) == 0 {
 			return Key{Name: "escape"}
+		}
+
+		// ESC[1~ → Home (VT220)
+		if params[0] == 1 && len(params) == 1 {
+			return Key{Name: "home"}
 		}
 
 		// ESC[200~ → Bracketed paste start
@@ -261,6 +279,11 @@ func (t *Terminal) resolveCSI(params []int, terminator rune) Key {
 		// ESC[3~ → Delete
 		if params[0] == 3 {
 			return Key{Name: "delete"}
+		}
+
+		// ESC[4~ → End (VT220)
+		if params[0] == 4 && len(params) == 1 {
+			return Key{Name: "end"}
 		}
 
 		// xterm modifyOtherKeys: ESC[27;modifier;keycode~

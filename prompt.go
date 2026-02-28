@@ -335,8 +335,9 @@ func (p *Prompt) handleResize(_ *promptState) {}
 func (p *Prompt) handleAbort(s *promptState) { s.State = StateCancel }
 
 func (p *Prompt) handleKey(s *promptState, char string, key Key) {
-	// Clear error on any keypress other than return/cancel (do this first)
-	if s.State == StateError && key.Name != "return" && !isCancel(char, key) {
+	// Clear error on any keypress other than plain return/cancel (do this first).
+	// Shift+Return is editing, so it clears the error. Plain Return re-validates.
+	if s.State == StateError && (key.Name != "return" || key.Shift) && !isCancel(char, key) {
 		s.State = StateActive
 		s.Error = ""
 	}
@@ -393,22 +394,26 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 			}
 		}
 
-		if p.opts.Validate != nil {
-			if err := p.opts.Validate(s.Value); err != nil {
-				var ve *ValidationError
-				if errors.As(err, &ve) {
-					s.Error = ve.Message
-				} else {
-					s.Error = err.Error()
-				}
+		// Only process validation and state if the component hasn't already set the state.
+		// This allows components like textarea to handle their own validation and state.
+		if s.State != StateError && s.State != StateSubmit && s.State != StateCancel {
+			if p.opts.Validate != nil {
+				if err := p.opts.Validate(s.Value); err != nil {
+					var ve *ValidationError
+					if errors.As(err, &ve) {
+						s.Error = ve.Message
+					} else {
+						s.Error = err.Error()
+					}
 
-				s.State = StateError
+					s.State = StateError
+				} else {
+					s.Error = ""
+					s.State = StateSubmit
+				}
 			} else {
-				s.Error = ""
 				s.State = StateSubmit
 			}
-		} else {
-			s.State = StateSubmit
 		}
 	}
 

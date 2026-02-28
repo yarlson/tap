@@ -2,6 +2,7 @@ package tap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -191,7 +192,27 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 				val = opts.DefaultValue
 			}
 
-			p.SetValue(val)
+			// Validate the resolved string
+			if opts.Validate != nil {
+				if err := opts.Validate(val); err != nil {
+					// Set error state, keep the buffer for continued editing
+					errMsg := err.Error()
+					e := &ValidationError{}
+					if errors.As(err, &e) {
+						errMsg = e.Message
+					}
+
+					p.cur.Value = val
+					p.cur.Error = errMsg
+					p.cur.State = StateError
+					p.cur.PrevFrame = "" // Force re-render
+					p.SetImmediateValue(val)
+					return
+				}
+			}
+
+			p.cur.Value = val
+			p.cur.State = StateSubmit
 
 			return
 
@@ -225,6 +246,14 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 			if line < lineCount-1 {
 				cur = lineColToCursor(buf, line+1, col)
 			}
+
+		case key.Name == "home":
+			line, _ := cursorToLineCol(buf, cur)
+			cur = lineColToCursor(buf, line, 0)
+
+		case key.Name == "end":
+			line, _ := cursorToLineCol(buf, cur)
+			cur = lineColToCursor(buf, line, len(buf))
 
 		case key.Name == "backspace":
 			if cur > 0 {

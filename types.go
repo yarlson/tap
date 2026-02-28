@@ -72,7 +72,7 @@ type TextareaOptions struct {
 	Placeholder  string
 	DefaultValue string
 	InitialValue string
-	Validate     func(string) error // Not yet wired; validation added in a future task
+	Validate     func(string) error
 	Input        Reader
 	Output       Writer
 }

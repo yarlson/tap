@@ -95,6 +95,24 @@ progress.Stop("Download complete!", 0, tap.StopOptions{
 })
 ```
 
+### Textarea
+
+```go
+res := tap.Textarea(context.Background(), tap.TextareaOptions{
+    Message:     "Enter your commit message:",
+    Placeholder: "Type something...",
+    Validate: func(s string) error {
+        if len(s) < 10 {
+            return fmt.Errorf("at least 10 characters required")
+        }
+        return nil
+    },
+})
+fmt.Println(res)
+```
+
+Use Shift+Enter to insert new lines. Pasted content is collapsed into `[Text N]` placeholders and expanded on submit.
+
 ### Messages with Hints
 
 ```go
@@ -121,11 +139,13 @@ tap.Outro("All done!", tap.MessageOptions{
 
 ### Textarea
 
-| Key          | Action                              |
-| ------------ | ----------------------------------- |
+| Key            | Action                            |
+| -------------- | --------------------------------- |
 | `Shift+Return` | Insert new line (multiline input) |
-| `Up/Down`    | Move to previous/next line          |
-| `Return`     | Submit multiline text               |
+| `Up/Down`      | Move to previous/next line        |
+| `Home`         | Move to start of current line     |
+| `End`          | Move to end of current line       |
+| `Return`       | Submit multiline text             |
 
 ## API Reference
 
@@ -179,15 +199,17 @@ type TextOptions struct {
 
 ```go
 type TextareaOptions struct {
-    Message      string
-    Placeholder  string
-    DefaultValue string
-    InitialValue string
-    Validate     func(string) error
+    Message      string             // Prompt label displayed above the input area
+    Placeholder  string             // Hint text shown when input is empty
+    DefaultValue string             // Value returned when user submits empty input
+    InitialValue string             // Pre-populated editable content on prompt start
+    Validate     func(string) error // Validates the fully-resolved string on submit
     Input        Reader
     Output       Writer
 }
 ```
+
+`Validate` receives the resolved string with all paste placeholders expanded. Return an error to reject the input — the error message is displayed below the input and the user can continue editing.
 
 #### SelectOptions
 
@@ -282,6 +304,12 @@ Terminal signal handling differs between Unix and Windows. The library includes 
 
 - `internal/terminal/terminal_unix.go` - Unix signal handling
 - `internal/terminal/terminal_windows.go` - Windows signal handling
+
+### Textarea Terminal Requirements
+
+**Shift+Enter** (multiline input) requires a terminal that reports modifier keys. Supported terminals include iTerm2, kitty, Alacritty, WezTerm, Ghostty, and Windows Terminal. Terminals that don't distinguish Shift+Enter from Enter (e.g., macOS Terminal.app) cannot insert newlines via keyboard — users can paste multiline content instead.
+
+**Bracketed paste mode** enables paste detection and `[Text N]` placeholder collapsing. Supported by all major modern terminals. Terminals without bracketed paste support degrade to character-by-character input — functional but without placeholder collapsing.
 
 ### Environment Variables
 

@@ -157,6 +157,32 @@ func TestParseKey_LineFeedIsShiftReturn(t *testing.T) {
 	}
 }
 
+func TestParseKey_EscapePlusCRIsShiftReturn(t *testing.T) {
+	term := testTerminal(13)
+
+	result := term.parseKey(27)
+	if result.Name != "return" {
+		t.Errorf("Name: got %q, want %q", result.Name, "return")
+	}
+
+	if !result.Shift {
+		t.Error("Shift should be true for ESC+CR fallback")
+	}
+}
+
+func TestParseKey_EscapePlusLFIsShiftReturn(t *testing.T) {
+	term := testTerminal(10)
+
+	result := term.parseKey(27)
+	if result.Name != "return" {
+		t.Errorf("Name: got %q, want %q", result.Name, "return")
+	}
+
+	if !result.Shift {
+		t.Error("Shift should be true for ESC+LF fallback")
+	}
+}
+
 func TestResolveCSI_ArrowKeys(t *testing.T) {
 	// resolveCSI is pure logic — no TTY needed
 	term := &Terminal{}
@@ -335,5 +361,45 @@ func TestParseKey_BracketedPasteMaxSize(t *testing.T) {
 	// Verify content was accumulated (may be capped before end marker)
 	if result.Content == "" {
 		t.Error("Content should be non-empty")
+	}
+}
+
+func TestResolveCSI_Home(t *testing.T) {
+	term := &Terminal{}
+
+	// ESC[H → Home
+	result := term.resolveCSI(nil, 'H')
+	if result.Name != "home" {
+		t.Errorf("Name: got %q, want %q", result.Name, "home")
+	}
+}
+
+func TestResolveCSI_End(t *testing.T) {
+	term := &Terminal{}
+
+	// ESC[F → End
+	result := term.resolveCSI(nil, 'F')
+	if result.Name != "end" {
+		t.Errorf("Name: got %q, want %q", result.Name, "end")
+	}
+}
+
+func TestResolveCSI_HomeVT220(t *testing.T) {
+	term := &Terminal{}
+
+	// ESC[1~ → Home (VT220 style)
+	result := term.resolveCSI([]int{1}, '~')
+	if result.Name != "home" {
+		t.Errorf("Name: got %q, want %q", result.Name, "home")
+	}
+}
+
+func TestResolveCSI_EndVT220(t *testing.T) {
+	term := &Terminal{}
+
+	// ESC[4~ → End (VT220 style)
+	result := term.resolveCSI([]int{4}, '~')
+	if result.Name != "end" {
+		t.Errorf("Name: got %q, want %q", result.Name, "end")
 	}
 }

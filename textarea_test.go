@@ -2,6 +2,7 @@ package tap
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -1148,5 +1149,559 @@ func TestTextarea_ShiftEnterMidLine(t *testing.T) {
 	got := <-resultCh
 	if got != "hello\nworld" {
 		t.Fatalf("expected %q, got %q", "hello\nworld", got)
+	}
+}
+
+// --- TASK3: Validation, Navigation, Edge Case Tests ---
+
+func TestTextarea_ValidationRejectsAndRecovers(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+			Validate: func(s string) error {
+				if len(s) < 10 {
+					return fmt.Errorf("at least 10 characters required")
+				}
+				return nil
+			},
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "hi" (too short)
+	in.EmitKeypress("h", Key{Name: "h", Rune: 'h'})
+	in.EmitKeypress("i", Key{Name: "i", Rune: 'i'})
+	time.Sleep(5 * time.Millisecond)
+
+	// Try to submit — should fail validation
+	in.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(10 * time.Millisecond)
+
+	// Check that error is visible in frames
+	frames := out.GetFrames()
+	foundError := false
+	for _, frame := range frames {
+		if strings.Contains(frame, "at least 10 characters required") {
+			foundError = true
+			break
+		}
+	}
+	if !foundError {
+		t.Error("expected validation error message in frames")
+	}
+
+	// Check that error symbol is visible
+	foundErrorSymbol := false
+	for _, frame := range frames {
+		if strings.Contains(frame, StepError) {
+			foundErrorSymbol = true
+			break
+		}
+	}
+	if !foundErrorSymbol {
+		t.Error("expected error symbol (▲) in frames")
+	}
+
+	// Type more text to clear error and meet validation
+	for _, r := range "hello world" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+	time.Sleep(5 * time.Millisecond)
+
+	// Submit again — should succeed
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "hihello world" {
+		t.Fatalf("expected %q, got %q", "hihello world", got)
+	}
+}
+
+func TestTextarea_ValidationOnResolvedString(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+			Validate: func(s string) error {
+				if len(s) < 6 {
+					return fmt.Errorf("at least 6 characters required")
+				}
+				return nil
+			},
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "a" then paste "bcdef" — resolved string is "abcdef" (6 chars)
+	in.EmitKeypress("a", Key{Name: "a", Rune: 'a'})
+	in.EmitPaste("bcdef")
+	time.Sleep(5 * time.Millisecond)
+
+	// Submit — validation runs against resolved string "abcdef" (6 chars, passes)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "abcdef" {
+		t.Fatalf("expected %q, got %q", "abcdef", got)
+	}
+}
+
+func TestTextarea_ErrorClearsOnKeypress(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+			Validate: func(s string) error {
+				if len(s) < 5 {
+					return fmt.Errorf("too short")
+				}
+				return nil
+			},
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "hi" and submit to trigger error
+	in.EmitKeypress("h", Key{Name: "h", Rune: 'h'})
+	in.EmitKeypress("i", Key{Name: "i", Rune: 'i'})
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(10 * time.Millisecond)
+
+	// Type a character to clear error
+	in.EmitKeypress("x", Key{Name: "x", Rune: 'x'})
+	time.Sleep(10 * time.Millisecond)
+
+	// Verify active symbol is back (error cleared)
+	frames := out.GetFrames()
+	// Find the last frame containing "hix" (after error clear + new char)
+	foundActive := false
+	for i := len(frames) - 1; i >= 0; i-- {
+		if strings.Contains(frames[i], "hix") && strings.Contains(frames[i], StepActive) {
+			foundActive = true
+			break
+		}
+	}
+	if !foundActive {
+		t.Error("expected active state after typing a character post-error")
+	}
+
+	// Type more and submit
+	for _, r := range "ab" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "hixab" {
+		t.Fatalf("expected %q, got %q", "hixab", got)
+	}
+}
+
+func TestTextarea_HomeKey(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "hello"
+	for _, r := range "hello" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	// Home → cursor at 0
+	in.EmitKeypress("", Key{Name: "home"})
+
+	// Type "X" → "Xhello"
+	in.EmitKeypress("X", Key{Name: "X", Rune: 'X'})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "Xhello" {
+		t.Fatalf("expected %q, got %q", "Xhello", got)
+	}
+}
+
+func TestTextarea_EndKey(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "hello"
+	for _, r := range "hello" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	// Home → cursor at 0, then End → cursor at 5
+	in.EmitKeypress("", Key{Name: "home"})
+	in.EmitKeypress("", Key{Name: "end"})
+
+	// Type "X" → "helloX"
+	in.EmitKeypress("X", Key{Name: "X", Rune: 'X'})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "helloX" {
+		t.Fatalf("expected %q, got %q", "helloX", got)
+	}
+}
+
+func TestTextarea_HomeEndMultiline(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "hello", Shift+Enter, "world"
+	for _, r := range "hello" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+	for _, r := range "world" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	// Cursor is at end of "world" (line 2, col 5)
+	// Move left twice to mid-line-2 (col 3)
+	in.EmitKeypress("", Key{Name: "left"})
+	in.EmitKeypress("", Key{Name: "left"})
+
+	// Home → cursor should be at start of line 2 (not line 1)
+	in.EmitKeypress("", Key{Name: "home"})
+
+	// Type "X" → "hello\nXworld" (not "Xhello\nworld")
+	in.EmitKeypress("X", Key{Name: "X", Rune: 'X'})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "hello\nXworld" {
+		t.Fatalf("expected %q, got %q", "hello\nXworld", got)
+	}
+}
+
+func TestTextarea_PasteWithNewlines(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("line1\nline2\nline3")
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "line1\nline2\nline3" {
+		t.Fatalf("expected %q, got %q", "line1\nline2\nline3", got)
+	}
+}
+
+func TestTextarea_EmptySubmitNoDefault(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "" {
+		t.Fatalf("expected empty string, got %q", got)
+	}
+}
+
+func TestTextarea_CancelAfterPaste(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("content")
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "escape"})
+
+	got := <-resultCh
+	if got != "" {
+		t.Fatalf("expected empty string on cancel after paste, got %q", got)
+	}
+}
+
+func TestTextarea_ThreePastes(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("alpha")
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("beta")
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("gamma")
+	time.Sleep(5 * time.Millisecond)
+
+	// Verify all three placeholders appear
+	frames := out.GetFrames()
+	for _, label := range []string{"[Text 1]", "[Text 2]", "[Text 3]"} {
+		found := false
+		for _, frame := range frames {
+			if strings.Contains(frame, label) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected %s placeholder in rendered frames", label)
+		}
+	}
+
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "alphabetagamma" {
+		t.Fatalf("expected %q, got %q", "alphabetagamma", got)
+	}
+}
+
+func TestTextarea_ContextCancel(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(ctx, TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("h", Key{Name: "h", Rune: 'h'})
+	in.EmitKeypress("i", Key{Name: "i", Rune: 'i'})
+	time.Sleep(5 * time.Millisecond)
+
+	// Cancel context
+	cancel()
+
+	got := <-resultCh
+	if got != "" {
+		t.Fatalf("expected empty string on context cancel, got %q", got)
+	}
+}
+
+// --- TASK3: Unit tests ---
+
+func TestResolve_PasteWithNewlines(t *testing.T) {
+	buf := []rune{'x', idToPUA(1), 'y'}
+	pastes := map[int]string{1: "a\nb\nc"}
+
+	got := resolve(buf, pastes)
+	if got != "xa\nb\ncy" {
+		t.Fatalf("expected %q, got %q", "xa\nb\ncy", got)
+	}
+}
+
+func TestCursorNavigation_Home(t *testing.T) {
+	buf := []rune("hello\nworld")
+	// Cursor at col 3, line 2 → "hello\nwor|ld"
+	// Position: 'h'=0, 'e'=1, 'l'=2, 'l'=3, 'o'=4, '\n'=5, 'w'=6, 'o'=7, 'r'=8, 'l'=9, 'd'=10
+	cursor := 9 // at 'l' in "world" (col 3)
+
+	line, _ := cursorToLineCol(buf, cursor)
+	if line != 1 {
+		t.Fatalf("expected line 1, got %d", line)
+	}
+
+	// Home → start of line 2 (index 6)
+	newCursor := lineColToCursor(buf, line, 0)
+	if newCursor != 6 {
+		t.Fatalf("expected cursor at 6 (start of line 2), got %d", newCursor)
+	}
+}
+
+func TestCursorNavigation_End(t *testing.T) {
+	buf := []rune("hello\nworld")
+	// Cursor at col 0, line 1 → "hello\n|world"
+	cursor := 6 // at 'w' in "world" (col 0, line 1)
+
+	line, _ := cursorToLineCol(buf, cursor)
+	if line != 1 {
+		t.Fatalf("expected line 1, got %d", line)
+	}
+
+	// End → end of line 1 (index 11, end of "world")
+	newCursor := lineColToCursor(buf, line, len(buf))
+	if newCursor != 11 {
+		t.Fatalf("expected cursor at 11 (end of line 2), got %d", newCursor)
+	}
+}
+
+func TestTextarea_ShiftReturnClearsError(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+			Validate: func(s string) error {
+				if len(s) < 5 {
+					return fmt.Errorf("too short")
+				}
+				return nil
+			},
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "hi" and submit to trigger error
+	in.EmitKeypress("h", Key{Name: "h", Rune: 'h'})
+	in.EmitKeypress("i", Key{Name: "i", Rune: 'i'})
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+	time.Sleep(10 * time.Millisecond)
+
+	// Press Shift+Return to insert newline — should clear error
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+	time.Sleep(10 * time.Millisecond)
+
+	// Verify active symbol is back (error cleared after Shift+Return)
+	frames := out.GetFrames()
+	foundActive := false
+	for i := len(frames) - 1; i >= 0; i-- {
+		if strings.Contains(frames[i], "hi") && strings.Contains(frames[i], StepActive) {
+			foundActive = true
+			break
+		}
+	}
+	if !foundActive {
+		t.Error("expected active state after Shift+Return to clear error")
+	}
+
+	// Type more to complete validation and submit
+	for _, r := range "jkl" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	// Expected: "hi\njkl" (newline inserted by Shift+Return, then "jkl" typed)
+	if got != "hi\njkl" {
+		t.Fatalf("expected %q, got %q", "hi\njkl", got)
 	}
 }
