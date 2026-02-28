@@ -80,12 +80,14 @@ Built by keyboard handler; emitted on keypress event.
 TAP enables **extended keyboard mode** via xterm modifyOtherKeys level 2 (CSI sequence `\x1b[>4;2m`) to receive modifier information from terminals that support it. This allows detection of Shift+Enter, Shift+arrows, etc.
 
 **Supported protocols**:
+
 - **xterm modifyOtherKeys level 2**: `ESC[27;modifier;keycodeu` format with modifier reporting
 - **Kitty protocol**: `ESC[keycode;modifiersu` format
 - **Bracketed paste mode**: `ESC[200~...content...ESC[201~` for pasting large text blocks
 - **Basic ANSI**: Fallback to standard arrow keys and control codes
 
 **Parser functions** (`internal/terminal/terminal.go`):
+
 - `parseCSI()` — Collects CSI parameters (supports both `;` and `:` separators)
 - `resolveCSI()` — Maps CSI terminator and parameters to Key events; detects paste start (200~)
 - `readBracketedPaste()` — Accumulates runes until paste end marker (201~); caps at 10MB

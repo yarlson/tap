@@ -100,6 +100,7 @@ Textarea supports vertical navigation with Up/Down arrow keys:
 - Column position is tracked during vertical moves to maintain intuitive editing
 
 Implementation uses helper functions:
+
 - `cursorToLineCol(buf, cursor)` — converts flat cursor index to (line, column)
 - `lineColToCursor(buf, line, col)` — converts (line, column) back to flat index
 - `countBufferLines(buf)` — counts total lines in buffer
@@ -107,6 +108,7 @@ Implementation uses helper functions:
 ## Multi-key Sequences
 
 No chord binding yet; each keypress is independent. Movement keys (up/down/left/right) are special-cased:
+
 - Select/MultiSelect: Emit "cursor" events for menu navigation
 - Textarea: Move cursor within text (vertical with Up/Down, horizontal with Left/Right)
 

@@ -130,12 +130,12 @@ tap.Outro("All done!", tap.MessageOptions{
 
 ### All Prompts
 
-| Key               | Action                        |
-| ----------------- | ----------------------------- |
-| `Return` (Enter)  | Submit/confirm selection      |
-| `Escape` or `^C`  | Cancel and exit prompt        |
-| `Left/Right`      | Move cursor left/right        |
-| `Backspace/Del`   | Delete character              |
+| Key              | Action                   |
+| ---------------- | ------------------------ |
+| `Return` (Enter) | Submit/confirm selection |
+| `Escape` or `^C` | Cancel and exit prompt   |
+| `Left/Right`     | Move cursor left/right   |
+| `Backspace/Del`  | Delete character         |
 
 ### Textarea
 
