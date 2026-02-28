@@ -289,7 +289,8 @@ func (t *Terminal) resolveCSI(params []int, terminator rune) Key {
 
 		// xterm modifyOtherKeys: ESC[27;modifier;keycode~
 		if len(params) == 3 && params[0] == 27 {
-			return t.resolveModifiedKey(params[2], params[1])
+			keycode, mod := params[2], params[1] //nolint:gosec // bounds checked by len(params)==3
+			return t.resolveModifiedKey(keycode, mod)
 		}
 
 		return Key{Name: "escape"}
