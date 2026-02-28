@@ -383,7 +383,7 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 
 	p.Emit("key", strings.ToLower(char), key)
 
-	if key.Name == "return" {
+	if key.Name == "return" && !key.Shift {
 		// For text input tracking, set value from user input if no value is set
 		if p.track && s.Value == nil {
 			if s.UserInput != "" {

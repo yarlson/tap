@@ -130,29 +130,13 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 
 	// Key handling
 	p.On("key", func(_ string, key Key) {
-		switch key.Name {
-		case "left":
-			if cur > 0 {
-				cur--
-			}
+		switch {
+		case key.Name == "return" && key.Shift:
+			// Shift+Enter: insert newline
+			buf = slices.Insert(buf, cur, '\n')
+			cur++
 
-		case "right":
-			if cur < len(buf) {
-				cur++
-			}
-
-		case "backspace":
-			if cur > 0 {
-				buf = slices.Delete(buf, cur-1, cur)
-				cur--
-			}
-
-		case "delete":
-			if cur < len(buf) {
-				buf = slices.Delete(buf, cur, cur+1)
-			}
-
-		case "return":
+		case key.Name == "return":
 			val := string(buf)
 			if val == "" && opts.DefaultValue != "" {
 				val = opts.DefaultValue
@@ -161,6 +145,40 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 			p.SetValue(val)
 
 			return
+
+		case key.Name == "left":
+			if cur > 0 {
+				cur--
+			}
+
+		case key.Name == "right":
+			if cur < len(buf) {
+				cur++
+			}
+
+		case key.Name == "up":
+			line, col := cursorToLineCol(buf, cur)
+			if line > 0 {
+				cur = lineColToCursor(buf, line-1, col)
+			}
+
+		case key.Name == "down":
+			line, col := cursorToLineCol(buf, cur)
+			lineCount := countBufferLines(buf)
+			if line < lineCount-1 {
+				cur = lineColToCursor(buf, line+1, col)
+			}
+
+		case key.Name == "backspace":
+			if cur > 0 {
+				buf = slices.Delete(buf, cur-1, cur)
+				cur--
+			}
+
+		case key.Name == "delete":
+			if cur < len(buf) {
+				buf = slices.Delete(buf, cur, cur+1)
+			}
 
 		default:
 			if key.Rune >= 32 && key.Rune <= 126 {
@@ -237,4 +255,63 @@ func indexRune(s []rune, r rune) int {
 	}
 
 	return -1
+}
+
+// cursorToLineCol converts a flat cursor index into line and column numbers.
+func cursorToLineCol(buf []rune, cursor int) (line, col int) {
+	for i := 0; i < cursor && i < len(buf); i++ {
+		if buf[i] == '\n' {
+			line++
+			col = 0
+		} else {
+			col++
+		}
+	}
+
+	return line, col
+}
+
+// lineColToCursor converts a line and column back to a flat cursor index.
+// If col exceeds the line's length, cursor is clamped to end of line.
+func lineColToCursor(buf []rune, targetLine, targetCol int) int {
+	line := 0
+	lineStart := 0
+
+	for i, r := range buf {
+		if line == targetLine {
+			lineStart = i
+			break
+		}
+
+		if r == '\n' {
+			line++
+			lineStart = i + 1
+		}
+	}
+
+	if line < targetLine {
+		return len(buf)
+	}
+
+	pos := lineStart
+	col := 0
+
+	for pos < len(buf) && buf[pos] != '\n' && col < targetCol {
+		pos++
+		col++
+	}
+
+	return pos
+}
+
+// countBufferLines returns the number of lines in the buffer (1-based count).
+func countBufferLines(buf []rune) int {
+	lines := 1
+	for _, r := range buf {
+		if r == '\n' {
+			lines++
+		}
+	}
+
+	return lines
 }

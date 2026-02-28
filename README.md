@@ -6,11 +6,12 @@ A Go library for building beautiful, interactive command-line prompts and termin
 
 ## Features
 
-- **Interactive Prompts**: Text input, password, confirmation, single/multi-select, autocomplete, and textarea
+- **Interactive Prompts**: Text input, password, confirmation, single/multi-select, autocomplete, and multiline textarea
 - **Progress Indicators**: Spinners with customizable frames and progress bars with multiple styles
 - **Output Utilities**: Styled tables, boxed messages, and streaming output
 - **Modern API**: Context-aware, generic types for select options, functional options pattern
 - **Cross-Platform**: Unix and Windows terminal support
+- **Multiline Input**: Textarea supports multiline editing with Shift+Enter for new lines and Up/Down navigation
 
 ## Installation
 
@@ -106,6 +107,25 @@ tap.Outro("All done!", tap.MessageOptions{
     Hint: "Run 'app --help' for more options",
 })
 ```
+
+## Keyboard Shortcuts
+
+### All Prompts
+
+| Key               | Action                        |
+| ----------------- | ----------------------------- |
+| `Return` (Enter)  | Submit/confirm selection      |
+| `Escape` or `^C`  | Cancel and exit prompt        |
+| `Left/Right`      | Move cursor left/right        |
+| `Backspace/Del`   | Delete character              |
+
+### Textarea
+
+| Key          | Action                              |
+| ------------ | ----------------------------------- |
+| `Shift+Return` | Insert new line (multiline input) |
+| `Up/Down`    | Move to previous/next line          |
+| `Return`     | Submit multiline text               |
 
 ## API Reference
 

@@ -339,3 +339,381 @@ func TestTextarea_CancelSymbol(t *testing.T) {
 		t.Error("expected cancel symbol in frames")
 	}
 }
+
+// --- TASK1: Multiline editing tests ---
+
+func TestTextarea_MultilineInput(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "line1"
+	for _, r := range "line1" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	// Shift+Enter to insert newline
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+
+	// Type "line2"
+	for _, r := range "line2" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Submit
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "line1\nline2" {
+		t.Fatalf("expected %q, got %q", "line1\nline2", got)
+	}
+}
+
+func TestTextarea_UpDownNavigation(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "abc", Shift+Enter, "def"
+	for _, r := range "abc" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+
+	for _, r := range "def" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	// Cursor is at end of "def" (line 2, col 3)
+	// Up arrow → cursor moves to line 1, col 3 (end of "abc")
+	in.EmitKeypress("", Key{Name: "up"})
+
+	// Insert "X" at cursor position (after "abc")
+	in.EmitKeypress("X", Key{Name: "X", Rune: 'X'})
+
+	// Down arrow → cursor moves back to line 2
+	in.EmitKeypress("", Key{Name: "down"})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "abcX\ndef" {
+		t.Fatalf("expected %q, got %q", "abcX\ndef", got)
+	}
+}
+
+func TestTextarea_ColumnClamp(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "longline" (8 chars), Shift+Enter, "ab" (2 chars)
+	for _, r := range "longline" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+
+	for _, r := range "ab" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	// Cursor at end of "ab" (line 2, col 2)
+	// Up arrow → should clamp to end of... wait, line 1 is longer, so col 2 is fine
+	// Let me reverse: cursor on long line, move down to short line
+	// Go up first
+	in.EmitKeypress("", Key{Name: "up"})
+	// Now on line 1, col 2 — cursor is at position 2 in "longline"
+	// Move to end of line 1
+	for i := 0; i < 6; i++ {
+		in.EmitKeypress("", Key{Name: "right"})
+	}
+
+	// Now at col 8 in "longline", move down to "ab" (length 2)
+	in.EmitKeypress("", Key{Name: "down"})
+
+	// Cursor should be clamped to col 2 (end of "ab")
+	// Insert "Z" — should appear at end of "ab"
+	in.EmitKeypress("Z", Key{Name: "Z", Rune: 'Z'})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "longline\nabZ" {
+		t.Fatalf("expected %q, got %q", "longline\nabZ", got)
+	}
+}
+
+func TestTextarea_RendersBarsPerLine(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type two lines
+	for _, r := range "first" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+
+	for _, r := range "second" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Check frames for bar prefix on each content line
+	frames := out.GetFrames()
+	found := false
+
+	for _, frame := range frames {
+		// A multiline frame should have at least two lines with Bar prefix containing content
+		if strings.Contains(frame, "first") && strings.Contains(frame, "second") {
+			lines := strings.Split(frame, "\n")
+			barCount := 0
+
+			for _, line := range lines {
+				if strings.Contains(line, Bar) {
+					barCount++
+				}
+			}
+
+			// Should have at least 3 bars: separator, first line, second line
+			if barCount >= 3 {
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		t.Error("expected bar prefix on each content line in multiline frame")
+	}
+
+	in.EmitKeypress("", Key{Name: "return"})
+	<-resultCh
+}
+
+func TestTextarea_MultilineSubmitDisplay(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	for _, r := range "hello" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+
+	for _, r := range "world" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+	<-resultCh
+
+	// After submit, frames should contain submit symbol and both lines with bar prefix
+	frames := out.GetFrames()
+	foundSubmitWithBars := false
+
+	for _, frame := range frames {
+		if !strings.Contains(frame, StepSubmit) || !strings.Contains(frame, "hello") || !strings.Contains(frame, "world") {
+			continue
+		}
+
+		// Verify each content line has a bar prefix
+		lines := strings.Split(frame, "\n")
+		helloHasBar := false
+		worldHasBar := false
+
+		for _, line := range lines {
+			if strings.Contains(line, Bar) && strings.Contains(line, "hello") {
+				helloHasBar = true
+			}
+
+			if strings.Contains(line, Bar) && strings.Contains(line, "world") {
+				worldHasBar = true
+			}
+		}
+
+		if helloHasBar && worldHasBar {
+			foundSubmitWithBars = true
+			break
+		}
+	}
+
+	if !foundSubmitWithBars {
+		t.Error("expected submitted frame to show both lines with bar prefix and submit symbol")
+	}
+}
+
+func TestTextarea_MultilineCancelDisplay(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	for _, r := range "hello" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+
+	for _, r := range "world" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "escape"})
+	<-resultCh
+
+	// After cancel, frames should contain cancel symbol and both lines with bar prefix
+	frames := out.GetFrames()
+	foundCancelWithBars := false
+
+	for _, frame := range frames {
+		if !strings.Contains(frame, StepCancel) || !strings.Contains(frame, "hello") || !strings.Contains(frame, "world") {
+			continue
+		}
+
+		// Verify each content line has a bar prefix
+		lines := strings.Split(frame, "\n")
+		helloHasBar := false
+		worldHasBar := false
+
+		for _, line := range lines {
+			if strings.Contains(line, Bar) && strings.Contains(line, "hello") {
+				helloHasBar = true
+			}
+
+			if strings.Contains(line, Bar) && strings.Contains(line, "world") {
+				worldHasBar = true
+			}
+		}
+
+		if helloHasBar && worldHasBar {
+			foundCancelWithBars = true
+			break
+		}
+	}
+
+	if !foundCancelWithBars {
+		t.Error("expected cancelled frame to show both lines with bar prefix and cancel symbol")
+	}
+}
+
+func TestTextarea_ShiftEnterMidLine(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "helloworld"
+	for _, r := range "helloworld" {
+		in.EmitKeypress(string(r), Key{Name: string(r), Rune: r})
+	}
+
+	// Move left 5 times to position cursor between "hello" and "world"
+	for i := 0; i < 5; i++ {
+		in.EmitKeypress("", Key{Name: "left"})
+	}
+
+	// Shift+Enter splits the line
+	in.EmitKeypress("", Key{Name: "return", Shift: true})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "hello\nworld" {
+		t.Fatalf("expected %q, got %q", "hello\nworld", got)
+	}
+}

@@ -32,9 +32,10 @@ func MoveUp(n int) string {
 
 // Key represents a parsed keyboard input event.
 type Key struct {
-	Name string // "up", "down", "left", "right", "return", "escape", "backspace", "delete", "space", "tab", or lowercase letter
-	Rune rune   // The actual character (0 for special keys)
-	Ctrl bool   // True if Ctrl modifier was pressed
+	Name  string // "up", "down", "left", "right", "return", "escape", "backspace", "delete", "space", "tab", or lowercase letter
+	Rune  rune   // The actual character (0 for special keys)
+	Ctrl  bool   // True if Ctrl modifier was pressed
+	Shift bool   // True if Shift modifier was pressed
 }
 
 // Terminal manages terminal I/O operations with channel-based key input.
@@ -107,6 +108,12 @@ func New() (*Terminal, error) {
 
 	globalTerminal = term
 
+	// Enable kitty keyboard protocol to receive modifier information for keys like Shift+Enter.
+	// This requests the terminal to send distinct escape sequences for modified keys.
+	// Kitty: CSI > 4 m
+	// xterm: CSI > 4 m (newer versions)
+	fmt.Print("\x1b[>4m") // Request kitty/xterm extended keyboard mode
+
 	// Set up signal handling for clean shutdown
 	sigChan := setupTermSignal()
 
@@ -159,50 +166,133 @@ func (t *Terminal) parseKey(r rune) Key {
 		// Try to read the next runes for escape sequence
 		n1, err := t.tty.ReadRune()
 		if err != nil {
-			return Key{Name: "escape", Rune: 0}
+			return Key{Name: "escape"}
 		}
 
 		if n1 == '[' {
-			n2, err := t.tty.ReadRune()
-			if err != nil {
-				return Key{Name: "escape", Rune: 0}
-			}
-
-			switch n2 {
-			case 'A':
-				return Key{Name: "up", Rune: 0}
-			case 'B':
-				return Key{Name: "down", Rune: 0}
-			case 'C':
-				return Key{Name: "right", Rune: 0}
-			case 'D':
-				return Key{Name: "left", Rune: 0}
-			case '3':
-				// Delete key is ESC[3~
-				_, _ = t.tty.ReadRune() // consume '~'
-				return Key{Name: "delete", Rune: 0}
-			}
+			return t.parseCSI()
 		}
 
-		return Key{Name: "escape", Rune: 0}
+		return Key{Name: "escape"}
 	case 13: // Enter
-		return Key{Name: "return", Rune: 0}
+		return Key{Name: "return"}
 	case 127, 8: // Backspace
-		return Key{Name: "backspace", Rune: 0}
+		return Key{Name: "backspace"}
 	case 9: // Tab
-		return Key{Name: "tab", Rune: 0}
+		return Key{Name: "tab"}
 	case 32: // Space
 		return Key{Name: "space", Rune: ' '}
 	case 3: // Ctrl+C
 		return Key{Name: "c", Rune: 'c', Ctrl: true}
 	default:
 		if r >= 32 && r <= 126 {
-			// Printable ASCII
 			return Key{Name: string(r), Rune: r}
 		}
-		// Unknown control character
+
 		return Key{Name: "", Rune: r}
 	}
+}
+
+// parseCSI parses a CSI (Control Sequence Introducer) sequence after ESC[.
+// Handles: arrow keys, delete, kitty keyboard protocol, xterm modifyOtherKeys.
+// Supports both semicolon (;) and colon (:) as parameter separators for compatibility.
+func (t *Terminal) parseCSI() Key {
+	// Collect numeric parameters and terminator
+	var params []int
+	current := 0
+	hasDigit := false
+
+	for {
+		ch, err := t.tty.ReadRune()
+		if err != nil {
+			return Key{Name: "escape"}
+		}
+
+		switch {
+		case ch >= '0' && ch <= '9':
+			current = current*10 + int(ch-'0')
+			hasDigit = true
+
+		case ch == ';' || ch == ':':
+			// Both ; and : are valid parameter separators
+			params = append(params, current)
+			current = 0
+			hasDigit = false
+
+		default:
+			// Terminator character reached
+			if hasDigit {
+				params = append(params, current)
+			}
+
+			return t.resolveCSI(params, ch)
+		}
+	}
+}
+
+// resolveCSI maps collected CSI parameters and terminator to a Key.
+func (t *Terminal) resolveCSI(params []int, terminator rune) Key {
+	switch terminator {
+	case 'A':
+		return Key{Name: "up"}
+	case 'B':
+		return Key{Name: "down"}
+	case 'C':
+		return Key{Name: "right"}
+	case 'D':
+		return Key{Name: "left"}
+
+	case '~':
+		if len(params) == 0 {
+			return Key{Name: "escape"}
+		}
+
+		// ESC[3~ → Delete
+		if params[0] == 3 {
+			return Key{Name: "delete"}
+		}
+
+		// xterm modifyOtherKeys: ESC[27;modifier;keycode~
+		if params[0] == 27 && len(params) == 3 {
+			return t.resolveModifiedKey(params[2], params[1])
+		}
+
+		return Key{Name: "escape"}
+
+	case 'u':
+		// Kitty keyboard protocol: ESC[keycode;modifiersu (or ESC[keycodeu for unmodified)
+		if len(params) == 1 {
+			// Single parameter: keycode without explicit modifier
+			// Only handle Enter (13); others fall through
+			if params[0] == 13 {
+				return Key{Name: "return"}
+			}
+		} else if len(params) >= 2 {
+			return t.resolveModifiedKey(params[0], params[1])
+		}
+
+		return Key{Name: "escape"}
+	}
+
+	return Key{Name: "escape"}
+}
+
+// resolveModifiedKey maps a keycode + modifier bitmask to a Key.
+func (t *Terminal) resolveModifiedKey(keycode, modifier int) Key {
+	// CSI modifier encoding: modifier value = 1 + bitmask
+	// modifier=1 means no modifiers (bitmask=0)
+	// modifier=2 means shift only (bitmask=1, bit 0 set)
+	// modifier=3 means shift+other (bitmask=2, etc.)
+	shift := false
+	if modifier >= 2 {
+		shift = ((modifier - 1) & 0x01) != 0
+	}
+
+	if keycode == 13 {
+		return Key{Name: "return", Shift: shift}
+	}
+
+	return Key{Name: "escape"}
 }
 
 // Keys returns the read-only key channel.
