@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/mattn/go-tty"
@@ -25,12 +26,12 @@ const (
 
 // MoveUp returns ANSI sequence to move cursor up n lines.
 func MoveUp(n int) string {
-	result := ""
-	for i := 0; i < n; i++ {
-		result += CursorUp
+	var b strings.Builder
+	for range n {
+		b.WriteString(CursorUp)
 	}
 
-	return result
+	return b.String()
 }
 
 // Key represents a parsed keyboard input event.
@@ -287,7 +288,7 @@ func (t *Terminal) resolveCSI(params []int, terminator rune) Key {
 		}
 
 		// xterm modifyOtherKeys: ESC[27;modifier;keycode~
-		if params[0] == 27 && len(params) == 3 {
+		if len(params) == 3 && params[0] == 27 {
 			return t.resolveModifiedKey(params[2], params[1])
 		}
 
