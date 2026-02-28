@@ -66,6 +66,17 @@ type MultiSelectOptions[T any] struct {
 	Output        Writer
 }
 
+// TextareaOptions defines options for styled multiline text input prompt.
+type TextareaOptions struct {
+	Message      string
+	Placeholder  string
+	DefaultValue string
+	InitialValue string
+	Validate     func(string) error // Not yet wired; validation added in a future task
+	Input        Reader
+	Output       Writer
+}
+
 // AutocompleteOptions defines options for styled autocomplete text prompt.
 type AutocompleteOptions struct {
 	Message      string

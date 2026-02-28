@@ -6,7 +6,7 @@ A Go library for building beautiful, interactive command-line prompts and termin
 
 ## Features
 
-- **Interactive Prompts**: Text input, password, confirmation, single/multi-select, and autocomplete
+- **Interactive Prompts**: Text input, password, confirmation, single/multi-select, autocomplete, and textarea
 - **Progress Indicators**: Spinners with customizable frames and progress bars with multiple styles
 - **Output Utilities**: Styled tables, boxed messages, and streaming output
 - **Modern API**: Context-aware, generic types for select options, functional options pattern
@@ -118,6 +118,7 @@ tap.Outro("All done!", tap.MessageOptions{
 | `Confirm(ctx, ConfirmOptions)`               | Yes/No confirmation         | `bool`      |
 | `Select[T](ctx, SelectOptions[T])`           | Single-choice selection     | `T`         |
 | `MultiSelect[T](ctx, MultiSelectOptions[T])` | Multiple-choice selection   | `[]T`       |
+| `Textarea(ctx, TextareaOptions)`             | Multiline text input        | `string`    |
 | `Autocomplete(ctx, AutocompleteOptions)`     | Text input with suggestions | `string`    |
 
 ### Progress Components
@@ -144,6 +145,20 @@ tap.Outro("All done!", tap.MessageOptions{
 
 ```go
 type TextOptions struct {
+    Message      string
+    Placeholder  string
+    DefaultValue string
+    InitialValue string
+    Validate     func(string) error
+    Input        Reader
+    Output       Writer
+}
+```
+
+#### TextareaOptions
+
+```go
+type TextareaOptions struct {
     Message      string
     Placeholder  string
     DefaultValue string
@@ -226,14 +241,16 @@ Run interactive examples:
 
 ```bash
 go run ./examples/text/main.go
+go run ./examples/textarea/main.go
+go run ./examples/password/main.go
 go run ./examples/select/main.go
 go run ./examples/multiselect/main.go
 go run ./examples/confirm/main.go
+go run ./examples/autocomplete/main.go
 go run ./examples/spinner/main.go
 go run ./examples/progress/main.go
 go run ./examples/messages/main.go
 go run ./examples/table/main.go
-go run ./examples/autocomplete/main.go
 go run ./examples/stream/main.go
 ```
 

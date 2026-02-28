@@ -2,3 +2,7 @@
 !/README.*
 !/INSTRUCTIONS.md
 .snap/
+
+# Go binaries
+/textarea
+/tap
