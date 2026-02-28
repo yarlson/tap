@@ -65,11 +65,17 @@
 
 ## Keyboard Protocols
 
-**Extended keyboard mode** — Terminal protocol (Kitty `ESC[>4m`) enabling modifier detection (Shift, Ctrl, Alt) for special keys. Allows Shift+Enter, Shift+arrows, etc. to be distinguished from unmodified keys.
+**Extended keyboard mode** — Terminal protocol (xterm modifyOtherKeys level 2: `ESC[>4;2m`) enabling modifier detection (Shift, Ctrl, Alt) for special keys. Allows Shift+Enter, Shift+arrows, etc. to be distinguished from unmodified keys.
 
 **CSI (Control Sequence Introducer)** — ANSI escape sequence `ESC[` initiating keyboard events. Parsed by `parseCSI()` to extract parameters and terminator, resolved to `Key` events by protocol handlers.
 
 **Modifier bitmask** — Encoded as `1 + bits` where bit 0 = Shift, bit 1 = Alt, bit 2 = Ctrl. Examples: modifier=1 (no modifiers), modifier=2 (Shift only), modifier=3 (Shift+Alt).
+
+**Bracketed paste mode** — Terminal feature enabled via `ESC[?2004h` and disabled via `ESC[?2004l`. When enabled, large pastes are framed by `ESC[200~` (start) and `ESC[201~` (end), allowing applications to distinguish pasted text from typed input.
+
+**PUA (Private Use Area)** — Reserved Unicode range (U+E000–U+F8FF) for application-specific characters. Textarea uses PUA runes to encode paste IDs as placeholders in the buffer, avoiding rendering overhead from long pasted content.
+
+**Paste placeholder** — A single PUA rune stored in the textarea buffer, representing stored paste content. Rendered as dim `[Text N]` where N is the paste ID. Deleted atomically; cursor skips over it.
 
 ## Testing
 

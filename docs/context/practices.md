@@ -74,6 +74,19 @@ go func() {
 result := Text(ctx, TextOptions{...})
 ```
 
+### Simulating Paste Events
+
+```go
+go func() {
+	in.EmitKeypress("t", Key{Name: "t", Rune: 't'})
+	in.EmitPaste("large content from clipboard")
+	in.EmitKeypress("", Key{Name: "return"})
+}()
+result := Textarea(ctx, TextareaOptions{...})
+```
+
+`EmitPaste()` emits a Key with Name "paste" and Content set. Textarea collects paste content into a buffer and renders as a `[Text N]` placeholder, resolving the original content on submit.
+
 ### Frame Verification
 
 Render functions must emit frames:

@@ -41,9 +41,11 @@ TAP uses an **event-driven prompt engine** at its core:
 - **Validation** with custom error messages (supports `ValidationError`)
 - **Default/initial values** for pre-filling prompts
 - **Keyboard shortcuts**: vim-style movement (hjkl), Escape/Ctrl+C for cancel, Return to submit
-- **Modifier detection**: Shift+Enter for Textarea, via extended keyboard protocols (Kitty, xterm modifyOtherKeys)
+- **Modifier detection**: Shift+Enter for Textarea, via extended keyboard protocols (xterm modifyOtherKeys)
+- **Bracketed paste mode**: Supports large paste operations via terminal escape sequences; textarea stores paste content with PUA placeholders
 - **Multiline textarea**: Shift+Enter for newlines, Up/Down arrows for line navigation, smart column tracking
 - **Multiline rendering** with soft-wrap detection and cursor repositioning
+- **Paste placeholders**: Textarea renders pasted content as dim `[Text N]` placeholders to avoid visual noise; resolves to original text on submit
 - **Event emission**: for custom subscribers (on state, value, cursor, key events)
 - **Cross-platform**: Unix (signals) and Windows (console API) terminal handling
 

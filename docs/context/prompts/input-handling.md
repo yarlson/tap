@@ -9,12 +9,14 @@ All prompts route keypresses through `prompt.handleKey()`:
 3. **Movement key emission**: Cursor keys emit "cursor" events for select/multiselect/list components
 4. **Vim alias support**: hjkl mapped to arrow keys when `track=false`
 5. **Modifier detection**: Key struct includes `Shift` and `Ctrl` flags from terminal protocols
-6. **Special key handling**:
+6. **Paste handling** (Textarea): Paste events insert PUA (Private Use Area) rune placeholders at cursor
+7. **Special key handling**:
+   - **Paste**: Insert content via PUA placeholder; resolved to original text on submit
    - **Return** (unmodified): Set value, run validation, transition to Submit/Error
    - **Shift+Return**: Component-specific (Textarea: insert newline; others: may not apply)
    - **Escape/Ctrl+C**: Transition to Cancel immediately
-   - **Backspace**: Delete character before cursor
-   - **Delete**: Delete character at cursor
+   - **Backspace**: Delete character before cursor (or atomic PUA placeholder)
+   - **Delete**: Delete character at cursor (or atomic PUA placeholder)
    - **Tab**: Insert tab character at cursor
    - **Space**: Insert space at cursor
    - **Regular chars**: Insert at cursor position (ASCII 32-126)
@@ -66,6 +68,21 @@ inverse(placeholder[0]) + dim(placeholder[1:])
 ```
 
 Placeholder disappears once user types first character.
+
+## Paste Buffer Handling (Textarea)
+
+When a paste event occurs, the textarea:
+
+1. **Store content**: Each paste increments a counter and stores content in `pasteBuffers` map
+2. **Insert placeholder**: A PUA (Private Use Area) rune encodes the paste ID at cursor position
+3. **Display as placeholder**: Renders as dim `[Text N]` where N is the paste ID
+4. **Cursor behavior**:
+   - Left/Right arrow keys skip over PUA placeholders atomically (move before/after the entire placeholder)
+   - Backspace/Delete remove the entire PUA placeholder and clean its content from `pasteBuffers`
+5. **Resolve on submit**: When user presses Return, `resolve()` expands all PUA runes to their original content
+6. **Bracketed paste mode**: Textarea enables `ESC[?2004h` on init and disables `ESC[?2004l` on finalize
+
+This design allows viewing multiple pastes visually while avoiding rendering complexity from long pasted text.
 
 ## Multiline Navigation (Textarea)
 

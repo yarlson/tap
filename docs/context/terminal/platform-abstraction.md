@@ -65,10 +65,11 @@ type Writer interface {
 
 ```go
 type Key struct {
-	Name  string // "a", "return", "escape", "left", "up", etc.
-	Rune  rune   // Printable character if applicable
-	Ctrl  bool   // Ctrl modifier
-	Shift bool   // Shift modifier
+	Name    string // "a", "return", "escape", "left", "up", "paste", etc.
+	Rune    rune   // Printable character if applicable
+	Ctrl    bool   // Ctrl modifier
+	Shift   bool   // Shift modifier
+	Content string // Paste content when Name == "paste"
 }
 ```
 
@@ -76,17 +77,20 @@ Built by keyboard handler; emitted on keypress event.
 
 **Keyboard Protocol Detection**:
 
-TAP enables **extended keyboard mode** via kitty keyboard protocol (CSI sequence `\x1b[>4m`) to receive modifier information from terminals that support it. This allows detection of Shift+Enter, Shift+arrows, etc.
+TAP enables **extended keyboard mode** via xterm modifyOtherKeys level 2 (CSI sequence `\x1b[>4;2m`) to receive modifier information from terminals that support it. This allows detection of Shift+Enter, Shift+arrows, etc.
 
 **Supported protocols**:
+- **xterm modifyOtherKeys level 2**: `ESC[27;modifier;keycodeu` format with modifier reporting
 - **Kitty protocol**: `ESC[keycode;modifiersu` format
-- **xterm modifyOtherKeys**: `ESC[27;modifier;keycodeu` format (older xterm variants)
+- **Bracketed paste mode**: `ESC[200~...content...ESC[201~` for pasting large text blocks
 - **Basic ANSI**: Fallback to standard arrow keys and control codes
 
 **Parser functions** (`internal/terminal/terminal.go`):
 - `parseCSI()` — Collects CSI parameters (supports both `;` and `:` separators)
-- `resolveCSI()` — Maps CSI terminator and parameters to Key events
+- `resolveCSI()` — Maps CSI terminator and parameters to Key events; detects paste start (200~)
+- `readBracketedPaste()` — Accumulates runes until paste end marker (201~); caps at 10MB
 - `resolveModifiedKey()` — Decodes modifier bitmask to Shift/Ctrl flags
+- `parseKey()` — Routes to CSI parser; treats line feed (10) as Shift+Enter fallback
 
 Modifier encoding: `modifier = 1 + bitmask` where bit 0 = Shift, bit 1 = Alt, bit 2 = Ctrl.
 
@@ -114,6 +118,12 @@ defer SetTermIO(nil, nil)
 - Writes to stdout directly
 - No TTY opening, no goroutines, no event loop
 - Prevents zombie "readKeys" goroutine that steals keypresses
+
+**MockReadable paste simulation** (`mock.go`):
+
+- `EmitPaste(content string)` — Simulate a bracketed paste event
+- Emits a Key with Name "paste" and Content field set
+- Used for testing paste handling in textarea and other prompts
 
 ## TTY Management
 
