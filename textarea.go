@@ -2,9 +2,37 @@ package tap
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 )
+
+// Bracketed paste mode escape sequences.
+const (
+	bracketedPasteEnable  = "\x1b[?2004h"
+	bracketedPasteDisable = "\x1b[?2004l"
+)
+
+// PUA rune helpers for paste placeholder encoding.
+// Paste placeholders are stored as Private Use Area runes (U+E000+) in the buffer.
+
+func isPUA(r rune) bool   { return r >= 0xE000 && r <= 0xF8FF }
+func puaToID(r rune) int  { return int(r-0xE000) + 1 }
+func idToPUA(id int) rune { return rune(0xE000 + id - 1) }
+
+// resolve expands all PUA runes in the buffer with their stored paste content.
+func resolve(buf []rune, pastes map[int]string) string {
+	var b strings.Builder
+	for _, r := range buf {
+		if isPUA(r) {
+			b.WriteString(pastes[puaToID(r)])
+		} else {
+			b.WriteRune(r)
+		}
+	}
+
+	return b.String()
+}
 
 // Textarea creates a styled multiline text input prompt.
 func Textarea(ctx context.Context, opts TextareaOptions) string {
@@ -28,9 +56,16 @@ func Textarea(ctx context.Context, opts TextareaOptions) string {
 func textarea(ctx context.Context, opts TextareaOptions) string {
 	// Local buffer state (track=false, same pattern as Autocomplete)
 	var (
-		buf []rune
-		cur int
+		buf          []rune
+		cur          int
+		pasteCounter int
+		pasteBuffers = make(map[int]string)
 	)
+
+	// Enable bracketed paste mode
+	if opts.Output != nil {
+		_, _ = opts.Output.Write([]byte(bracketedPasteEnable))
+	}
 
 	p := NewPromptWithTracking(PromptOptions{
 		Input:        opts.Input,
@@ -82,7 +117,6 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 
 			default:
 				// Active/Initial/Error state
-				content := string(buf)
 				barColor := cyan
 
 				if s == StateError {
@@ -101,6 +135,8 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 					return result
 				}
 
+				// Render buffer with PUA runes replaced by dim placeholders
+				content := renderBufWithPlaceholders(buf)
 				lines := strings.Split(content, "\n")
 				var parts []string
 
@@ -121,6 +157,13 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 		},
 	}, false)
 
+	// Disable bracketed paste mode on finalize
+	p.On("finalize", func() {
+		if opts.Output != nil {
+			_, _ = opts.Output.Write([]byte(bracketedPasteDisable))
+		}
+	})
+
 	// Initialize from InitialValue if provided
 	if opts.InitialValue != "" {
 		buf = []rune(opts.InitialValue)
@@ -131,13 +174,19 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 	// Key handling
 	p.On("key", func(_ string, key Key) {
 		switch {
+		case key.Name == "paste":
+			pasteCounter++
+			pasteBuffers[pasteCounter] = key.Content
+			buf = slices.Insert(buf, cur, idToPUA(pasteCounter))
+			cur++
+
 		case key.Name == "return" && key.Shift:
 			// Shift+Enter: insert newline
 			buf = slices.Insert(buf, cur, '\n')
 			cur++
 
 		case key.Name == "return":
-			val := string(buf)
+			val := resolve(buf, pasteBuffers)
 			if val == "" && opts.DefaultValue != "" {
 				val = opts.DefaultValue
 			}
@@ -149,11 +198,19 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 		case key.Name == "left":
 			if cur > 0 {
 				cur--
+				// If we landed right after a PUA rune, skip it
+				if cur > 0 && isPUA(buf[cur-1]) {
+					cur--
+				}
 			}
 
 		case key.Name == "right":
 			if cur < len(buf) {
 				cur++
+				// If we just moved onto a PUA rune, skip it
+				if cur < len(buf) && isPUA(buf[cur]) {
+					cur++
+				}
 			}
 
 		case key.Name == "up":
@@ -171,12 +228,21 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 
 		case key.Name == "backspace":
 			if cur > 0 {
-				buf = slices.Delete(buf, cur-1, cur)
-				cur--
+				target := cur - 1
+				if isPUA(buf[target]) {
+					delete(pasteBuffers, puaToID(buf[target]))
+				}
+
+				buf = slices.Delete(buf, target, target+1)
+				cur = target
 			}
 
 		case key.Name == "delete":
 			if cur < len(buf) {
+				if isPUA(buf[cur]) {
+					delete(pasteBuffers, puaToID(buf[cur]))
+				}
+
 				buf = slices.Delete(buf, cur, cur+1)
 			}
 
@@ -187,7 +253,7 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 			}
 		}
 
-		p.SetImmediateValue(string(buf))
+		p.SetImmediateValue(resolve(buf, pasteBuffers))
 	})
 
 	v := p.Prompt(ctx)
@@ -196,6 +262,21 @@ func textarea(ctx context.Context, opts TextareaOptions) string {
 	}
 
 	return ""
+}
+
+// renderBufWithPlaceholders converts a buffer to a display string,
+// replacing PUA runes with dim "[Text N]" placeholders.
+func renderBufWithPlaceholders(buf []rune) string {
+	var b strings.Builder
+	for _, r := range buf {
+		if isPUA(r) {
+			b.WriteString(dim(fmt.Sprintf("[Text %d]", puaToID(r))))
+		} else {
+			b.WriteRune(r)
+		}
+	}
+
+	return b.String()
 }
 
 // renderTextareaPlaceholder renders placeholder text with inverse first char + dim rest.
@@ -209,15 +290,16 @@ func renderTextareaPlaceholder(placeholder string) string {
 }
 
 // renderTextareaLine renders a single line of textarea content with cursor display.
+// The line parameter contains rendered text (with ANSI for PUA placeholders).
+// Cursor positioning uses the raw buf to map cursor index to display position.
 func renderTextareaLine(line string, buf []rune, cursor, lineIdx int, state ClackState) string {
 	if state != StateActive && state != StateInitial {
 		return line
 	}
 
-	// Calculate cursor position within this line
+	// Calculate cursor position within this line in the raw buffer
 	lineStart := 0
 	for i := 0; i < lineIdx; i++ {
-		// Find the next newline to determine where this line starts
 		idx := indexRune(buf[lineStart:], '\n')
 		if idx < 0 {
 			break
@@ -226,24 +308,62 @@ func renderTextareaLine(line string, buf []rune, cursor, lineIdx int, state Clac
 		lineStart += idx + 1
 	}
 
-	lineEnd := lineStart + len([]rune(line))
+	// Find raw line end
+	lineEnd := lineStart
+	for lineEnd < len(buf) && buf[lineEnd] != '\n' {
+		lineEnd++
+	}
+
 	if cursor < lineStart || cursor > lineEnd {
 		return line
 	}
 
-	// Cursor is on this line
+	// Cursor is on this line. Map raw buffer position to display position.
+	// Walk the raw buffer from lineStart to cursor, tracking display offset
+	// in the rendered string (which has ANSI sequences for PUA runes).
 	posInLine := cursor - lineStart
-	runes := []rune(line)
 
-	if posInLine >= len(runes) {
+	// Count how many runes (non-PUA) and PUA placeholders are before cursor position
+	// We need to map raw cursor offset to display string offset
+	displayOffset := 0
+	for i := lineStart; i < lineStart+posInLine && i < len(buf); i++ {
+		if isPUA(buf[i]) {
+			// PUA rune renders as dim("[Text N]") which includes ANSI codes
+			placeholder := dim(fmt.Sprintf("[Text %d]", puaToID(buf[i])))
+			displayOffset += len(placeholder)
+		} else {
+			displayOffset += len(string(buf[i]))
+		}
+	}
+
+	// Now split the rendered line at displayOffset (byte offset)
+	if displayOffset >= len(line) {
 		return line + inverse(" ")
 	}
 
-	before := string(runes[:posInLine])
-	char := string(runes[posInLine])
-	after := string(runes[posInLine+1:])
+	before := line[:displayOffset]
+	after := line[displayOffset:]
 
-	return before + inverse(char) + after
+	// Extract the first rune/token at cursor position for inverse rendering
+	// If cursor is on a PUA rune, the placeholder is already styled, just add cursor after
+	if posInLine < lineEnd-lineStart && isPUA(buf[lineStart+posInLine]) {
+		// Cursor is at a PUA rune position — render cursor after the placeholder
+		placeholder := dim(fmt.Sprintf("[Text %d]", puaToID(buf[lineStart+posInLine])))
+		rest := line[displayOffset+len(placeholder):]
+
+		return before + placeholder + inverse(" ") + rest
+	}
+
+	// Regular rune at cursor — apply inverse to the first rune
+	firstRune := []rune(after)
+	if len(firstRune) == 0 {
+		return line + inverse(" ")
+	}
+
+	charStr := string(firstRune[0])
+	remaining := after[len(charStr):]
+
+	return before + inverse(charStr) + remaining
 }
 
 // indexRune returns the index of the first occurrence of r in s, or -1.

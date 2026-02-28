@@ -679,6 +679,439 @@ func TestTextarea_MultilineCancelDisplay(t *testing.T) {
 	}
 }
 
+// --- TASK2: Paste buffer unit tests ---
+
+func TestResolve_NoPUA(t *testing.T) {
+	buf := []rune("hello world")
+	pastes := map[int]string{}
+
+	got := resolve(buf, pastes)
+	if got != "hello world" {
+		t.Fatalf("expected %q, got %q", "hello world", got)
+	}
+}
+
+func TestResolve_WithPUA(t *testing.T) {
+	buf := []rune{'h', 'i', idToPUA(1), '!'}
+	pastes := map[int]string{1: "pasted content"}
+
+	got := resolve(buf, pastes)
+	if got != "hipasted content!" {
+		t.Fatalf("expected %q, got %q", "hipasted content!", got)
+	}
+}
+
+func TestResolve_MultiplePUA(t *testing.T) {
+	buf := []rune{'a', idToPUA(1), 'b', idToPUA(2), 'c'}
+	pastes := map[int]string{1: "X", 2: "YZ"}
+
+	got := resolve(buf, pastes)
+	if got != "aXbYZc" {
+		t.Fatalf("expected %q, got %q", "aXbYZc", got)
+	}
+}
+
+func TestIsPUA(t *testing.T) {
+	tests := []struct {
+		name     string
+		r        rune
+		expected bool
+	}{
+		{"PUA start", 0xE000, true},
+		{"PUA middle", 0xE100, true},
+		{"PUA end", 0xF8FF, true},
+		{"regular letter", 'a', false},
+		{"space", ' ', false},
+		{"newline", '\n', false},
+		{"zero", 0, false},
+		{"just below PUA", 0xDFFF, false},
+		{"just above PUA", 0xF900, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isPUA(tt.r)
+			if got != tt.expected {
+				t.Errorf("isPUA(%U) = %v, want %v", tt.r, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestPUARoundtrip(t *testing.T) {
+	for id := 1; id <= 10; id++ {
+		r := idToPUA(id)
+		if !isPUA(r) {
+			t.Errorf("idToPUA(%d) produced non-PUA rune %U", id, r)
+		}
+
+		gotID := puaToID(r)
+		if gotID != id {
+			t.Errorf("puaToID(idToPUA(%d)) = %d, want %d", id, gotID, id)
+		}
+	}
+}
+
+// --- TASK2: Paste buffer integration tests ---
+
+func TestTextarea_PasteInsertsPlaceholder(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("hello")
+	time.Sleep(5 * time.Millisecond)
+
+	frames := out.GetFrames()
+	found := false
+
+	for _, frame := range frames {
+		if strings.Contains(frame, "[Text 1]") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Error("expected [Text 1] placeholder in rendered frames")
+	}
+
+	in.EmitKeypress("", Key{Name: "return"})
+	<-resultCh
+}
+
+func TestTextarea_PasteAndResolve(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("hello")
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "hello" {
+		t.Fatalf("expected %q, got %q", "hello", got)
+	}
+}
+
+func TestTextarea_MultiplePastes(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("first")
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("second")
+	time.Sleep(5 * time.Millisecond)
+
+	// Check that both placeholders appear in frames
+	frames := out.GetFrames()
+	foundText1 := false
+	foundText2 := false
+
+	for _, frame := range frames {
+		if strings.Contains(frame, "[Text 1]") {
+			foundText1 = true
+		}
+
+		if strings.Contains(frame, "[Text 2]") {
+			foundText2 = true
+		}
+	}
+
+	if !foundText1 {
+		t.Error("expected [Text 1] placeholder in rendered frames")
+	}
+
+	if !foundText2 {
+		t.Error("expected [Text 2] placeholder in rendered frames")
+	}
+
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "firstsecond" {
+		t.Fatalf("expected %q, got %q", "firstsecond", got)
+	}
+}
+
+func TestTextarea_AtomicPlaceholderDelete(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitPaste("pasted")
+	time.Sleep(5 * time.Millisecond)
+
+	// Backspace should remove the entire placeholder
+	in.EmitKeypress("", Key{Name: "backspace"})
+	time.Sleep(5 * time.Millisecond)
+
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "" {
+		t.Fatalf("expected empty string after deleting paste placeholder, got %q", got)
+	}
+}
+
+func TestTextarea_CursorSkipsPlaceholder(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "ab"
+	in.EmitKeypress("a", Key{Name: "a", Rune: 'a'})
+	in.EmitKeypress("b", Key{Name: "b", Rune: 'b'})
+
+	// Paste "X"
+	in.EmitPaste("X")
+
+	// Type "cd"
+	in.EmitKeypress("c", Key{Name: "c", Rune: 'c'})
+	in.EmitKeypress("d", Key{Name: "d", Rune: 'd'})
+
+	// Cursor is at end: a b [PUA] c d
+	// Move left twice → should be at position after 'b' (skipping over PUA)
+	in.EmitKeypress("", Key{Name: "left"})
+	in.EmitKeypress("", Key{Name: "left"})
+
+	// Insert "Z" — should appear between 'b' and placeholder
+	in.EmitKeypress("Z", Key{Name: "Z", Rune: 'Z'})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "abZXcd" {
+		t.Fatalf("expected %q, got %q", "abZXcd", got)
+	}
+}
+
+func TestTextarea_TypedAndPastedMixed(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	in.EmitKeypress("a", Key{Name: "a", Rune: 'a'})
+	in.EmitPaste("B")
+	in.EmitKeypress("c", Key{Name: "c", Rune: 'c'})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "aBc" {
+		t.Fatalf("expected %q, got %q", "aBc", got)
+	}
+}
+
+func TestTextarea_PasteDeleteCleansStore(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "x", paste, then delete at placeholder position
+	in.EmitKeypress("x", Key{Name: "x", Rune: 'x'})
+	in.EmitPaste("DELETED")
+	time.Sleep(5 * time.Millisecond)
+
+	// Move left to position cursor before the PUA rune, then use delete
+	in.EmitKeypress("", Key{Name: "left"})
+	// Now cursor is before PUA, delete forward removes it
+	in.EmitKeypress("", Key{Name: "delete"})
+	time.Sleep(5 * time.Millisecond)
+
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	if got != "x" {
+		t.Fatalf("expected %q after deleting paste placeholder with delete key, got %q", "x", got)
+	}
+}
+
+func TestTextarea_BracketedPasteMode(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Check that bracketed paste mode enable sequence was written to output
+	frames := out.GetFrames()
+	foundEnable := false
+
+	for _, frame := range frames {
+		if strings.Contains(frame, "\x1b[?2004h") {
+			foundEnable = true
+			break
+		}
+	}
+
+	if !foundEnable {
+		t.Error("expected bracketed paste enable sequence (ESC[?2004h) in output")
+	}
+
+	in.EmitKeypress("", Key{Name: "return"})
+	<-resultCh
+
+	// Check that bracketed paste mode disable sequence was written on finalize
+	frames = out.GetFrames()
+	foundDisable := false
+
+	for _, frame := range frames {
+		if strings.Contains(frame, "\x1b[?2004l") {
+			foundDisable = true
+			break
+		}
+	}
+
+	if !foundDisable {
+		t.Error("expected bracketed paste disable sequence (ESC[?2004l) in output")
+	}
+}
+
+func TestTextarea_CursorRightSkipsPlaceholder(t *testing.T) {
+	in := NewMockReadable()
+	out := NewMockWritable()
+
+	resultCh := make(chan string, 1)
+
+	go func() {
+		res := Textarea(context.Background(), TextareaOptions{
+			Message: "Enter text:",
+			Input:   in,
+			Output:  out,
+		})
+		resultCh <- res
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+
+	// Type "ab"
+	in.EmitKeypress("a", Key{Name: "a", Rune: 'a'})
+	in.EmitKeypress("b", Key{Name: "b", Rune: 'b'})
+
+	// Move left to before 'b'
+	in.EmitKeypress("", Key{Name: "left"})
+
+	// Paste "X" — inserts PUA at cursor (between a and b)
+	in.EmitPaste("X")
+
+	// Cursor is now after PUA at position 2 (between PUA and b)
+	// Move left to before PUA (between a and PUA)
+	in.EmitKeypress("", Key{Name: "left"})
+
+	// Cursor is before PUA. Type "Z"
+	in.EmitKeypress("Z", Key{Name: "Z", Rune: 'Z'})
+
+	// Move right over PUA — should land between PUA and 'b' (position 2)
+	in.EmitKeypress("", Key{Name: "right"})
+
+	// Type "c" — should appear after placeholder and before 'b'
+	in.EmitKeypress("c", Key{Name: "c", Rune: 'c'})
+
+	time.Sleep(5 * time.Millisecond)
+	in.EmitKeypress("", Key{Name: "return"})
+
+	got := <-resultCh
+	// Expected: a Z [PUA=X] c b
+	if got != "aZXcb" {
+		t.Fatalf("expected %q, got %q", "aZXcb", got)
+	}
+}
+
 func TestTextarea_ShiftEnterMidLine(t *testing.T) {
 	in := NewMockReadable()
 	out := NewMockWritable()

@@ -18,6 +18,9 @@ const (
 	EraseDown  = "\x1b[J"
 	SaveCursor = "\x1b[s"
 	RestCursor = "\x1b[u"
+
+	// xterm modifyOtherKeys level 2: report modified keys (e.g. Shift+Enter).
+	enableModifyOtherKeys = "\x1b[>4;2m"
 )
 
 // MoveUp returns ANSI sequence to move cursor up n lines.
@@ -32,15 +35,17 @@ func MoveUp(n int) string {
 
 // Key represents a parsed keyboard input event.
 type Key struct {
-	Name  string // "up", "down", "left", "right", "return", "escape", "backspace", "delete", "space", "tab", or lowercase letter
-	Rune  rune   // The actual character (0 for special keys)
-	Ctrl  bool   // True if Ctrl modifier was pressed
-	Shift bool   // True if Shift modifier was pressed
+	Name    string // "up", "down", "left", "right", "return", "escape", "backspace", "delete", "space", "tab", "paste", or lowercase letter
+	Rune    rune   // The actual character (0 for special keys)
+	Ctrl    bool   // True if Ctrl modifier was pressed
+	Shift   bool   // True if Shift modifier was pressed
+	Content string // Paste content when Name == "paste"
 }
 
 // Terminal manages terminal I/O operations with channel-based key input.
 type Terminal struct {
 	tty       *tty.TTY
+	readRune  func() (rune, error) // rune reader; defaults to tty.ReadRune
 	keys      chan Key
 	done      chan struct{}
 	closeOnce sync.Once
@@ -99,20 +104,19 @@ func New() (*Terminal, error) {
 	doneChan := make(chan struct{})
 
 	term := &Terminal{
-		tty:    t,
-		keys:   keysChan,
-		done:   doneChan,
-		Reader: &Reader{keys: keysChan},
-		Writer: &Writer{},
+		tty:      t,
+		readRune: t.ReadRune,
+		keys:     keysChan,
+		done:     doneChan,
+		Reader:   &Reader{keys: keysChan},
+		Writer:   &Writer{},
 	}
 
 	globalTerminal = term
 
-	// Enable kitty keyboard protocol to receive modifier information for keys like Shift+Enter.
-	// This requests the terminal to send distinct escape sequences for modified keys.
-	// Kitty: CSI > 4 m
-	// xterm: CSI > 4 m (newer versions)
-	fmt.Print("\x1b[>4m") // Request kitty/xterm extended keyboard mode
+	// Request modified-key reporting for terminals that support xterm modifyOtherKeys.
+	// This enables escape sequences for keys like Shift+Enter.
+	fmt.Print(enableModifyOtherKeys)
 
 	// Set up signal handling for clean shutdown
 	sigChan := setupTermSignal()
@@ -145,7 +149,7 @@ func (t *Terminal) readKeys() {
 		default:
 		}
 
-		r, err := t.tty.ReadRune()
+		r, err := t.readRune()
 		if err != nil {
 			continue
 		}
@@ -164,7 +168,7 @@ func (t *Terminal) parseKey(r rune) Key {
 	switch r {
 	case 27: // ESC
 		// Try to read the next runes for escape sequence
-		n1, err := t.tty.ReadRune()
+		n1, err := t.readRune()
 		if err != nil {
 			return Key{Name: "escape"}
 		}
@@ -176,6 +180,8 @@ func (t *Terminal) parseKey(r rune) Key {
 		return Key{Name: "escape"}
 	case 13: // Enter
 		return Key{Name: "return"}
+	case 10: // Line feed (Shift+Enter fallback in some terminals)
+		return Key{Name: "return", Shift: true}
 	case 127, 8: // Backspace
 		return Key{Name: "backspace"}
 	case 9: // Tab
@@ -203,7 +209,7 @@ func (t *Terminal) parseCSI() Key {
 	hasDigit := false
 
 	for {
-		ch, err := t.tty.ReadRune()
+		ch, err := t.readRune()
 		if err != nil {
 			return Key{Name: "escape"}
 		}
@@ -245,6 +251,11 @@ func (t *Terminal) resolveCSI(params []int, terminator rune) Key {
 	case '~':
 		if len(params) == 0 {
 			return Key{Name: "escape"}
+		}
+
+		// ESC[200~ → Bracketed paste start
+		if params[0] == 200 && len(params) == 1 {
+			return t.readBracketedPaste()
 		}
 
 		// ESC[3~ → Delete
@@ -293,6 +304,70 @@ func (t *Terminal) resolveModifiedKey(keycode, modifier int) Key {
 	}
 
 	return Key{Name: "escape"}
+}
+
+// readBracketedPaste accumulates runes until the paste end marker ESC[201~ and
+// returns a single Key with Name "paste" and the accumulated content.
+// The buffer is capped at maxPasteSize to prevent unbounded growth.
+const maxPasteSize = 10 * 1024 * 1024 // 10MB
+
+func (t *Terminal) readBracketedPaste() Key {
+	var buf []rune
+
+	for {
+		r, err := t.readRune()
+		if err != nil {
+			return Key{Name: "paste", Content: string(buf)}
+		}
+
+		// Cap paste size to prevent memory exhaustion
+		if len(buf) >= maxPasteSize {
+			return Key{Name: "paste", Content: string(buf)}
+		}
+
+		if r == 27 { // ESC — potential end marker
+			r2, err := t.readRune()
+			if err != nil {
+				buf = append(buf, r)
+				return Key{Name: "paste", Content: string(buf)}
+			}
+
+			if r2 != '[' {
+				buf = append(buf, r, r2)
+				continue
+			}
+
+			// Read CSI params to check for 201~
+			var num int
+			for {
+				r3, err := t.readRune()
+				if err != nil {
+					buf = append(buf, r, r2)
+					return Key{Name: "paste", Content: string(buf)}
+				}
+
+				if r3 >= '0' && r3 <= '9' {
+					num = num*10 + int(r3-'0')
+					continue
+				}
+
+				if r3 == '~' && num == 201 {
+					return Key{Name: "paste", Content: string(buf)}
+				}
+
+				// Not the end marker — add the consumed bytes to buffer
+				buf = append(buf, r, r2)
+				buf = append(buf, []rune(fmt.Sprintf("%d", num))...)
+				buf = append(buf, r3)
+
+				break
+			}
+
+			continue
+		}
+
+		buf = append(buf, r)
+	}
 }
 
 // Keys returns the read-only key channel.

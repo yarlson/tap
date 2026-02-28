@@ -1,9 +1,26 @@
 package terminal
 
 import (
+	"io"
 	"testing"
 	"time"
 )
+
+// testTerminal creates a Terminal with a canned rune sequence for testing parseKey
+// and related methods without a real TTY.
+func testTerminal(runes ...rune) *Terminal {
+	idx := 0
+	return &Terminal{
+		readRune: func() (rune, error) {
+			if idx >= len(runes) {
+				return 0, io.EOF
+			}
+			r := runes[idx]
+			idx++
+			return r, nil
+		},
+	}
+}
 
 func TestNew(t *testing.T) {
 	term, err := New()
@@ -121,6 +138,22 @@ func TestParseKey_RegularKeysUnchanged(t *testing.T) {
 				t.Errorf("Shift should be false for rune %d (%q), got true", tt.input, string(tt.input))
 			}
 		})
+	}
+}
+
+func TestParseKey_LineFeedIsShiftReturn(t *testing.T) {
+	term, err := New()
+	if err != nil {
+		t.Skipf("Skipping test: no TTY available: %v", err)
+	}
+
+	result := term.parseKey(10)
+	if result.Name != "return" {
+		t.Errorf("Name: got %q, want %q", result.Name, "return")
+	}
+
+	if !result.Shift {
+		t.Error("Shift should be true for line feed fallback (Shift+Enter)")
 	}
 }
 
@@ -248,5 +281,59 @@ func TestMoveUp(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("MoveUp(%d): got %q, want %q", tt.n, result, tt.expected)
 		}
+	}
+}
+
+func TestParseKey_BracketedPaste(t *testing.T) {
+	// Simulate ESC[200~hello ESC[201~
+	// parseKey receives ESC (27), then reads: '[', '2','0','0','~' (CSI 200~)
+	// readBracketedPaste then reads: 'h','e','l','l','o', ESC, '[', '2','0','1','~'
+	term := testTerminal('[', '2', '0', '0', '~', 'h', 'e', 'l', 'l', 'o', 27, '[', '2', '0', '1', '~')
+	result := term.parseKey(27)
+
+	if result.Name != "paste" {
+		t.Errorf("Name: got %q, want %q", result.Name, "paste")
+	}
+
+	if result.Content != "hello" {
+		t.Errorf("Content: got %q, want %q", result.Content, "hello")
+	}
+}
+
+func TestParseKey_BracketedPasteEmpty(t *testing.T) {
+	// Simulate ESC[200~ ESC[201~ with no content between markers
+	term := testTerminal('[', '2', '0', '0', '~', 27, '[', '2', '0', '1', '~')
+	result := term.parseKey(27)
+
+	if result.Name != "paste" {
+		t.Errorf("Name: got %q, want %q", result.Name, "paste")
+	}
+
+	if result.Content != "" {
+		t.Errorf("Content: got %q, want %q", result.Content, "")
+	}
+}
+
+func TestParseKey_BracketedPasteMaxSize(t *testing.T) {
+	// Create a large paste that exceeds maxPasteSize
+	// We can't easily test with actual 10MB, so we'll manually verify the limit exists
+	// by checking that readBracketedPaste has protection (this test documents the constraint)
+
+	// Simulate ESC[200~ followed by 100,000 'x' runes (won't reach 10MB but tests the flow)
+	runes := []rune{'[', '2', '0', '0', '~'}
+	for i := 0; i < 100000; i++ {
+		runes = append(runes, 'x')
+	}
+
+	term := testTerminal(runes...)
+	result := term.parseKey(27)
+
+	if result.Name != "paste" {
+		t.Errorf("Name: got %q, want %q", result.Name, "paste")
+	}
+
+	// Verify content was accumulated (may be capped before end marker)
+	if result.Content == "" {
+		t.Error("Content should be non-empty")
 	}
 }

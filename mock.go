@@ -68,6 +68,11 @@ func (m *MockReadable) SendKey(char string, key Key) {
 	m.EmitKeypress(char, key)
 }
 
+// EmitPaste simulates a bracketed paste event by emitting a Key with Name "paste".
+func (m *MockReadable) EmitPaste(content string) {
+	m.EmitKeypress("", Key{Name: "paste", Content: content})
+}
+
 type MockWritable struct {
 	Buffer    []string
 	mutex     sync.Mutex
