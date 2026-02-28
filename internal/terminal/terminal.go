@@ -318,15 +318,27 @@ func (t *Terminal) resolveModifiedKey(keycode, modifier int) Key {
 	// modifier=2 means shift only (bitmask=1, bit 0 set)
 	// modifier=3 means shift+other (bitmask=2, etc.)
 	shift := false
+	ctrl := false
 	if modifier >= 2 {
 		shift = ((modifier - 1) & 0x01) != 0
+		ctrl = ((modifier - 1) & 0x04) != 0
 	}
 
-	if keycode == 13 {
-		return Key{Name: "return", Shift: shift}
+	switch {
+	case keycode == 13:
+		return Key{Name: "return", Shift: shift, Ctrl: ctrl}
+	case keycode == 9:
+		return Key{Name: "tab", Shift: shift, Ctrl: ctrl}
+	case keycode == 127 || keycode == 8:
+		return Key{Name: "backspace", Shift: shift, Ctrl: ctrl}
+	case keycode == 32:
+		return Key{Name: "space", Rune: ' ', Shift: shift, Ctrl: ctrl}
+	case keycode >= 32 && keycode <= 126:
+		r := rune(keycode)
+		return Key{Name: string(r), Rune: r, Shift: shift, Ctrl: ctrl}
+	default:
+		return Key{Name: "escape"}
 	}
-
-	return Key{Name: "escape"}
 }
 
 // readBracketedPaste accumulates runes until the paste end marker ESC[201~ and

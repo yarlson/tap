@@ -292,6 +292,73 @@ func TestResolveCSI_ShiftReturn_Ghostty(t *testing.T) {
 	}
 }
 
+func TestResolveModifiedKey_ShiftLetter(t *testing.T) {
+	term := &Terminal{}
+
+	// Shift+A via modifyOtherKeys: ESC[27;2;65~ → resolveModifiedKey(65, 2)
+	result := term.resolveModifiedKey(65, 2)
+	if result.Name != "A" {
+		t.Errorf("Name: got %q, want %q", result.Name, "A")
+	}
+
+	if result.Rune != 'A' {
+		t.Errorf("Rune: got %q, want %q", result.Rune, 'A')
+	}
+
+	if !result.Shift {
+		t.Error("Shift should be true for Shift+A")
+	}
+
+	if result.Name == "escape" {
+		t.Error("Shift+letter must not produce escape key")
+	}
+}
+
+func TestResolveModifiedKey_ShiftSpace(t *testing.T) {
+	term := &Terminal{}
+
+	result := term.resolveModifiedKey(32, 2)
+	if result.Name != "space" {
+		t.Errorf("Name: got %q, want %q", result.Name, "space")
+	}
+
+	if result.Rune != ' ' {
+		t.Errorf("Rune: got %q, want %q", result.Rune, ' ')
+	}
+
+	if !result.Shift {
+		t.Error("Shift should be true")
+	}
+}
+
+func TestResolveCSI_ShiftLetter_XtermModifyOtherKeys(t *testing.T) {
+	term := &Terminal{}
+
+	// xterm modifyOtherKeys: ESC[27;2;65~ → params=[27,2,65], terminator='~'
+	result := term.resolveCSI([]int{27, 2, 65}, '~')
+	if result.Name != "A" {
+		t.Errorf("Name: got %q, want %q", result.Name, "A")
+	}
+
+	if !result.Shift {
+		t.Error("Shift should be true for xterm Shift+A")
+	}
+}
+
+func TestResolveCSI_ShiftLetter_Kitty(t *testing.T) {
+	term := &Terminal{}
+
+	// Kitty protocol: ESC[65;2u → params=[65,2], terminator='u'
+	result := term.resolveCSI([]int{65, 2}, 'u')
+	if result.Name != "A" {
+		t.Errorf("Name: got %q, want %q", result.Name, "A")
+	}
+
+	if !result.Shift {
+		t.Error("Shift should be true for Kitty Shift+A")
+	}
+}
+
 func TestMoveUp(t *testing.T) {
 	tests := []struct {
 		n        int
