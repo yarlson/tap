@@ -2,6 +2,7 @@ package tap
 
 import (
 	"io"
+	"slices"
 	"sync"
 )
 
@@ -62,7 +63,7 @@ func (m *MockReadable) EmitKeypress(char string, key Key) {
 	}
 }
 
-// SendKey is a convenience method for testing
+// SendKey is a convenience method for testing.
 func (m *MockReadable) SendKey(char string, key Key) {
 	m.EmitKeypress(char, key)
 }
@@ -98,7 +99,7 @@ func (m *MockWritable) On(event string, handler func()) {
 
 func (m *MockWritable) Emit(event string) {
 	m.mutex.Lock()
-	handlers := append([]func(){}, m.listeners[event]...)
+	handlers := slices.Clone(m.listeners[event])
 	m.mutex.Unlock()
 
 	for _, handler := range handlers {
@@ -106,7 +107,7 @@ func (m *MockWritable) Emit(event string) {
 	}
 }
 
-// GetFrames returns all written frames for testing
+// GetFrames returns all written frames for testing.
 func (m *MockWritable) GetFrames() []string {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()

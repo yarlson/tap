@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Text creates a styled text input prompt
+// Text creates a styled text input prompt.
 func Text(ctx context.Context, opts TextOptions) string {
 	if opts.Input != nil && opts.Output != nil {
 		return text(ctx, opts)
@@ -24,7 +24,7 @@ func Text(ctx context.Context, opts TextOptions) string {
 	})
 }
 
-// text implements the core text prompt logic
+// text implements the core text prompt logic.
 func text(ctx context.Context, opts TextOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
@@ -53,7 +53,7 @@ func text(ctx context.Context, opts TextOptions) string {
 
 			if userInput == "" && opts.Placeholder != "" {
 				// Show placeholder with inverted first character
-				if len(opts.Placeholder) > 0 {
+				if opts.Placeholder != "" {
 					displayInput = inverse(string(opts.Placeholder[0])) + dim(opts.Placeholder[1:])
 				} else {
 					displayInput = inverse(" ")
@@ -117,7 +117,7 @@ func text(ctx context.Context, opts TextOptions) string {
 	return ""
 }
 
-// renderTextWithCursor renders text with a cursor indicator
+// renderTextWithCursor renders text with a cursor indicator.
 func renderTextWithCursor(text string, cursor int, state ClackState) string {
 	if state != StateActive && state != StateInitial {
 		return text

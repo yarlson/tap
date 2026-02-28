@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
-// Table renders a formatted table with headers and rows
+// Table renders a formatted table with headers and rows.
 func Table(headers []string, rows [][]string, opts TableOptions) {
 	out := opts.Output
 	if out == nil {
-		out, _ = resolveWriter()
+		out = resolveWriter()
 	}
 
 	if out == nil {
@@ -65,7 +65,7 @@ func Table(headers []string, rows [][]string, opts TableOptions) {
 	}
 }
 
-// calculateColumnWidths determines the optimal width for each column
+// calculateColumnWidths determines the optimal width for each column.
 func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []int {
 	numCols := len(headers)
 
@@ -182,7 +182,7 @@ func calculateColumnWidths(headers []string, rows [][]string, maxWidth int) []in
 	return widths
 }
 
-// normalizeRows ensures all rows have the same number of columns as headers
+// normalizeRows ensures all rows have the same number of columns as headers.
 func normalizeRows(rows [][]string, numCols int) [][]string {
 	normalized := make([][]string, len(rows))
 	for i, row := range rows {
@@ -199,7 +199,7 @@ func normalizeRows(rows [][]string, numCols int) [][]string {
 	return normalized
 }
 
-// renderTableWithBorders renders a table with full borders
+// renderTableWithBorders renders a table with full borders.
 func renderTableWithBorders(out Writer, headers []string, rows [][]string, columnWidths []int, linePrefix string, formatBorder func(string) string, opts TableOptions) {
 	numCols := len(headers)
 
@@ -254,7 +254,7 @@ func renderTableWithBorders(out Writer, headers []string, rows [][]string, colum
 	_, _ = fmt.Fprint(out, "\n")
 }
 
-// renderTableWithoutBorders renders a table without borders
+// renderTableWithoutBorders renders a table without borders.
 func renderTableWithoutBorders(out Writer, headers []string, rows [][]string, columnWidths []int, linePrefix string, opts TableOptions) {
 	// Header row
 	renderTableRow(out, headers, columnWidths, linePrefix, nil, opts, true)
@@ -265,7 +265,7 @@ func renderTableWithoutBorders(out Writer, headers []string, rows [][]string, co
 	}
 }
 
-// renderTableRow renders a single table row
+// renderTableRow renders a single table row.
 func renderTableRow(out Writer, row []string, columnWidths []int, linePrefix string, formatBorder func(string) string, opts TableOptions, isHeader bool) {
 	_, _ = fmt.Fprint(out, linePrefix)
 
@@ -318,7 +318,7 @@ func renderTableRow(out Writer, row []string, columnWidths []int, linePrefix str
 	_, _ = fmt.Fprint(out, "\n")
 }
 
-// alignText aligns text within the given width, accounting for ANSI escape sequences
+// alignText aligns text within the given width, accounting for ANSI escape sequences.
 func alignText(text string, width int, alignment TableAlignment) string {
 	// Get the visible width (excluding ANSI escape sequences)
 	textWidth := visibleWidth(text)
@@ -341,7 +341,7 @@ func alignText(text string, width int, alignment TableAlignment) string {
 	}
 }
 
-// truncateTableText truncates text to fit within the given width
+// truncateTableText truncates text to fit within the given width.
 func truncateTableText(text string, width int) string {
 	if visibleWidth(text) <= width {
 		return text
@@ -363,7 +363,7 @@ func truncateTableText(text string, width int) string {
 			i = next
 
 			if tw == 0 {
-				if len(token) > 0 && token[0] == '\x1b' {
+				if token != "" && token[0] == '\x1b' {
 					sawANSI = true
 
 					if token == Reset {
@@ -405,7 +405,7 @@ func truncateTableText(text string, width int) string {
 		i = next
 
 		if tw == 0 {
-			if len(token) > 0 && token[0] == '\x1b' {
+			if token != "" && token[0] == '\x1b' {
 				sawANSI = true
 
 				if token == Reset {

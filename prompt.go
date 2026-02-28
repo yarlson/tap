@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"os"
+	"slices"
 	"strings"
 	"sync/atomic"
 
 	"github.com/mattn/go-runewidth"
-	"github.com/yarlson/tap/internal/terminal"
-
 	xterm "golang.org/x/term"
+
+	"github.com/yarlson/tap/internal/terminal"
 )
 
 type PromptOptions struct {
@@ -63,27 +64,27 @@ func (p *Prompt) StateSnapshot() ClackState {
 }
 
 func (p *Prompt) UserInputSnapshot() string {
-	s := p.snap.Load().(promptState)
+	s, _ := p.snap.Load().(promptState)
 	return s.UserInput
 }
 
 func (p *Prompt) CursorSnapshot() int {
-	s := p.snap.Load().(promptState)
+	s, _ := p.snap.Load().(promptState)
 	return s.Cursor
 }
 
 func (p *Prompt) ErrorSnapshot() string {
-	s := p.snap.Load().(promptState)
+	s, _ := p.snap.Load().(promptState)
 	return s.Error
 }
 
 func (p *Prompt) ValueSnapshot() any {
-	s := p.snap.Load().(promptState)
+	s, _ := p.snap.Load().(promptState)
 	return s.Value
 }
 
-func (p *Prompt) snapshot() (ClackState, string) {
-	s := p.snap.Load().(promptState)
+func (p *Prompt) snapshot() (state ClackState, prevFrame string) {
+	s, _ := p.snap.Load().(promptState)
 	return s.State, s.PrevFrame
 }
 
@@ -114,14 +115,14 @@ func (p *Prompt) SetImmediateValue(v any) {
 	p.SetValue(v)
 }
 
-// NewPrompt creates a new prompt instance with default tracking
+// NewPrompt creates a new prompt instance with default tracking.
 func NewPrompt(options PromptOptions) *Prompt {
 	return NewPromptWithTracking(options, true)
 }
 
 // unboundedQueue creates an unbounded event queue by using a goroutine with a slice buffer.
 // Returns input and output channels. Input never blocks. Output delivers events in order.
-func unboundedQueue() (chan<- func(*promptState), <-chan func(*promptState)) {
+func unboundedQueue() (input chan<- func(*promptState), output <-chan func(*promptState)) {
 	in := make(chan func(*promptState))
 	out := make(chan func(*promptState))
 
@@ -163,7 +164,7 @@ func unboundedQueue() (chan<- func(*promptState), <-chan func(*promptState)) {
 	return in, out
 }
 
-// NewPromptWithTracking creates a new prompt instance with specified tracking
+// NewPromptWithTracking creates a new prompt instance with specified tracking.
 func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 	evIn, evOut := unboundedQueue()
 
@@ -185,12 +186,12 @@ func NewPromptWithTracking(options PromptOptions, trackValue bool) *Prompt {
 	return p
 }
 
-// On subscribes to an event
+// On subscribes to an event.
 func (p *Prompt) On(event string, handler any) {
 	p.preSubs[event] = append(p.preSubs[event], handler)
 }
 
-// Emit emits an event to all subscribers
+// Emit emits an event to all subscribers.
 func (p *Prompt) Emit(event string, args ...any) {
 	handlers := p.subscribers[event]
 	for _, handler := range handlers {
@@ -201,19 +202,27 @@ func (p *Prompt) Emit(event string, args ...any) {
 			}
 		case "confirm":
 			if h, ok := handler.(func(bool)); ok {
-				h(args[0].(bool))
+				if v, ok := args[0].(bool); ok {
+					h(v)
+				}
 			}
 		case "key":
-			if h, ok := handler.(func(string, Key)); ok {
-				h(args[0].(string), args[1].(Key))
+			if h, ok := handler.(func(string, Key)); ok && len(args) >= 2 {
+				s, _ := args[0].(string)
+				k, _ := args[1].(Key)
+				h(s, k)
 			}
 		case "cursor":
 			if h, ok := handler.(func(string)); ok {
-				h(args[0].(string))
+				if v, ok := args[0].(string); ok {
+					h(v)
+				}
 			}
 		case "userInput":
 			if h, ok := handler.(func(string)); ok {
-				h(args[0].(string))
+				if v, ok := args[0].(string); ok {
+					h(v)
+				}
 			}
 		case "finalize":
 			if h, ok := handler.(func()); ok {
@@ -231,7 +240,7 @@ func (p *Prompt) Emit(event string, args ...any) {
 	}
 }
 
-// Prompt starts the prompt and returns the result
+// Prompt starts the prompt and returns the result.
 func (p *Prompt) Prompt(ctx context.Context) any {
 	if ctx != nil {
 		select {
@@ -301,7 +310,7 @@ func isCancel(char string, key Key) bool {
 		return true
 	}
 
-	if key.Name == "escape" || strings.ToLower(char) == "escape" {
+	if key.Name == "escape" || strings.EqualFold(char, "escape") {
 		return true
 	}
 
@@ -365,8 +374,8 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 	}
 
 	hasConfirmSubscribers := len(p.subscribers["confirm"]) > 0 || len(p.preSubs["confirm"]) > 0
-	if char != "" && (strings.ToLower(char) == "y" || strings.ToLower(char) == "n") && hasConfirmSubscribers {
-		val := strings.ToLower(char) == "y"
+	if char != "" && (strings.EqualFold(char, "y") || strings.EqualFold(char, "n")) && hasConfirmSubscribers {
+		val := strings.EqualFold(char, "y")
 		p.Emit("confirm", val)
 		s.Value = val
 		s.State = StateSubmit
@@ -408,7 +417,7 @@ func (p *Prompt) handleKey(s *promptState, char string, key Key) {
 	}
 }
 
-// updateUserInputWithCursor handles cursor-based input tracking
+// updateUserInputWithCursor handles cursor-based input tracking.
 func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char string, key Key) (newInput string, newCursor int) {
 	runes := []rune(current)
 
@@ -441,8 +450,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 	case "backspace":
 		// Delete character before cursor
 		if cursor > 0 && len(runes) > 0 {
-			newRunes := append(runes[:cursor-1], runes[cursor:]...)
-			return string(newRunes), cursor - 1
+			return string(slices.Delete(runes, cursor-1, cursor)), cursor - 1
 		}
 
 		return current, cursor
@@ -450,8 +458,7 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 	case "delete":
 		// Delete character at cursor
 		if cursor < len(runes) {
-			newRunes := append(runes[:cursor], runes[cursor+1:]...)
-			return string(newRunes), cursor
+			return string(slices.Delete(runes, cursor, cursor+1)), cursor
 		}
 
 		return current, cursor
@@ -462,27 +469,23 @@ func (p *Prompt) updateUserInputWithCursor(current string, cursor int, char stri
 
 	case "tab":
 		// Insert tab at cursor
-		newRunes := append(runes[:cursor], append([]rune{'\t'}, runes[cursor:]...)...)
-		return string(newRunes), cursor + 1
+		return string(slices.Insert(runes, cursor, '\t')), cursor + 1
 
 	case "space":
 		// Insert space at cursor
-		newRunes := append(runes[:cursor], append([]rune{' '}, runes[cursor:]...)...)
-		return string(newRunes), cursor + 1
+		return string(slices.Insert(runes, cursor, ' ')), cursor + 1
 
 	default:
 		// Regular printable characters - insert at cursor position
-		if char != "" && len(char) > 0 {
-			newRunes := runes
-
+		if char != "" {
 			for _, r := range char {
 				if r >= 32 && r <= 126 { // Printable ASCII
-					newRunes = append(newRunes[:cursor], append([]rune{r}, newRunes[cursor:]...)...)
+					runes = slices.Insert(runes, cursor, r)
 					cursor++
 				}
 			}
 
-			return string(newRunes), cursor
+			return string(runes), cursor
 		}
 
 		return current, cursor
@@ -531,7 +534,7 @@ func (p *Prompt) adoptPreSubscribers() {
 	}
 }
 
-// Detect terminal width; fall back to 80
+// Detect terminal width; fall back to 80.
 func getColumns() int {
 	fd := int(os.Stdout.Fd())
 	if cols, _, err := xterm.GetSize(fd); err == nil && cols > 0 {
@@ -541,13 +544,13 @@ func getColumns() int {
 	return 80
 }
 
-// Printable width ignoring ANSI; rune-count approximation
+// Printable width ignoring ANSI; rune-count approximation.
 func visibleWidth(s string) int {
 	clean := ansiRegexp.ReplaceAllString(s, "")
 	return runewidth.StringWidth(clean)
 }
 
-// Rows occupied by frame, accounting for soft-wrapping
+// Rows occupied by frame, accounting for soft-wrapping.
 func countPhysicalLines(s string) int {
 	if s == "" {
 		return 0
@@ -564,10 +567,10 @@ func countPhysicalLines(s string) int {
 	for _, line := range segments {
 		w := visibleWidth(line)
 		if w == 0 {
-			total += 1
+			total++
 			continue
 		}
-		// rows = ceil(w / cols)
+		// Ceiling division for wrapped rows.
 		rows := (w-1)/cols + 1
 		total += rows
 	}
@@ -640,7 +643,7 @@ func (p *Prompt) finalize(st *promptState) any {
 	}
 
 	if st.State == StateCancel {
-		var res any = nil
+		var res any
 		p.Emit("cancel", res)
 
 		return res
@@ -672,20 +675,20 @@ func runWithTerminal[T any](fn func(Reader, Writer) T) T {
 	return fn(t.Reader, t.Writer)
 }
 
-// resolveWriter returns the output writer and an optional terminal to close.
-// For simple output operations (like Intro, Outro, Message), we use a lightweight
-// stdout wrapper that doesn't start a readKeys goroutine. This prevents zombie
-// terminals from stealing keypresses from interactive prompts.
-func resolveWriter() (Writer, *terminal.Terminal) {
+// resolveWriter returns the output writer for simple output operations
+// (like Intro, Outro, Message). It uses a lightweight stdout wrapper that
+// doesn't start a readKeys goroutine, preventing zombie terminals from
+// stealing keypresses from interactive prompts.
+func resolveWriter() Writer {
 	// Check if we have override I/O set
 	if out := getOverrideWriter(); out != nil {
-		return out, nil
+		return out
 	}
 
 	// Return a simple stdout writer - no full terminal needed for output-only operations.
 	// This avoids the bug where resolveWriter would create a terminal that keeps reading
 	// keys and interferes with interactive prompts.
-	return &stdoutWriter{}, nil
+	return &stdoutWriter{}
 }
 
 // stdoutWriter is a simple Writer implementation that writes to stdout.
@@ -697,15 +700,15 @@ func (w *stdoutWriter) Write(p []byte) (int, error) {
 	return os.Stdout.Write(p)
 }
 
-func (w *stdoutWriter) On(event string, handler func()) {
+func (w *stdoutWriter) On(_ string, _ func()) {
 	// No-op: output-only writer doesn't need resize handling
 }
 
-func (w *stdoutWriter) Emit(event string) {
+func (w *stdoutWriter) Emit(_ string) {
 	// No-op: output-only writer doesn't emit events
 }
 
-// getOverrideWriter returns the override writer if set
+// getOverrideWriter returns the override writer if set.
 func getOverrideWriter() Writer {
 	// Just return the override writer directly - do NOT create a terminal here!
 	// Creating a terminal just to check for an override would leave a zombie

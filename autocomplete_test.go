@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// suggestFn is a helper to convert a static list into a suggestion function
+// suggestFn is a helper to convert a static list into a suggestion function.
 func suggestFn(list []string) func(string) []string {
 	return func(input string) []string {
 		var out []string

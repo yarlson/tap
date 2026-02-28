@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// StreamOptions configure the styled stream renderer
+// StreamOptions configure the styled stream renderer.
 type StreamOptions struct {
 	Output Writer
 	// If true, show elapsed time on finalize line
@@ -27,19 +27,18 @@ type Stream struct {
 	title string
 }
 
-// NewStream creates a Stream
+// NewStream creates a Stream.
 func NewStream(opts StreamOptions) *Stream {
 	if opts.Output != nil {
 		return &Stream{out: opts.Output, opts: opts}
 	}
 
-	out, _ := resolveWriter()
-	opts.Output = out
+	opts.Output = resolveWriter()
 
 	return &Stream{out: opts.Output, opts: opts}
 }
 
-// Start prints the header and prepares to receive lines
+// Start prints the header and prepares to receive lines.
 func (s *Stream) Start(message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -58,7 +57,7 @@ func (s *Stream) Start(message string) {
 	}
 }
 
-// WriteLine appends a single line into the stream area
+// WriteLine appends a single line into the stream area.
 func (s *Stream) WriteLine(line string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -72,7 +71,7 @@ func (s *Stream) WriteLine(line string) {
 	s.lines = append(s.lines, line)
 }
 
-// Pipe reads from r line-by-line and writes to the stream area
+// Pipe reads from r line-by-line and writes to the stream area.
 func (s *Stream) Pipe(r io.Reader) {
 	s.mu.Lock()
 	open := s.open

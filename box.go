@@ -3,6 +3,7 @@ package tap
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -41,10 +42,10 @@ func YellowBorder(s string) string { return yellow(s) }
 func RedBorder(s string) string    { return red(s) }
 
 // Box renders a framed message with optional title.
-func Box(message string, title string, opts BoxOptions) {
+func Box(message, title string, opts BoxOptions) {
 	out := opts.Output
 	if out == nil {
-		out, _ = resolveWriter()
+		out = resolveWriter()
 	}
 
 	if out == nil {
@@ -93,27 +94,14 @@ func Box(message string, title string, opts BoxOptions) {
 	// Determine box width
 	var boxWidth int
 
-	if opts.WidthAuto {
-		// start from fraction if provided else full width
-		frac := opts.WidthFraction
-		if frac <= 0 {
-			frac = 1.0
-		}
+	frac := opts.WidthFraction
+	if frac <= 0 {
+		frac = 1.0
+	}
 
-		boxWidth = int(math.Floor(float64(columns)*frac)) - visibleWidth(linePrefix)
-		if boxWidth <= 0 {
-			boxWidth = maxBoxWidth
-		}
-	} else {
-		frac := opts.WidthFraction
-		if frac <= 0 {
-			frac = 1.0
-		}
-
-		boxWidth = int(math.Floor(float64(columns)*frac)) - visibleWidth(linePrefix)
-		if boxWidth <= 0 {
-			boxWidth = maxBoxWidth
-		}
+	boxWidth = int(math.Floor(float64(columns)*frac)) - visibleWidth(linePrefix)
+	if boxWidth <= 0 {
+		boxWidth = maxBoxWidth
 	}
 
 	if boxWidth%2 != 0 {
@@ -205,10 +193,8 @@ func Box(message string, title string, opts BoxOptions) {
 }
 
 // getPaddingForLine mirrors the TS logic.
-func getPaddingForLine(lineLength int, innerWidth int, padding int, align BoxAlignment) (int, int) {
-	left := padding
-
-	var right int
+func getPaddingForLine(lineLength, innerWidth, padding int, align BoxAlignment) (left, right int) {
+	left = padding
 
 	switch align {
 	case BoxAlignCenter:
@@ -258,7 +244,7 @@ func truncateToWidth(s string, width int) string {
 		i = next
 
 		if tw == 0 {
-			if len(token) > 0 && token[0] == '\x1b' {
+			if token != "" && token[0] == '\x1b' {
 				sawANSI = true
 
 				if token == Reset {
@@ -358,7 +344,7 @@ func wrapTextHardWidth(s string, width int) []string {
 				return
 			}
 
-			tokens = append([]segment{}, tokens[n:]...)
+			tokens = slices.Clone(tokens[n:])
 
 			recalc()
 		}

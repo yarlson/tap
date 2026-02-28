@@ -17,7 +17,7 @@ func TestPrompt_RendersRenderResult(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -47,7 +47,7 @@ func TestPrompt_SubmitsOnReturn(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -83,7 +83,7 @@ func TestPrompt_CancelsOnCtrlC(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -119,7 +119,7 @@ func TestPrompt_CancelsOnEscape(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string { return "foo" },
+		Render: func(_ *Prompt) string { return "foo" },
 	})
 
 	// Start the prompt
@@ -146,7 +146,7 @@ func TestPrompt_EmitsFinalizeOnSubmitAndCancel(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string { return "foo" },
+		Render: func(_ *Prompt) string { return "foo" },
 	})
 
 	var finalizeCount int32
@@ -165,7 +165,7 @@ func TestPrompt_EmitsFinalizeOnSubmitAndCancel(t *testing.T) {
 	p2 := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string { return "bar" },
+		Render: func(_ *Prompt) string { return "bar" },
 	})
 
 	atomic.StoreInt32(&finalizeCount, 0)
@@ -188,7 +188,7 @@ func TestPrompt_InitialUserInputSetsValueAndEmitsEvent(t *testing.T) {
 		Input:            input,
 		Output:           output,
 		InitialUserInput: "hello",
-		Render:           func(p *Prompt) string { return "foo" },
+		Render:           func(_ *Prompt) string { return "foo" },
 	})
 
 	p.On("userInput", func(v string) { got = v })
@@ -213,7 +213,7 @@ func TestPrompt_ReturnsCancelSymbolOnImmediateAbort(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string { return "foo" },
+		Render: func(_ *Prompt) string { return "foo" },
 	})
 
 	// Return cancel symbol without blocking
@@ -228,7 +228,7 @@ func TestPrompt_EmitsSubmitAndCancelEventsWithPayload(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string { return "foo" },
+		Render: func(_ *Prompt) string { return "foo" },
 	})
 
 	var (
@@ -254,13 +254,13 @@ func TestPrompt_EmitsSubmitAndCancelEventsWithPayload(t *testing.T) {
 	p2 := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string { return "bar" },
+		Render: func(_ *Prompt) string { return "bar" },
 	})
 	submitted = atomic.Value{}
 	cancelled = atomic.Value{}
 
 	p2.On("submit", func(v any) { submitted.Store(v) })
-	p2.On("cancel", func(v any) { cancelled.Store(true) })
+	p2.On("cancel", func(_ any) { cancelled.Store(true) })
 
 	go func() { _ = p2.Prompt(context.Background()) }()
 
@@ -279,13 +279,13 @@ func TestPrompt_DoesNotWriteInitialValueToValue(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 		InitialValue: "bananas",
 	})
 
-	p.On("value", func(value any) {
+	p.On("value", func(_ any) {
 		eventCalled = true
 	})
 
@@ -306,7 +306,7 @@ func TestPrompt_ReRendersOnResize(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			renderCallCount.Add(1)
 			return "foo"
 		},
@@ -335,7 +335,7 @@ func TestPrompt_StateIsActiveAfterFirstRender(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -361,7 +361,7 @@ func TestPrompt_EmitsTruthyConfirmOnYPress(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -398,7 +398,7 @@ func TestPrompt_EmitsFalseyConfirmOnNPress(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -429,7 +429,7 @@ func TestPrompt_EmitsKeyEventForUnknownChars(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -475,7 +475,7 @@ func TestPrompt_EmitsCursorEventsForMovementKeys(t *testing.T) {
 			p := NewPrompt(PromptOptions{
 				Input:  input,
 				Output: output,
-				Render: func(p *Prompt) string {
+				Render: func(_ *Prompt) string {
 					return "foo"
 				},
 			})
@@ -511,7 +511,7 @@ func TestPrompt_ValidatesValueOnReturn(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 		Validate: func(value any) error {
@@ -544,7 +544,7 @@ func TestPrompt_AcceptsValidValueWithValidation(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 		Validate: func(value any) error {
@@ -587,7 +587,7 @@ func TestPrompt_EmitsCursorEventsForMovementKeyAliasesWhenNotTracking(t *testing
 			p := NewPromptWithTracking(PromptOptions{
 				Input:  input,
 				Output: output,
-				Render: func(p *Prompt) string {
+				Render: func(_ *Prompt) string {
 					return "foo"
 				},
 			}, false)
@@ -628,7 +628,7 @@ func TestPrompt_AbortsOnAbortSignal(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -655,7 +655,7 @@ func TestPrompt_ReturnsImmediatelyIfSignalIsAlreadyAborted(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 	})
@@ -671,7 +671,7 @@ func TestPrompt_AcceptsInvalidInitialValue(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 		InitialValue: "invalid",
@@ -700,7 +700,7 @@ func TestPrompt_ValidatesValueWithErrorObject(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 		Validate: func(value any) error {
@@ -733,7 +733,7 @@ func TestPrompt_ValidatesValueWithRegexValidation(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 		Validate: func(value any) error {
@@ -751,7 +751,7 @@ func TestPrompt_ValidatesValueWithRegexValidation(t *testing.T) {
 				}
 			}
 
-			if matched && len(str) > 0 {
+			if matched && str != "" {
 				return nil
 			}
 
@@ -780,7 +780,7 @@ func TestPrompt_AcceptsValidValueWithRegexValidation(t *testing.T) {
 	p := NewPrompt(PromptOptions{
 		Input:  input,
 		Output: output,
-		Render: func(p *Prompt) string {
+		Render: func(_ *Prompt) string {
 			return "foo"
 		},
 		Validate: func(value any) error {
@@ -798,7 +798,7 @@ func TestPrompt_AcceptsValidValueWithRegexValidation(t *testing.T) {
 				}
 			}
 
-			if matched && len(str) > 0 {
+			if matched && str != "" {
 				return nil
 			}
 

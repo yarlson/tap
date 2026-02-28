@@ -8,7 +8,7 @@ import (
 
 // Type aliases for convenience
 
-// TextOptions defines options for styled text prompt
+// TextOptions defines options for styled text prompt.
 type TextOptions struct {
 	Message      string
 	Placeholder  string
@@ -19,7 +19,7 @@ type TextOptions struct {
 	Output       Writer
 }
 
-// PasswordOptions defines options for styled password prompt
+// PasswordOptions defines options for styled password prompt.
 type PasswordOptions struct {
 	Message      string
 	DefaultValue string
@@ -29,7 +29,7 @@ type PasswordOptions struct {
 	Output       Writer
 }
 
-// ConfirmOptions defines options for styled confirm prompt
+// ConfirmOptions defines options for styled confirm prompt.
 type ConfirmOptions struct {
 	Message      string
 	Active       string
@@ -39,14 +39,14 @@ type ConfirmOptions struct {
 	Output       Writer
 }
 
-// SelectOption represents an option in a styled select prompt
+// SelectOption represents an option in a styled select prompt.
 type SelectOption[T any] struct {
 	Value T
 	Label string
 	Hint  string
 }
 
-// SelectOptions defines options for styled select prompt
+// SelectOptions defines options for styled select prompt.
 type SelectOptions[T any] struct {
 	Message      string
 	Options      []SelectOption[T]
@@ -56,7 +56,7 @@ type SelectOptions[T any] struct {
 	Output       Writer
 }
 
-// MultiSelectOptions defines options for styled multi-select prompt
+// MultiSelectOptions defines options for styled multi-select prompt.
 type MultiSelectOptions[T any] struct {
 	Message       string
 	Options       []SelectOption[T]
@@ -66,7 +66,7 @@ type MultiSelectOptions[T any] struct {
 	Output        Writer
 }
 
-// AutocompleteOptions defines options for styled autocomplete text prompt
+// AutocompleteOptions defines options for styled autocomplete text prompt.
 type AutocompleteOptions struct {
 	Message      string
 	Placeholder  string
@@ -163,7 +163,7 @@ const (
 	TableColorCyan    TableColor = "cyan"
 )
 
-// TableOptions defines options for styled table rendering
+// TableOptions defines options for styled table rendering.
 type TableOptions struct {
 	Output           Writer
 	ShowBorders      bool

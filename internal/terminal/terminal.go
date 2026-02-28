@@ -9,7 +9,7 @@ import (
 	"github.com/mattn/go-tty"
 )
 
-// ANSI escape sequences for terminal control
+// ANSI escape sequences for terminal control.
 const (
 	CursorHide = "\x1b[?25l"
 	CursorShow = "\x1b[?25h"
@@ -20,7 +20,7 @@ const (
 	RestCursor = "\x1b[u"
 )
 
-// MoveUp returns ANSI sequence to move cursor up n lines
+// MoveUp returns ANSI sequence to move cursor up n lines.
 func MoveUp(n int) string {
 	result := ""
 	for i := 0; i < n; i++ {
@@ -30,14 +30,14 @@ func MoveUp(n int) string {
 	return result
 }
 
-// Key represents a parsed keyboard input event
+// Key represents a parsed keyboard input event.
 type Key struct {
 	Name string // "up", "down", "left", "right", "return", "escape", "backspace", "delete", "space", "tab", or lowercase letter
 	Rune rune   // The actual character (0 for special keys)
 	Ctrl bool   // True if Ctrl modifier was pressed
 }
 
-// Terminal manages terminal I/O operations with channel-based key input
+// Terminal manages terminal I/O operations with channel-based key input.
 type Terminal struct {
 	tty       *tty.TTY
 	keys      chan Key
@@ -47,14 +47,14 @@ type Terminal struct {
 	Writer    *Writer
 }
 
-// Reader provides read-only access to the key channel
+// Reader provides read-only access to the key channel.
 type Reader struct {
 	keys   <-chan Key
 	cancel chan struct{} // Cancel channel to stop current consumer
 	mu     sync.Mutex    // Protects cancel channel
 }
 
-// Writer wraps stdout
+// Writer wraps stdout.
 type Writer struct{}
 
 // Singleton terminal management to prevent multiple terminals competing for input.
@@ -125,7 +125,7 @@ func New() (*Terminal, error) {
 	return term, nil
 }
 
-// readKeys continuously reads from TTY and sends parsed keys to channel
+// readKeys continuously reads from TTY and sends parsed keys to channel.
 func (t *Terminal) readKeys() {
 	defer func() {
 		close(t.keys)
@@ -152,7 +152,7 @@ func (t *Terminal) readKeys() {
 	}
 }
 
-// parseKey converts a rune to a Key struct, handling escape sequences
+// parseKey converts a rune to a Key struct, handling escape sequences.
 func (t *Terminal) parseKey(r rune) Key {
 	switch r {
 	case 27: // ESC
@@ -205,12 +205,12 @@ func (t *Terminal) parseKey(r rune) Key {
 	}
 }
 
-// Keys returns the read-only key channel
+// Keys returns the read-only key channel.
 func (t *Terminal) Keys() <-chan Key {
 	return t.keys
 }
 
-// Write implements io.Writer
+// Write implements io.Writer.
 func (t *Terminal) Write(b []byte) (int, error) {
 	return os.Stdout.Write(b)
 }
@@ -261,8 +261,8 @@ func (r *Reader) On(event string, handler func(string, Key)) {
 	}()
 }
 
-// Reader methods
-func (r *Reader) Read(p []byte) (int, error) {
+// Reader methods.
+func (r *Reader) Read(_ []byte) (int, error) {
 	return 0, nil
 }
 
@@ -273,7 +273,7 @@ type resizeHandler struct {
 
 var globalResizeHandler = &resizeHandler{}
 
-// On registers a callback for terminal events
+// On registers a callback for terminal events.
 func (w *Writer) On(event string, handler func()) {
 	if event != "resize" {
 		return
@@ -302,10 +302,10 @@ func (w *Writer) On(event string, handler func()) {
 	globalResizeHandler.handlers = append(globalResizeHandler.handlers, handler)
 }
 
-// Emit triggers an event (no-op for compatibility)
-func (w *Writer) Emit(event string) {}
+// Emit triggers an event (no-op for compatibility).
+func (w *Writer) Emit(_ string) {}
 
-// Writer methods
+// Writer methods.
 func (w *Writer) Write(b []byte) (int, error) {
 	return os.Stdout.Write(b)
 }

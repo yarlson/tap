@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// ProgressOptions configures the progress bar
+// ProgressOptions configures the progress bar.
 type ProgressOptions struct {
 	Style  string // "light", "heavy", "block"
 	Max    int    // maximum value (default 100)
@@ -17,7 +17,7 @@ type ProgressOptions struct {
 	Output Writer
 }
 
-// Progress represents a progress bar that wraps spinner functionality
+// Progress represents a progress bar that wraps spinner functionality.
 type Progress struct {
 	style    string
 	max      int
@@ -37,35 +37,34 @@ type Progress struct {
 	lastPct         int
 }
 
-// Progress bar character styles
+// Progress bar character styles.
 var progressChars = map[string]string{
 	"light": "─",
 	"heavy": "━",
 	"block": "█",
 }
 
-// NewProgress creates a new progress bar
+// NewProgress creates a new progress bar.
 func NewProgress(opts ProgressOptions) *Progress {
 	if opts.Output != nil {
 		return newProgress(opts)
 	}
 
-	out, _ := resolveWriter()
-	opts.Output = out
+	opts.Output = resolveWriter()
 
 	return newProgress(opts)
 }
 
-// newProgress creates a new progress bar with given options
+// newProgress creates a new progress bar with given options.
 func newProgress(opts ProgressOptions) *Progress {
 	style := opts.Style
 	if style == "" {
 		style = "heavy"
 	}
 
-	max := opts.Max
-	if max <= 0 {
-		max = 100
+	maxVal := opts.Max
+	if maxVal <= 0 {
+		maxVal = 100
 	}
 
 	size := opts.Size
@@ -75,7 +74,7 @@ func newProgress(opts ProgressOptions) *Progress {
 
 	return &Progress{
 		style:      style,
-		max:        max,
+		max:        maxVal,
 		size:       size,
 		value:      0,
 		output:     opts.Output,
@@ -86,7 +85,7 @@ func newProgress(opts ProgressOptions) *Progress {
 	}
 }
 
-// Start begins the progress bar animation
+// Start begins the progress bar animation.
 func (p *Progress) Start(msg string) {
 	p.mu.Lock()
 
@@ -108,7 +107,7 @@ func (p *Progress) Start(msg string) {
 	p.render(msg)
 }
 
-// Advance updates progress by the given step and optionally updates message
+// Advance updates progress by the given step and optionally updates message.
 func (p *Progress) Advance(step int, msg string) {
 	p.mu.Lock()
 
@@ -131,12 +130,12 @@ func (p *Progress) Advance(step int, msg string) {
 	p.render(renderMsg)
 }
 
-// Message updates the message without advancing progress
+// Message updates the message without advancing progress.
 func (p *Progress) Message(msg string) {
 	p.Advance(0, msg)
 }
 
-// Stop halts the progress bar and shows final state
+// Stop halts the progress bar and shows final state.
 func (p *Progress) Stop(msg string, code int, opts ...StopOptions) {
 	p.mu.Lock()
 
@@ -193,7 +192,7 @@ func (p *Progress) Stop(msg string, code int, opts ...StopOptions) {
 	}
 }
 
-// animate runs the animation loop
+// animate runs the animation loop.
 func (p *Progress) animate() {
 	for {
 		select {
@@ -214,7 +213,7 @@ func (p *Progress) animate() {
 	}
 }
 
-// render draws the current progress bar frame
+// render draws the current progress bar frame.
 func (p *Progress) render(msg string) {
 	if p.output == nil {
 		return
@@ -244,7 +243,7 @@ func (p *Progress) render(msg string) {
 	if isActive {
 		coloredBar = fmt.Sprintf("%s%s",
 			cyan(filledBar), // active progress in cyan
-			dim(emptyBar)) // remaining progress dimmed
+			dim(emptyBar))   // remaining progress dimmed
 	} else {
 		coloredBar = fmt.Sprintf("%s%s",
 			green(filledBar), // completed progress in green
@@ -285,7 +284,7 @@ func (p *Progress) render(msg string) {
 	p.mu.Unlock()
 }
 
-// removeAnsiCodes removes ANSI color codes to get actual display length
+// removeAnsiCodes removes ANSI color codes to get actual display length.
 func removeAnsiCodes(s string) string {
 	// Simple regex to remove ANSI escape sequences
 	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)

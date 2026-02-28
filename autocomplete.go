@@ -3,6 +3,7 @@ package tap
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -54,9 +55,9 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 		}
 	}
 
-	max := opts.MaxResults
-	if max <= 0 {
-		max = 5
+	maxResults := opts.MaxResults
+	if maxResults <= 0 {
+		maxResults = 5
 	}
 
 	state := &acState{selected: 0}
@@ -68,11 +69,11 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 		}
 
 		list := opts.Suggest(input)
-		if len(list) > max {
-			return append([]string{}, list[:max]...)
+		if len(list) > maxResults {
+			return slices.Clone(list[:maxResults])
 		}
 
-		return append([]string{}, list...)
+		return slices.Clone(list)
 	}
 
 	// Local input state
@@ -187,12 +188,12 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 			}
 		case "backspace":
 			if cur > 0 {
-				inBuf = append(inBuf[:cur-1], inBuf[cur:]...)
+				inBuf = slices.Delete(inBuf, cur-1, cur)
 				cur--
 			}
 		case "delete":
 			if cur < len(inBuf) {
-				inBuf = append(inBuf[:cur], inBuf[cur+1:]...)
+				inBuf = slices.Delete(inBuf, cur, cur+1)
 			}
 		case "up":
 			if len(state.suggestions) > 0 {
@@ -217,7 +218,7 @@ func autocomplete(ctx context.Context, opts AutocompleteOptions) string {
 			if char != "" {
 				for _, r := range char {
 					if r >= 32 && r <= 126 { // basic printable
-						inBuf = append(inBuf[:cur], append([]rune{r}, inBuf[cur:]...)...)
+						inBuf = slices.Insert(inBuf, cur, r)
 						cur++
 					}
 				}

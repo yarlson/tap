@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// helper to strip ANSI codes
+// helper to strip ANSI codes.
 func removeANSI(s string) string {
-	ansi := regexp.MustCompile("\x1b\\[[0-9;?]*[ -/]*[@-~]")
+	ansi := regexp.MustCompile("\x1b\\[[0-9;?]*[\x20-\x2f]*[@-~]")
 	return ansi.ReplaceAllString(s, "")
 }
 

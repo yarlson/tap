@@ -24,7 +24,7 @@ func Cancel(message string, opts ...MessageOptions) {
 	}
 
 	if out == nil {
-		out, _ = resolveWriter()
+		out = resolveWriter()
 	}
 
 	if out == nil {
@@ -51,7 +51,7 @@ func Intro(title string, opts ...MessageOptions) {
 	}
 
 	if out == nil {
-		out, _ = resolveWriter()
+		out = resolveWriter()
 	}
 
 	if out == nil {
@@ -78,7 +78,7 @@ func Outro(message string, opts ...MessageOptions) {
 	}
 
 	if out == nil {
-		out, _ = resolveWriter()
+		out = resolveWriter()
 	}
 
 	if out == nil {
@@ -104,7 +104,7 @@ func Message(message string, opts ...MessageOptions) {
 	}
 
 	if out == nil {
-		out, _ = resolveWriter()
+		out = resolveWriter()
 	}
 
 	if out == nil {

@@ -17,6 +17,8 @@ func TestSpinner_API(t *testing.T) {
 	time.Sleep(time.Millisecond)
 	s.Message("hello")
 	s.Stop("", 0)
+
+	assert.NotEmpty(t, out.GetFrames())
 }
 
 func TestSpinner_RendersFrames(t *testing.T) {

@@ -7,20 +7,20 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-// Strip ANSI sequences for width calculations
-var ansiRegexp = regexp.MustCompile("\x1b\\[[0-9;?]*[ -/]*[@-~]")
+// Strip ANSI sequences for width calculations.
+var ansiRegexp = regexp.MustCompile("\x1b\\[[0-9;?]*[\x20-\x2f]*[@-~]")
 
 // scanANSIToken returns the next ANSI-aware token from s starting at idx.
 // The returned token preserves escape sequences, while width reports the
 // printable width contributed by the token (zero for control sequences).
-func scanANSIToken(s string, idx int) (token string, width int, next int) {
+func scanANSIToken(s string, idx int) (token string, width, next int) {
 	if idx >= len(s) {
 		return "", 0, len(s)
 	}
 
 	if s[idx] == '\x1b' {
 		rel := ansiRegexp.FindStringIndex(s[idx:])
-		if rel != nil && rel[0] == 0 {
+		if len(rel) > 0 && rel[0] == 0 {
 			return s[idx : idx+rel[1]], 0, idx + rel[1]
 		}
 

@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-// styledSelectState holds the state for a styled select prompt
+// styledSelectState holds the state for a styled select prompt.
 type styledSelectState[T any] struct {
 	cursor  int
 	options []SelectOption[T]
 }
 
-// Select creates a styled select prompt
+// Select creates a styled select prompt.
 func Select[T any](ctx context.Context, opts SelectOptions[T]) T {
 	if opts.Input != nil && opts.Output != nil {
 		return selectInternal(ctx, opts)
@@ -31,7 +31,7 @@ func Select[T any](ctx context.Context, opts SelectOptions[T]) T {
 	})
 }
 
-// selectInternal implements the core select prompt logic
+// selectInternal implements the core select prompt logic.
 func selectInternal[T any](ctx context.Context, opts SelectOptions[T]) T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {

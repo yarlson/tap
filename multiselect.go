@@ -3,6 +3,7 @@ package tap
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -32,7 +33,7 @@ func MultiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 	})
 }
 
-// multiSelect implements the core multiselect prompt logic
+// multiSelect implements the core multiselect prompt logic.
 func multiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 	coreOptions := make([]SelectOption[T], len(opts.Options))
 	for i, opt := range opts.Options {
@@ -112,7 +113,7 @@ func multiSelect[T any](ctx context.Context, opts MultiSelectOptions[T]) []T {
 
 				for i, v := range state.order {
 					if v == idx {
-						state.order = append(state.order[:i], state.order[i+1:]...)
+						state.order = slices.Delete(state.order, i, i+1)
 						break
 					}
 				}

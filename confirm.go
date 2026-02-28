@@ -2,7 +2,7 @@ package tap
 
 import "context"
 
-// Confirm creates a styled confirm prompt
+// Confirm creates a styled confirm prompt.
 func Confirm(ctx context.Context, opts ConfirmOptions) bool {
 	if opts.Input != nil && opts.Output != nil {
 		return confirm(ctx, opts)
@@ -21,7 +21,7 @@ func Confirm(ctx context.Context, opts ConfirmOptions) bool {
 	})
 }
 
-// confirm implements the core confirm prompt logic
+// confirm implements the core confirm prompt logic.
 func confirm(ctx context.Context, opts ConfirmOptions) bool {
 	active := opts.Active
 	if active == "" {
@@ -80,7 +80,7 @@ func confirm(ctx context.Context, opts ConfirmOptions) bool {
 		}
 	})
 
-	p.On("confirm", func(val bool) {})
+	p.On("confirm", func(_ bool) {})
 
 	p.SetValue(currentValue)
 

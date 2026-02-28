@@ -1,14 +1,14 @@
 package tap
 
-// Unicode symbols for drawing styled prompts
+// Unicode symbols for drawing styled prompts.
 const (
-	// Step symbols
+	// Step symbols.
 	StepActive = "◆"
 	StepCancel = "■"
 	StepError  = "▲"
 	StepSubmit = "◇"
 
-	// Bar symbols
+	// Bar symbols.
 	Bar           = "│"
 	BarH          = "─"
 	BarStart      = "┌"
@@ -16,40 +16,40 @@ const (
 	BarEnd        = "└"
 	BarEndRight   = "┘"
 
-	// Corner symbols (rounded)
+	// Corner symbols (rounded).
 	CornerTopLeft     = "╭"
 	CornerTopRight    = "╮"
 	CornerBottomLeft  = "╰"
 	CornerBottomRight = "╯"
 
-	// Radio symbols
+	// Radio symbols.
 	RadioActive   = "●"
 	RadioInactive = "○"
 
-	// Checkbox symbols for multiselect
+	// Checkbox symbols for multiselect.
 	CheckboxChecked   = "◼"
 	CheckboxUnchecked = "◻"
 )
 
-// ANSI color codes
+// ANSI color codes.
 const (
 	Reset = "\033[0m"
 
-	// Colors
+	// Colors.
 	Gray   = "\033[90m"
 	Red    = "\033[91m"
 	Green  = "\033[92m"
 	Yellow = "\033[93m"
 	Cyan   = "\033[96m"
 
-	// Text styles
+	// Text styles.
 	Dim           = "\033[2m"
 	Bold          = "\033[1m"
 	Inverse       = "\033[7m"
 	Strikethrough = "\033[9m"
 )
 
-// Color helper functions
+// Color helper functions.
 func gray(s string) string          { return Gray + s + Reset }
 func red(s string) string           { return Red + s + Reset }
 func green(s string) string         { return Green + s + Reset }
@@ -60,7 +60,7 @@ func bold(s string) string          { return Bold + s + Reset }
 func inverse(s string) string       { return Inverse + s + Reset }
 func strikethrough(s string) string { return Strikethrough + s + Reset }
 
-// Symbol returns the appropriate symbol for a given state with color
+// Symbol returns the appropriate symbol for a given state with color.
 func Symbol(state ClackState) string {
 	switch state {
 	case StateInitial, StateActive:
@@ -76,9 +76,9 @@ func Symbol(state ClackState) string {
 	return StepActive
 }
 
-// Table symbols
+// Table symbols.
 const (
-	// Table border symbols
+	// Table border symbols.
 	TableTopLeft     = "┌"
 	TableTopRight    = "┐"
 	TableBottomLeft  = "└"
@@ -92,7 +92,7 @@ const (
 	TableVertical    = "│"
 )
 
-// Table styling helper functions
+// Table styling helper functions.
 func tableStyle(text string, style TableStyle, color TableColor) string {
 	result := text
 

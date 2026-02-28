@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// SpinnerOptions configures the spinner behavior
+// SpinnerOptions configures the spinner behavior.
 type SpinnerOptions struct {
 	Indicator     string   // "dots" (default) or "timer"
 	Frames        []string // custom frames; defaults to unicode spinner frames
@@ -18,7 +18,7 @@ type SpinnerOptions struct {
 	ErrorMessage  string
 }
 
-// Spinner represents an animated spinner
+// Spinner represents an animated spinner.
 type Spinner struct {
 	indicator string
 	frames    []string
@@ -53,19 +53,18 @@ func clearLines(out Writer, lines int) {
 	}
 }
 
-// NewSpinner creates a new Spinner with defaults
+// NewSpinner creates a new Spinner with defaults.
 func NewSpinner(opts SpinnerOptions) *Spinner {
 	if opts.Output != nil {
 		return newSpinner(opts)
 	}
 
-	out, _ := resolveWriter()
-	opts.Output = out
+	opts.Output = resolveWriter()
 
 	return newSpinner(opts)
 }
 
-// newSpinner creates a new Spinner with given options
+// newSpinner creates a new Spinner with given options.
 func newSpinner(opts SpinnerOptions) *Spinner {
 	indicator := opts.Indicator
 	if indicator == "" {
@@ -91,7 +90,7 @@ func newSpinner(opts SpinnerOptions) *Spinner {
 	}
 }
 
-// Start begins the spinner animation
+// Start begins the spinner animation.
 func (s *Spinner) Start(msg string) {
 	s.mu.Lock()
 
@@ -121,7 +120,7 @@ func (s *Spinner) Start(msg string) {
 	s.render()
 }
 
-// Message updates the spinner message for next frame
+// Message updates the spinner message for next frame.
 func (s *Spinner) Message(msg string) {
 	s.mu.Lock()
 	s.message = removeTrailingDots(msg)
@@ -209,7 +208,7 @@ func (s *Spinner) Stop(msg string, code int, opts ...StopOptions) {
 	s.mu.Unlock()
 }
 
-// IsCancelled reports whether Stop was called with cancel code (1)
+// IsCancelled reports whether Stop was called with cancel code (1).
 func (s *Spinner) IsCancelled() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -301,7 +300,7 @@ func formatTimer(start time.Time) string {
 	return fmt.Sprintf("[%ds]", sec)
 }
 
-// stripANSI removes ANSI color codes to get display length
+// stripANSI removes ANSI color codes to get display length.
 func stripANSI(s string) string {
 	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return ansiRegex.ReplaceAllString(s, "")

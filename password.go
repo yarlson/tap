@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Password creates a styled password input prompt that masks user input
+// Password creates a styled password input prompt that masks user input.
 func Password(ctx context.Context, opts PasswordOptions) string {
 	if opts.Input != nil && opts.Output != nil {
 		return password(ctx, opts)
@@ -24,7 +24,7 @@ func Password(ctx context.Context, opts PasswordOptions) string {
 	})
 }
 
-// password implements the core password prompt logic
+// password implements the core password prompt logic.
 func password(ctx context.Context, opts PasswordOptions) string {
 	var validate func(any) error
 	if opts.Validate != nil {
