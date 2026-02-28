@@ -63,6 +63,14 @@
 
 **Styling functions** — ANSI color/formatting helpers: `gray()`, `dim()`, `inverse()`, `strikethrough()`, `bold()`, etc.
 
+## Keyboard Protocols
+
+**Extended keyboard mode** — Terminal protocol (Kitty `ESC[>4m`) enabling modifier detection (Shift, Ctrl, Alt) for special keys. Allows Shift+Enter, Shift+arrows, etc. to be distinguished from unmodified keys.
+
+**CSI (Control Sequence Introducer)** — ANSI escape sequence `ESC[` initiating keyboard events. Parsed by `parseCSI()` to extract parameters and terminator, resolved to `Key` events by protocol handlers.
+
+**Modifier bitmask** — Encoded as `1 + bits` where bit 0 = Shift, bit 1 = Alt, bit 2 = Ctrl. Examples: modifier=1 (no modifiers), modifier=2 (Shift only), modifier=3 (Shift+Alt).
+
 ## Testing
 
 **Mock readable** — `NewMockReadable()` simulates keyboard input via `EmitKeypress()`.

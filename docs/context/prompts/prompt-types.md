@@ -109,17 +109,25 @@
 
 **Behavior**:
 
-- Multiline text input with newline support
-- Cursor-based editing (left/right/backspace/delete work across lines)
+- Multiline text input with cursor-based editing
+- **Shift+Return**: Insert newline within text (multiline editing)
+- **Return**: Submit the entire textarea content
+- **Up/Down arrows**: Navigate between lines, maintaining column position
+- **Left/Right arrows**: Move cursor within current line
+- **Backspace/Delete**: Delete characters across line boundaries
 - Placeholder when empty
 - Default and initial values supported
 
 **Key implementation** (`textarea.go`):
 
-- `track=false` (manual input buffer)
+- `track=false` (manual input buffer management)
 - Render multiline text with bar prefix per line
-- Return key inserts newline (Ctrl+Return or M-Return would submit if implemented; currently no modifier detection)
-- Note: Multiline Return not yet bound; validation not wired
+- Key handlers:
+  - Shift+Return calls `buf = slices.Insert(buf, cur, '\n')`
+  - Regular Return calls `p.SetValue(string(buf))` to submit
+  - Up/Down use `cursorToLineCol()` and `lineColToCursor()` for smart vertical navigation
+  - Left/Right adjust cursor within bounds
+  - Backspace/Delete modify buffer at cursor position
 
 ## All Prompt Components
 

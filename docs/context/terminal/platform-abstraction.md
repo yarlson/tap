@@ -61,7 +61,7 @@ type Writer interface {
 - No POSIX signal equivalents; custom event loop
 - Console mode configured for raw input
 
-## Key Struct
+## Key Struct and Keyboard Protocol Support
 
 ```go
 type Key struct {
@@ -69,11 +69,26 @@ type Key struct {
 	Rune  rune   // Printable character if applicable
 	Ctrl  bool   // Ctrl modifier
 	Shift bool   // Shift modifier
-	Alt   bool   // Alt/Meta modifier
 }
 ```
 
 Built by keyboard handler; emitted on keypress event.
+
+**Keyboard Protocol Detection**:
+
+TAP enables **extended keyboard mode** via kitty keyboard protocol (CSI sequence `\x1b[>4m`) to receive modifier information from terminals that support it. This allows detection of Shift+Enter, Shift+arrows, etc.
+
+**Supported protocols**:
+- **Kitty protocol**: `ESC[keycode;modifiersu` format
+- **xterm modifyOtherKeys**: `ESC[27;modifier;keycodeu` format (older xterm variants)
+- **Basic ANSI**: Fallback to standard arrow keys and control codes
+
+**Parser functions** (`internal/terminal/terminal.go`):
+- `parseCSI()` — Collects CSI parameters (supports both `;` and `:` separators)
+- `resolveCSI()` — Maps CSI terminator and parameters to Key events
+- `resolveModifiedKey()` — Decodes modifier bitmask to Shift/Ctrl flags
+
+Modifier encoding: `modifier = 1 + bitmask` where bit 0 = Shift, bit 1 = Alt, bit 2 = Ctrl.
 
 ## I/O Override System
 

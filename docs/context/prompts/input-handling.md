@@ -8,8 +8,10 @@ All prompts route keypresses through `prompt.handleKey()`:
 2. **User input tracking**: For text-based prompts (`track=true`), cursor-based updates via `updateUserInputWithCursor()`
 3. **Movement key emission**: Cursor keys emit "cursor" events for select/multiselect/list components
 4. **Vim alias support**: hjkl mapped to arrow keys when `track=false`
-5. **Special key handling**:
-   - **Return**: Set value, run validation, transition to Submit/Error
+5. **Modifier detection**: Key struct includes `Shift` and `Ctrl` flags from terminal protocols
+6. **Special key handling**:
+   - **Return** (unmodified): Set value, run validation, transition to Submit/Error
+   - **Shift+Return**: Component-specific (Textarea: insert newline; others: may not apply)
    - **Escape/Ctrl+C**: Transition to Cancel immediately
    - **Backspace**: Delete character before cursor
    - **Delete**: Delete character at cursor
@@ -65,9 +67,24 @@ inverse(placeholder[0]) + dim(placeholder[1:])
 
 Placeholder disappears once user types first character.
 
+## Multiline Navigation (Textarea)
+
+Textarea supports vertical navigation with Up/Down arrow keys:
+
+- **Up**: Move cursor to previous line at same column position (or end of shorter line)
+- **Down**: Move cursor to next line at same column position (or end of shorter line)
+- Column position is tracked during vertical moves to maintain intuitive editing
+
+Implementation uses helper functions:
+- `cursorToLineCol(buf, cursor)` — converts flat cursor index to (line, column)
+- `lineColToCursor(buf, line, col)` — converts (line, column) back to flat index
+- `countBufferLines(buf)` — counts total lines in buffer
+
 ## Multi-key Sequences
 
-No chord binding yet; each keypress is independent. Movement keys (up/down/left/right) are special-cased for select/multiselect; other components ignore them.
+No chord binding yet; each keypress is independent. Movement keys (up/down/left/right) are special-cased:
+- Select/MultiSelect: Emit "cursor" events for menu navigation
+- Textarea: Move cursor within text (vertical with Up/Down, horizontal with Left/Right)
 
 Example: hjkl support for Vim users in Select menus:
 
