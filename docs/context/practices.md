@@ -108,8 +108,19 @@ Render functions must emit frames:
 ### Validation
 
 - User-supplied validation function may return `ValidationError` (custom) or standard error
-- Parser wraps in validation function for prompt-specific behavior
+- Validation can occur at two levels:
+  1. **Component-level**: Complex components (Textarea) validate before submit and set state directly
+  2. **Prompt-level**: Prompt engine calls `opts.Validate()` only if component hasn't set state
 - Validation errors trigger `StateError`; user can retry or cancel
+- Components should validate the fully-resolved value (e.g., Textarea expands paste placeholders before validating)
+
+### Component State Control
+
+Components like Textarea can set state to StateError, StateSubmit, or StateCancel directly:
+
+- If component sets state, prompt skips validation and proceeds with finalization
+- This allows components to implement custom validation logic or state management
+- Example: Textarea validates after resolving paste placeholders, sets error state with custom message
 
 ### Type Safety
 

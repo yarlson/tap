@@ -4,7 +4,7 @@
 
 All prompts route keypresses through `prompt.handleKey()`:
 
-1. **Error state recovery**: Any key (except Return/Cancel) clears error and returns to Active
+1. **Error state recovery**: Any key except plain Return/Cancel clears error and returns to Active. Shift+Return does NOT clear error (allows continued editing on validation failure)
 2. **User input tracking**: For text-based prompts (`track=true`), cursor-based updates via `updateUserInputWithCursor()`
 3. **Movement key emission**: Cursor keys emit "cursor" events for select/multiselect/list components
 4. **Vim alias support**: hjkl mapped to arrow keys when `track=false`
@@ -12,11 +12,13 @@ All prompts route keypresses through `prompt.handleKey()`:
 6. **Paste handling** (Textarea): Paste events insert PUA (Private Use Area) rune placeholders at cursor
 7. **Special key handling**:
    - **Paste**: Insert content via PUA placeholder; resolved to original text on submit
-   - **Return** (unmodified): Set value, run validation, transition to Submit/Error
-   - **Shift+Return**: Component-specific (Textarea: insert newline; others: may not apply)
+   - **Return** (unmodified): Set value, run validation, transition to Submit/Error. In error state: re-validate
+   - **Shift+Return**: Component-specific (Textarea: insert newline and clear error; others: may not apply)
    - **Escape/Ctrl+C**: Transition to Cancel immediately
    - **Backspace**: Delete character before cursor (or atomic PUA placeholder)
    - **Delete**: Delete character at cursor (or atomic PUA placeholder)
+   - **Home**: Move cursor to start of current line (Textarea only)
+   - **End**: Move cursor to end of current line (Textarea only)
    - **Tab**: Insert tab character at cursor
    - **Space**: Insert space at cursor
    - **Regular chars**: Insert at cursor position (ASCII 32-126)
@@ -47,12 +49,17 @@ Prompts track user input to provide real-time feedback (placeholder replacement,
 ## Validation Flow
 
 1. User presses Return
-2. `prompt.handleKey()` calls `p.opts.Validate(s.Value)` if validator present
-3. **Success**: State → Submit
+2. Component (e.g., Textarea) may handle validation first:
+   - If component sets state to StateError/StateSubmit/StateCancel, prompt skips validation
+   - Otherwise, prompt runs `p.opts.Validate(s.Value)` if validator present
+3. **Success**: State → Submit, prompt returns resolved value
 4. **Failure**: Capture error message (string or `ValidationError`), State → Error, message visible in render
-5. User can retry or cancel; pressing any other key clears error and returns to Active
+5. User can retry or cancel:
+   - Pressing Return re-validates
+   - Pressing Shift+Return (Textarea) clears error and allows continued editing
+   - Pressing any other key clears error and returns to Active
 
-Note: Validation function receives the _value_ (not user input), so custom validators can coerce/process before checking rules.
+Note: Validation function receives the _value_ (not user input), so custom validators can coerce/process before checking rules. For Textarea, validation receives the fully-resolved string with all paste placeholders expanded.
 
 ## Placeholder Behavior
 

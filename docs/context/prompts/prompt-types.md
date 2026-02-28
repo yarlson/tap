@@ -110,24 +110,29 @@
 **Behavior**:
 
 - Multiline text input with cursor-based editing
-- **Shift+Return**: Insert newline within text (multiline editing)
-- **Return**: Submit the entire textarea content
+- **Shift+Return**: Insert newline within text (multiline editing); clears error state if present
+- **Return**: Submit the entire textarea content; validates if `Validate` function configured
 - **Up/Down arrows**: Navigate between lines, maintaining column position
 - **Left/Right arrows**: Move cursor within current line
+- **Home**: Move cursor to start of current line
+- **End**: Move cursor to end of current line
 - **Backspace/Delete**: Delete characters across line boundaries
 - Placeholder when empty
 - Default and initial values supported
+- Validation receives fully-resolved string with all paste placeholders expanded
 
 **Key implementation** (`textarea.go`):
 
 - `track=false` (manual input buffer management)
 - Render multiline text with bar prefix per line
 - Key handlers:
-  - Shift+Return calls `buf = slices.Insert(buf, cur, '\n')`
-  - Regular Return calls `p.SetValue(string(buf))` to submit
+  - Shift+Return calls `buf = slices.Insert(buf, cur, '\n')` and clears error
+  - Regular Return resolves paste placeholders, validates, then submits or sets error state
   - Up/Down use `cursorToLineCol()` and `lineColToCursor()` for smart vertical navigation
+  - Home/End use `lineColToCursor()` to move to line start/end
   - Left/Right adjust cursor within bounds
   - Backspace/Delete modify buffer at cursor position
+- Component handles its own validation state (prompt skips validation if state already set)
 
 ## All Prompt Components
 
